@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Stab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E11; --surface:#161B21; --surface2:#1E252D; --line:#2A333D;
+  --ink:#F2F4F6; --dim:#7A858F; --dimmer:#4A545E;
+  --ok:#4ADE80; --warn:#FBBF24; --low:#F87171; --live:#60A5FA;
+  --cond:'Barlow Condensed',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:var(--cond);overscroll-behavior:none;user-select:none}
+body{display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+.hide{display:none!important}
+
+/* ---------- setup ---------- */
+#setup{flex:1;overflow-y:auto;padding:18px 16px 32px}
+.brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dimmer);margin-bottom:22px}
+.lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin:22px 0 9px}
+.wing{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:9px}
+.rm{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:13px 0;font-size:22px;font-weight:600;letter-spacing:.03em}
+.rm .sub{display:block;font-family:var(--mono);font-size:9px;color:var(--dimmer);
+  letter-spacing:0;margin-top:2px;font-weight:400}
+.rm.on{background:var(--live);border-color:var(--live);color:#07121F}
+.rm.on .sub{color:#07121F;opacity:.7}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:15px 8px;font-size:18px;font-weight:600}
+.side .sub{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);
+  margin-top:3px;font-weight:400;line-height:1.3}
+.side.on{background:var(--live);border-color:var(--live);color:#07121F}
+.side.on .sub{color:#07121F;opacity:.75}
+.go{width:100%;margin-top:26px;padding:19px;border-radius:11px;background:var(--ok);
+  color:#052D14;font-size:23px;font-weight:700;letter-spacing:.05em}
+.go[disabled]{background:var(--surface2);color:var(--dimmer)}
+.tiny{font-family:var(--mono);font-size:11px;color:var(--dimmer);line-height:1.6;margin-top:18px}
+
+/* ---------- header ---------- */
+#hdr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+#hroom{font-size:21px;font-weight:700;letter-spacing:.04em}
+#hside{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+#hstat{margin-left:auto;padding:6px 8px;border-radius:8px;background:var(--surface);display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dimmer)}
+.dot.live{background:var(--live);box-shadow:0 0 0 3px rgba(96,165,250,.18)}
+.dot.stale{background:var(--warn)}
+#exit{font-family:var(--mono);font-size:11px;color:var(--dim);padding:4px 7px}
+
+/* ---------- route strip : the signature ---------- */
+#route{display:flex;gap:0;padding:9px 12px;border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none}
+#route::-webkit-scrollbar{display:none}
+.tk{flex:0 0 auto;width:30px;text-align:center;position:relative;padding-top:13px}
+.tk .n{font-family:var(--mono);font-size:12px;color:var(--dimmer)}
+.tk .bar{position:absolute;top:3px;left:3px;right:3px;height:4px;border-radius:2px;background:var(--surface2)}
+.tk.done .bar{background:var(--dim)}
+.tk.done .n{color:var(--dim)}
+.tk.now .bar{background:var(--live)}
+.tk.now .n{color:var(--live);font-weight:600}
+.tk.flag .bar{background:var(--low)}
+
+/* ---------- main ---------- */
+main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
+#pos{font-size:38px;font-weight:700;line-height:.98;letter-spacing:.01em}
+#depth{font-size:27px;font-weight:600;color:var(--live);letter-spacing:.02em;margin-top:3px}
+#pos,#depth{transition:opacity .12s}
+.flash #pos,.flash #depth{opacity:.25}
+#depth .d{display:inline-block;margin-left:9px;padding:3px 10px;border-radius:6px;
+  background:var(--surface2);font-family:var(--mono);font-size:14px;color:var(--ink);
+  letter-spacing:.06em;vertical-align:3px}
+#vwcwrap{margin:auto 0 0;display:flex;align-items:baseline;gap:9px}
+#vwc{font-family:var(--mono);font-size:68px;font-weight:600;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#ecwrap{display:flex;align-items:baseline;gap:9px;margin:2px 0 auto}
+#ecbig{font-family:var(--mono);font-size:52px;font-weight:600;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
+#ecunit{font-family:var(--mono);font-size:17px;color:var(--dim)}
+#vwc.ok{color:var(--ok)} #vwc.warn{color:var(--warn)} #vwc.low{color:var(--low)}
+#vwc.none{color:var(--dimmer)}
+#pct{font-family:var(--mono);font-size:22px;color:var(--dim)}
+#sub{display:flex;gap:22px;font-family:var(--mono);font-size:16px;color:var(--dim);margin-bottom:12px}
+#sub b{color:var(--ink);font-weight:500}
+#nextup{font-family:var(--mono);font-size:12px;color:var(--dimmer);
+  letter-spacing:.08em;margin-top:4px}
+#ctx{font-family:var(--mono);font-size:12px;color:var(--dimmer);
+  border-top:1px solid var(--line);padding-top:10px;margin-bottom:12px;min-height:34px;line-height:1.5}
+#ctx .was{color:var(--dim)}
+#diag{font-family:var(--mono);font-size:10px;color:var(--live);
+  margin-bottom:10px;min-height:14px;word-break:break-all;line-height:1.4}
+
+/* ---------- controls ---------- */
+#pad{padding:0 16px calc(14px + env(safe-area-inset-bottom))}
+#log{width:100%;padding:26px;border-radius:13px;background:var(--ok);color:#052D14;
+  font-size:29px;font-weight:700;letter-spacing:.06em}
+#log:active{transform:scale(.985)}
+#log[disabled]{background:var(--surface2);color:var(--dimmer)}
+#log.stale{background:var(--warn);color:#3A2600}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:22px}
+.row button{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:15px 2px;font-size:14px;font-weight:600;color:var(--dim)}
+.row button:active{background:var(--surface2)}
+.row button[disabled]{opacity:.35}
+
+/* ---------- done ---------- */
+#done{flex:1;overflow-y:auto;padding:22px 16px calc(22px + env(safe-area-inset-bottom))}
+#done h2{font-size:32px;font-weight:700;margin:0 0 4px}
+#stats{font-family:var(--mono);font-size:13px;color:var(--dim);line-height:1.8;margin-bottom:20px}
+#csv{width:100%;height:210px;background:var(--surface);color:var(--dim);border:1px solid var(--line);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:10px;line-height:1.5;
+  user-select:text;-webkit-user-select:text;resize:none}
+.act{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.act button{padding:17px;border-radius:10px;font-size:17px;font-weight:600}
+#copy{background:var(--live);color:#07121F}
+#more{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:var(--ink);
+  color:var(--bg);padding:11px 22px;border-radius:22px;font-size:16px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .18s}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<section id="setup">
+  <div class="brand">Stab</div>
+  <div class="lbl">Room</div>
+  <div id="rooms"></div>
+  <div class="lbl">Side</div>
+  <div class="two">
+    <button class="side on" data-side="standard">Standard<span class="sub">T1 on your left</span></button>
+    <button class="side" data-side="opposite">Opposite<span class="sub">T1 on your right</span></button>
+  </div>
+  <button class="go" id="start" disabled>Pick a room</button>
+  <div class="tiny" id="hint">
+    Odd tables run front to header, even tables run header to front.<br>
+    2-gallon rooms take reference and mid at each stop. 1.25-gallon take reference only.
+  </div>
+</section>
+
+<!-- ============ SWEEP ============ -->
+<header id="hdr" class="hide">
+  <span id="hroom"></span><span id="hside"></span>
+  <button id="hstat"><span class="dot" id="dot"></span><span id="statxt">off</span></button>
+  <button id="exit">END</button>
+</header>
+<div id="route" class="hide"></div>
+<main class="hide" id="main">
+  <div id="pos"></div>
+  <div id="depth"></div>
+  <div id="vwcwrap"><span id="vwc" class="none">--</span><span id="pct">%</span></div>
+  <div id="ecwrap"><span id="ecbig">--</span><span id="ecunit">EC</span></div>
+  <div id="sub"><span><b id="tmp">--</b> °F</span><span id="roomavg"></span></div>
+  <div id="nextup"></div>
+  <div id="ctx"></div>
+  <div id="diag"></div>
+</main>
+<div id="pad" class="hide">
+  <button id="log" disabled>CONNECT</button>
+  <div class="row">
+    <button id="extra" disabled>+ plant</button>
+    <button id="skip" disabled>skip</button>
+    <button id="undo" disabled>undo</button>
+    <button id="redo" disabled>redo</button>
+  </div>
+  <div class="row" style="grid-template-columns:1fr;margin-top:6px">
+    <button id="hunt">find trigger</button>
+  </div>
+</div>
+
+<!-- ============ DONE ============ -->
+<section id="done" class="hide">
+  <h2 id="dtitle">Sweep complete</h2>
+  <div id="stats"></div>
+  <textarea id="csv" readonly></textarea>
+  <div class="act">
+    <button id="copy">Copy CSV</button>
+    <button id="more">New room</button>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ---------------- rooms ---------------- */
+var ROOMS={
+ A1:{t:12,bag:2,media:'Bio365'}, A2:{t:12,bag:2,media:'Bio365'},
+ A3:{t:12,bag:2,media:'Mother Earth coco'}, A4:{t:12,bag:1.25,media:'Bio365'},
+ A5:{t:12,bag:1.25,media:'Bio365'}, A6:{t:12,bag:1.25,media:'Bio365'},
+ A7:{t:12,bag:1.25,media:'Bio365'},
+ B1:{t:11,bag:2,media:'Bio365'}, B2:{t:11,bag:2,media:'Bio365'},
+ B3:{t:11,bag:1.25,media:'Bio365'}, B4:{t:11,bag:1.25,media:'Bio365'},
+ B5:{t:11,bag:1.25,media:'Bio365'}, B6:{t:11,bag:2,media:'Bio365'},
+ C1:{t:11,bag:2,media:'Bio365'}, C2:{t:11,bag:2,media:'Bio365'},
+ C3:{t:11,bag:1.25,media:'Bio365'}, C4:{t:11,bag:1.25,media:'Bio365'},
+ C5:{t:11,bag:1.25,media:'Bio365'}, C6:{t:11,bag:2,media:'Bio365'}
+};
+var FLOOR={2:22, 1.25:30};
+
+/* ---------------- probe ---------------- */
+var SVC='deca0001-10c7-43a8-8c9f-42b70e03808d';
+var NTF='deca0003-10c7-43a8-8c9f-42b70e03808d';
+var WRT='deca0002-10c7-43a8-8c9f-42b70e03808d';
+var CANDS=(function(){
+  function crc(d){ var c=0;
+    for(var i=0;i<d.length;i++){ c^=d[i]<<8;
+      for(var k=0;k<8;k++) c = (c&0x8000) ? ((c<<1)^0x1021)&0xFFFF : (c<<1)&0xFFFF; }
+    return c; }
+  function frame(txt){
+    var p=new TextEncoder().encode(txt), tot=6+p.length, b=[0x7C,0x61,(tot>>8)&255,tot&255];
+    for(var i=0;i<p.length;i++) b.push(p[i]);
+    var c=crc(b); b.push((c>>8)&255, c&255); return b; }
+  var L=[];
+  ['sdicmd 0XR3!!','sdicmd 0XR3!!\n','sdicmd 0XR3!','sdicmd 0XR3!\n',
+   'sdicmd 0XR3!!\r\n','0XR3!','0XR3!\n','sdicmd 0R3!!','sdicmd 0R0!!'
+  ].forEach(function(t){ L.push({n:'framed '+JSON.stringify(t), b:frame(t)}); });
+  ['sdicmd 0XR3!!','sdicmd 0XR3!!\n','0XR3!','0XR3!\r\n'
+  ].forEach(function(t){ L.push({n:'raw '+JSON.stringify(t), t:t}); });
+  ['0','1','2'].forEach(function(a){ ['XR3!','XR4!','R3!','R4!'].forEach(function(c){
+    L.push({n:a+c,t:a+c}); }); });
+  [1,2,3,0,10,13].forEach(function(v){ L.push({n:'0x'+v.toString(16),b:[v]}); });
+  return L;
+})();
+function vwcCounts(c){
+  return (6.771e-10*c*c*c - 5.105e-6*c*c + 1.302e-2*c - 10.848)*100;
+}
+function permCounts(c){
+  var v = 2.887e-9*c*c*c - 2.080e-5*c*c + 5.276e-2*c - 43.39;
+  return v*v;
+}
+// Hilhorst pore-water EC. OFFSET fitted to one paired reading (25.9% / 0.18 bulk -> 4.39 Aroya).
+// Needs 3-4 more paired points across the moisture range to firm up.
+var HILHORST_OFFSET = 2.9;
+function poreEC(counts, bulk_uS, tC){
+  var eb=permCounts(counts), ep=80.3-0.37*(tC-20), d=eb-HILHORST_OFFSET;
+  if(d<=0.5) return null;
+  return ep*(bulk_uS/1000)/d;
+}
+function parse(txt){
+  var t=txt.replace(/[^\x20-\x7E]/g,' ');
+  var m=t.match(/(\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+)\s*[gh]/), c,b,T;
+  if(m){ c=+m[1]; T=+m[2]; b=+m[3]; }
+  else {
+    var n=t.match(/(\d+)\s*:\s*(\d+)\s+(\d+)\s+(\d+)/);
+    if(!n) return null;
+    c=+n[2]/10; T=+n[3]/100-50; b=+n[4];
+  }
+  var p=poreEC(c,b,T);
+  return { vwc:+vwcCounts(c).toFixed(1), tmp:+T.toFixed(1),
+           ec: p===null ? null : +p.toFixed(2), bulk:+(b/1000).toFixed(3),
+           raw:(m?m[0]:t).trim() };
+}
+var S={room:null, side:'standard', route:[], i:0, rows:[], last:null, lastAt:0, dev:null, chr:null, svc:null, wchr:null, hunting:false, trigger:null, pkts:0, awaiting:false, extraNext:false, redo:[]};
+var PREV={};
+try{ PREV=JSON.parse(localStorage.getItem('stab_prev')||'{}'); }catch(e){ PREV={}; }
+
+function buildRoute(room){
+  var cfg=ROOMS[room], r=[];
+  for(var t=1;t<=cfg.t;t++){
+    var seq = (t%2===1) ? ['front','middle','header'] : ['header','middle','front'];
+    for(var p=0;p<3;p++){
+      r.push({t:t,pos:seq[p],depth:'reference'});
+      if(cfg.bag===2) r.push({t:t,pos:seq[p],depth:'mid-bag'});
+    }
+  }
+  return r;
+}
+
+/* ---------------- setup screen ---------------- */
+var wings=['A','B','C'], box=document.getElementById('rooms');
+wings.forEach(function(w){
+  var d=document.createElement('div'); d.className='wing';
+  Object.keys(ROOMS).filter(function(k){return k[0]===w;}).forEach(function(k){
+    var b=document.createElement('button'); b.className='rm'; b.dataset.room=k;
+    b.innerHTML=k+'<span class="sub">'+ROOMS[k].bag+' gal</span>';
+    d.appendChild(b);
+  });
+  box.appendChild(d);
+});
+box.addEventListener('click',function(e){
+  var b=e.target.closest('.rm'); if(!b) return;
+  [].forEach.call(box.querySelectorAll('.rm'),function(x){x.classList.remove('on');});
+  b.classList.add('on'); S.room=b.dataset.room;
+  var g=document.getElementById('start');
+  g.disabled=false; g.textContent='Start '+S.room;
+});
+document.querySelector('.two').addEventListener('click',function(e){
+  var b=e.target.closest('.side'); if(!b) return;
+  [].forEach.call(document.querySelectorAll('.side'),function(x){x.classList.remove('on');});
+  b.classList.add('on'); S.side=b.dataset.side;
+});
+
+document.getElementById('start').onclick=function(){
+  S.route=buildRoute(S.room); S.i=0; S.rows=[];
+  document.getElementById('setup').classList.add('hide');
+  ['hdr','route','main','pad'].forEach(function(id){document.getElementById(id).classList.remove('hide');});
+  document.getElementById('hroom').textContent=S.room;
+  document.getElementById('hside').textContent=S.side;
+  drawRoute(); render(); connect();
+};
+
+/* ---------------- route strip ---------------- */
+function drawRoute(){
+  var el=document.getElementById('route'); el.innerHTML='';
+  var cur=S.route[S.i], flagged={}, tv={};
+  S.rows.forEach(function(r){ if(r.flag) flagged[r.table]=1;
+    if(r.depth==='reference'){ (tv[r.table]=tv[r.table]||[]).push(r.vwc); } });
+  var f=FLOOR[ROOMS[S.room].bag];
+  for(var t=1;t<=ROOMS[S.room].t;t++){
+    var d=document.createElement('div'); d.className='tk';
+    if(cur && t===cur.t) d.className+=' now';
+    else if(!cur || t<cur.t) d.className+=' done';
+    var col='';
+    if(tv[t]){ var mv=med(tv[t]);
+      col = mv<f ? 'var(--low)' : (mv<f+6 ? 'var(--warn)' : 'var(--ok)'); }
+    if(flagged[t]) col='var(--low)';
+    d.innerHTML='<span class="bar"'+(col&&!d.className.match(/now/)?' style="background:'+col+'"':'')+
+      '></span><span class="n">'+t+'</span>';
+    el.appendChild(d);
+  }
+  var now=el.querySelector('.now'); if(now) now.scrollIntoView({inline:'center',block:'nearest'});
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  var s=S.route[S.i];
+  if(!s){ finish(); return; }
+  document.getElementById('pos').textContent='Table '+s.t;
+  document.getElementById('depth').innerHTML=s.pos+'<span class="d">'+(s.depth==='reference'?'REF':'MID')+'</span>';
+  var nx=S.route[S.i+1];
+  document.getElementById('nextup').textContent = nx
+    ? 'next  T'+nx.t+' '+nx.pos+' '+(nx.depth==='reference'?'ref':'mid') : 'last one';
+  var rv=S.rows.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;});
+  document.getElementById('roomavg').innerHTML = rv.length>2
+    ? 'room <b>'+med(rv).toFixed(0)+'</b> · n'+rv.length : '';
+  var key=S.room+'|'+s.t+'|'+s.pos+'|'+s.depth, p=PREV[key];
+  document.getElementById('ctx').innerHTML = p
+    ? '<span class="was">last here '+p.d+'</span> &nbsp; '+p.v+'% &nbsp; '+p.e+' dS/m'
+    : '<span class="was">no prior reading here</span>';
+  drawRoute(); paint();
+}
+function paint(){
+  var v=document.getElementById('vwc'), age=Date.now()-S.lastAt;
+  if(!S.last){ v.textContent='--'; v.className='none';
+    document.getElementById('ecbig').textContent='--';
+    document.getElementById('tmp').textContent='--'; return; }
+  v.textContent=S.last.vwc.toFixed(1);
+  var f=FLOOR[ROOMS[S.room].bag];
+  v.className = S.last.vwc<f ? 'low' : (S.last.vwc<f+6 ? 'warn' : 'ok');
+  document.getElementById('ecbig').textContent=(S.last.ec===null?'--':S.last.ec.toFixed(2));
+  document.getElementById('tmp').textContent=(S.last.tmp*9/5+32).toFixed(1);
+  var b=document.getElementById('log');
+  if(age>45000){ b.classList.add('stale'); b.textContent='LOG · '+Math.round(age/1000)+'s OLD'; }
+  else { b.classList.remove('stale'); b.textContent='LOG'; }
+}
+setInterval(function(){
+  if(S.last) paint();
+  var d=document.getElementById('dot');
+  if(S.dev && S.dev.gatt && S.dev.gatt.connected){
+    var stale=Date.now()-S.lastAt>45000;
+    d.className='dot '+(stale?'stale':'live');
+    document.getElementById('statxt').textContent = S.lastAt ? (stale?'stale':'live') : 'waiting';
+  }
+},1000);
+
+/* ---------------- bluetooth ---------------- */
+function connect(){
+  if(!navigator.bluetooth){ step('no Web Bluetooth — open in Bluefy'); return; }
+  var btn=document.getElementById('log');
+  btn.textContent='CONNECTING…'; step('requesting device');
+  navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]})
+    .catch(function(){ step('retry with all devices');
+      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]}); })
+    .then(function(dev){
+      S.dev=dev; step('connecting GATT');
+      dev.addEventListener('gattserverdisconnected',function(){
+        document.getElementById('dot').className='dot';
+        document.getElementById('statxt').textContent='dropped'; step('probe disconnected');
+      });
+      return dev.gatt.connect();
+    })
+    .then(function(g){
+      step('connected — settling');
+      return new Promise(function(res){ setTimeout(function(){res(g);},900); });
+    })
+    .then(function(g){
+      step('finding service');
+      return g.getPrimaryService(SVC).catch(function(){
+        step('listing all services');
+        return g.getPrimaryServices().then(function(list){
+          for(var i=0;i<list.length;i++){ if(list[i].uuid.toLowerCase()===SVC) return list[i]; }
+          if(list.length) { step('using '+list[0].uuid.slice(0,8)); return list[0]; }
+          throw new Error('no services found');
+        });
+      });
+    })
+    .then(function(svc){
+      S.svc=svc; step('finding characteristic');
+      return svc.getCharacteristic(NTF).catch(function(){
+        return svc.getCharacteristics().then(function(cs){
+          for(var i=0;i<cs.length;i++){ if(cs[i].properties.notify) return cs[i]; }
+          if(cs.length) return cs[0];
+          throw new Error('no characteristics');
+        });
+      });
+    })
+    .then(function(c){
+      S.chr=c; step('subscribing');
+      if(S.svc) S.svc.getCharacteristic(WRT).then(function(w){S.wchr=w;}).catch(function(){});
+      c.addEventListener('characteristicvaluechanged',onPacket);
+      return c.startNotifications().catch(function(e){
+        step('notify failed — read mode'); return null;
+      });
+    })
+    .then(function(){
+      document.getElementById('statxt').textContent='waiting';
+      ['log','extra','skip','undo','redo'].forEach(function(id){document.getElementById(id).disabled=false;});
+      document.getElementById('log').textContent='TAKE READING';
+      step('finding trigger…'); setTimeout(hunt,300);
+
+    })
+    .catch(function(err){
+      btn.textContent='RETRY CONNECT'; btn.disabled=false;
+      step('failed at: '+((err&&err.message)||err));
+    });
+}
+function pull(){
+  if(!S.trigger){ step('no trigger yet — tap find trigger'); return; }
+  sendCand(S.trigger).catch(function(e){ step('write failed: '+((e&&e.message)||e)); });
+}
+function bytesOf(c){
+  if(c.b) return new Uint8Array(c.b);
+  return new TextEncoder().encode(c.t);
+}
+function sendCand(c){
+  if(!S.wchr) return Promise.reject();
+  var w = S.wchr.writeValueWithoutResponse ? S.wchr.writeValueWithoutResponse.bind(S.wchr)
+                                           : S.wchr.writeValue.bind(S.wchr);
+  return w(bytesOf(c));
+}
+function hunt(){
+  if(!S.wchr){ step('no write characteristic'); return; }
+  if(S.hunting){ S.hunting=false; step('hunt stopped'); return; }
+  S.hunting=true; var i=0, before=S.lastAt, pkts=S.pkts;
+  document.getElementById('hunt').textContent='stop hunt';
+  (function next(){
+    if(!S.hunting){ document.getElementById('hunt').textContent='find trigger'; return; }
+    if(S.pkts>pkts){ S.trigger=CANDS[i-1]; S.hunting=false;
+      document.getElementById('hunt').textContent='find trigger';
+      step('★ TRIGGER = '+CANDS[i-1].n); return; }
+    if(i>=CANDS.length){ S.hunting=false;
+      document.getElementById('hunt').textContent='find trigger';
+      step('nothing in '+CANDS.length+' tries'); return; }
+    var c=CANDS[i++];
+    step(i+'/'+CANDS.length+'  '+c.n);
+    sendCand(c).catch(function(){});
+    setTimeout(next,900);
+  })();
+}
+function step(m){ var d=document.getElementById('diag'); if(d) d.textContent=m; }
+function onPacket(e){
+  S.pkts++;
+  var txt=new TextDecoder().decode(e.target.value);
+  var p=parse(txt);
+  if(!p){ step('PACKET (unparsed): '+txt.slice(0,30)); return; }
+  step(p.raw);
+  S.last=p; S.lastAt=Date.now(); paint();
+  if(navigator.vibrate) navigator.vibrate(12);
+  if(S.awaiting){
+    S.awaiting=false;
+    document.getElementById('log').textContent='TAKE READING';
+    if(S.extraNext){ S.extraNext=false; commit(S.route[S.i],true); drawRoute(); toast('extra plant'); }
+    else { S.redo=[]; commit(S.route[S.i], false); S.i++; setTimeout(function(){ render(); flash(); },420); }
+  }
+}
+document.getElementById('log').addEventListener('click',function(){
+  if(!S.chr){ connect(); return; }
+  if(!S.trigger){ hunt(); return; }
+  if(S.awaiting) return;
+  S.awaiting=true;
+  var b=document.getElementById('log'); b.textContent='READING…'; step('reading…');
+  pull();
+  setTimeout(function(){ if(S.awaiting){ S.awaiting=false;
+    document.getElementById('log').textContent='TAKE READING';
+    step('no response — tap again'); } },4000);
+});
+
+/* ---------------- logging ---------------- */
+function commit(stop,isExtra){
+  var f=FLOOR[ROOMS[S.room].bag];
+  var row={
+    date:new Date().toLocaleDateString('en-US'),
+    time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}),
+    room:S.room, table:stop.t, position:stop.pos, depth:stop.depth,
+    plant:isExtra?'adjacent':'', bag:ROOMS[S.room].bag, media:ROOMS[S.room].media,
+    side:S.side, vwc:S.last.vwc, ec:S.last.ec, bulk:S.last.bulk, tmp:S.last.tmp,
+    flag:S.last.vwc<f, raw:S.last.raw
+  };
+  S.rows.push(row);
+  var key=S.room+'|'+stop.t+'|'+stop.pos+'|'+stop.depth;
+  PREV[key]={d:row.date,v:row.vwc,e:row.ec};
+  try{ localStorage.setItem('stab_prev',JSON.stringify(PREV));
+       localStorage.setItem('stab_rows',JSON.stringify(S.rows)); }catch(e){}
+  if(row.flag) toast('Below floor · '+row.vwc+'%');
+}
+document.getElementById('extra').onclick=function(){
+  if(!S.chr || S.awaiting) return;
+  S.extraNext=true; S.awaiting=true;
+  document.getElementById('log').textContent='READING…'; step('extra plant…');
+  pull();
+  setTimeout(function(){ if(S.awaiting){ S.awaiting=false; S.extraNext=false;
+    document.getElementById('log').textContent='TAKE READING'; } },4000);
+};
+document.getElementById('skip').onclick=function(){ S.redo=[]; S.i++; render(); flash(); toast('skipped'); };
+document.getElementById('undo').onclick=function(){
+  if(!S.rows.length){ toast('nothing to undo'); return; }
+  var r=S.rows.pop();
+  if(!r.plant && S.i>0) S.i--;
+  S.redo.push(r); render(); flash();
+  toast('undid T'+r.table+' '+r.position);
+};
+document.getElementById('redo').onclick=function(){
+  if(!S.redo.length){ toast('nothing to redo'); return; }
+  var r=S.redo.pop(); S.rows.push(r);
+  if(!r.plant) S.i++;
+  render(); flash(); toast('redid T'+r.table+' '+r.position);
+};
+document.getElementById('exit').onclick=function(){
+  if(S.rows.length && !confirm('End sweep with '+S.rows.length+' readings?')) return;
+  finish();
+};
+
+/* ---------------- finish ---------------- */
+function finish(){
+  ['hdr','route','main','pad'].forEach(function(id){document.getElementById(id).classList.add('hide');});
+  document.getElementById('done').classList.remove('hide');
+  var v=S.rows.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;}).sort(function(a,b){return a-b;});
+  var med=v.length?(v.length%2?v[(v.length-1)/2]:((v[v.length/2-1]+v[v.length/2])/2)).toFixed(1):'--';
+  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  document.getElementById('dtitle').textContent=S.room+' · '+S.rows.length+' readings';
+  document.getElementById('stats').innerHTML=
+    'reference median &nbsp;<b style="color:var(--ink)">'+med+'%</b><br>'+
+    (v.length?'range &nbsp;'+v[0].toFixed(1)+' – '+v[v.length-1].toFixed(1)+'%<br>':'')+
+    'below floor &nbsp;'+lows+'<br>side &nbsp;'+S.side;
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Raw\n';
+  var body=S.rows.map(function(r){
+    return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,r.bag,r.media,r.side,
+            r.vwc,(r.ec===null?'':r.ec),r.bulk,(r.tmp*9/5+32).toFixed(1),r.flag?'YES':'','"'+r.raw+'"'].join(',');
+  }).join('\n');
+  document.getElementById('csv').value=head+body;
+}
+document.getElementById('copy').onclick=function(){
+  var t=document.getElementById('csv');
+  t.select(); t.setSelectionRange(0,999999);
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  if(navigator.clipboard) navigator.clipboard.writeText(t.value).then(function(){toast('CSV copied');},function(){});
+  else toast(ok?'CSV copied':'Select the text and copy');
+};
+document.getElementById('more').onclick=function(){ location.reload(); };
+document.getElementById('hunt').onclick=hunt;
+document.getElementById('hstat').onclick=function(){
+  if(S.dev && S.dev.gatt && S.dev.gatt.connected){ toast('already connected'); return; }
+  S.chr=null; S.wchr=null; S.svc=null; connect();
+};
+
+/* ---------------- toast ---------------- */
+function med(a){ var x=a.slice().sort(function(p,q){return p-q;});
+  return x.length%2 ? x[(x.length-1)/2] : (x[x.length/2-1]+x[x.length/2])/2; }
+function flash(){
+  var m=document.getElementById('main'); if(!m) return;
+  m.classList.add('flash');
+  setTimeout(function(){ m.classList.remove('flash'); },130);
+}
+var tmr;
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('show');},2200);
+}
+</script>
+</body>
+</html>
