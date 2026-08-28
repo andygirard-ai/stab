@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Stab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E11; --surface:#161B21; --surface2:#1E252D; --line:#2A333D;
+  --ink:#F2F4F6; --dim:#7A858F; --dimmer:#4A545E;
+  --ok:#4ADE80; --warn:#FBBF24; --low:#F87171; --live:#60A5FA;
+  --cond:'Barlow Condensed',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:var(--cond);overscroll-behavior:none;user-select:none}
+body{display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+.hide{display:none!important}
+
+#setup{flex:1;overflow-y:auto;padding:18px 16px 32px}
+.brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dimmer);margin-bottom:22px}
+.lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin:22px 0 9px}
+.wing{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:9px}
+.rm{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:13px 0;font-size:22px;font-weight:600;letter-spacing:.03em}
+.rm .sub{display:block;font-family:var(--mono);font-size:9px;color:var(--dimmer);
+  letter-spacing:0;margin-top:2px;font-weight:400}
+.rm.on{background:var(--live);border-color:var(--live);color:#07121F}
+.rm.on .sub{color:#07121F;opacity:.7}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:15px 8px;font-size:18px;font-weight:600}
+.side .sub{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);
+  margin-top:3px;font-weight:400;line-height:1.3}
+.side.on{background:var(--live);border-color:var(--live);color:#07121F}
+.side.on .sub{color:#07121F;opacity:.75}
+.go{width:100%;margin-top:26px;padding:19px;border-radius:11px;background:var(--ok);
+  color:#052D14;font-size:23px;font-weight:700;letter-spacing:.05em}
+.go[disabled]{background:var(--surface2);color:var(--dimmer)}
+.tiny{font-family:var(--mono);font-size:11px;color:var(--dimmer);line-height:1.6;margin-top:18px}
+
+#hdr{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+#hroom{font-size:21px;font-weight:700;letter-spacing:.04em}
+#hside{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+#hstat{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dimmer)}
+.dot.live{background:var(--live);box-shadow:0 0 0 3px rgba(96,165,250,.18)}
+.dot.stale{background:var(--warn)}
+#exit{font-family:var(--mono);font-size:11px;color:var(--dim);padding:4px 7px}
+
+#route{display:flex;gap:0;padding:9px 12px;border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none}
+#route::-webkit-scrollbar{display:none}
+.tk{flex:0 0 auto;width:30px;text-align:center;position:relative;padding-top:13px}
+.tk .n{font-family:var(--mono);font-size:12px;color:var(--dimmer)}
+.tk .bar{position:absolute;top:3px;left:3px;right:3px;height:4px;border-radius:2px;background:var(--surface2)}
+.tk.done .bar{background:var(--dim)}
+.tk.done .n{color:var(--dim)}
+.tk.now .bar{background:var(--live)}
+.tk.now .n{color:var(--live);font-weight:600}
+.tk.flag .bar{background:var(--low)}
+
+main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
+#pos{font-size:44px;font-weight:700;line
