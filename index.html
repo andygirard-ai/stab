@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Stab v19</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E11; --surface:#161B21; --surface2:#1E252D; --line:#2A333D; --line2:#39434F;
+  --ink:#FFFFFF; --dim:#A8B2BC; --dimmer:#6B7680;
+  --ok:#4ADE80; --warn:#FBBF24; --low:#F87171; --live:#60A5FA;
+  --cond:'Barlow Condensed',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:var(--cond);overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+body{display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+.hide{display:none!important}
+
+/* ---------- setup ---------- */
+#setup{flex:1;overflow-y:auto;padding:18px 16px 130px}
+.brand{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--dimmer);margin-bottom:4px}
+.brand b{color:var(--dim);font-weight:600}
+#weekly{font-family:var(--mono);font-size:11px;color:var(--dimmer);margin-bottom:16px}
+.lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin:22px 0 9px}
+.wing{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.wl{font-family:var(--mono);font-size:11px;color:var(--dimmer);letter-spacing:.2em;margin:14px 0 6px}
+.wl:first-child{margin-top:0}
+.rm{position:relative;overflow:hidden;border-radius:11px;
+  background:linear-gradient(180deg,#1C232C 0%,#141A20 100%);
+  border:1px solid var(--line);border-top-color:var(--line2);
+  box-shadow:0 4px 10px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  padding:13px 0 15px;font-size:22px;font-weight:600;letter-spacing:.03em;
+  transition:transform .06s,box-shadow .06s}
+.rm:active{transform:translateY(2px);box-shadow:0 1px 4px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04)}
+.rm .sub{display:block;font-family:var(--mono);font-size:9px;color:var(--dimmer);
+  letter-spacing:0;margin-top:2px;font-weight:400}
+.rm .cov{position:absolute;left:0;right:0;bottom:0;height:4px;background:transparent}
+.rm .cov.g{background:var(--ok)} .rm .cov.a{background:var(--warn)} .rm .cov.r{background:var(--low)}
+.rm.on{background:linear-gradient(180deg,#83B3FB 0%,#5B92EC 100%);border-color:#5B92EC;border-top-color:#A7CBFD;color:#07121F;
+  box-shadow:0 5px 14px rgba(96,165,250,.35), inset 0 1px 0 rgba(255,255,255,.4)}
+.rm.on .sub{color:#07121F;opacity:.7}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.two.four{grid-template-columns:1fr 1fr}
+.side,.dir,.mode,.cap{background:linear-gradient(180deg,#1A2027 0%,#141A20 100%);border:1px solid var(--line);border-top-color:var(--line2);border-radius:10px;
+  box-shadow:0 3px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  padding:15px 8px;font-size:18px;font-weight:600}
+.side .sub,.dir .sub,.mode .sub,.cap .sub{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);
+  margin-top:3px;font-weight:400;line-height:1.3}
+.side.on,.dir.on,.mode.on,.cap.on{background:linear-gradient(180deg,#83B3FB,#5B92EC);border-color:#5B92EC;color:#07121F;
+  box-shadow:0 4px 12px rgba(96,165,250,.3), inset 0 1px 0 rgba(255,255,255,.4)}
+.side.on .sub,.dir.on .sub,.mode.on .sub,.cap.on .sub{color:#07121F;opacity:.75}
+.opc{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:10px 18px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--dim);margin-right:7px}
+.opc.on{background:var(--live);border-color:var(--live);color:#07121F}
+#voice{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:9px 16px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+#voice.on{border-color:var(--live);color:var(--live)}
+#demo{margin:10px 0 0 7px;background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:9px 16px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+#demo.on{border-color:var(--warn);color:var(--warn)}
+#garden{margin:10px 0 0 7px;background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:9px 16px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+#garden.on{border-color:var(--ok);color:var(--ok)}
+#toggles{display:flex;flex-wrap:wrap;gap:0}
+.tiny b{color:var(--dim);font-weight:600}
+#dbtns{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.dbtn{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:14px;font-size:15px;font-weight:600;color:var(--ink);text-align:left}
+.dbtn.danger{border-color:var(--low);color:var(--low)}
+#rooms.off{opacity:.3;pointer-events:none}
+.tk.wide{width:44px}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:52px;height:52px;border-radius:11px;background:var(--surface);
+  border:1px solid var(--line);font-size:26px;font-weight:600;color:var(--ink)}
+.stepper span{font-family:var(--mono);font-size:26px;min-width:34px;text-align:center}
+#demobar{background:var(--warn);color:#3A2600;font-family:var(--mono);font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;text-align:center;padding:6px}
+.tiny{font-family:var(--mono);font-size:11px;color:var(--dimmer);line-height:1.6;margin-top:18px}
+#resume{background:var(--surface);border:1px solid var(--warn);border-radius:11px;padding:13px;margin-bottom:18px}
+#resume .t{font-size:17px;font-weight:600;margin-bottom:3px}
+#resume .s{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:11px}
+#resume .b{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+#resume .b button{padding:12px 4px;border-radius:9px;font-size:14px;font-weight:600;background:var(--surface2);border:1px solid var(--line);color:var(--ink)}
+#resume .b .pri{background:var(--warn);border-color:var(--warn);color:#3A2600}
+#roomhist{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.7;
+  margin:12px 0 4px;min-height:0}
+#roomhist .k{color:var(--ink);font-weight:600}
+#roomhist .out{color:var(--warn)}
+#tpick{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:6px}
+#tpick button{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:14px 0;font-size:17px;font-weight:600;color:var(--dim)}
+#tpick button.on{background:var(--live);border-color:var(--live);color:#07121F}
+#startbar{grid-template-columns:auto auto 1fr;position:fixed;left:0;right:0;bottom:0;z-index:15;
+  padding:26px 16px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(11,14,17,0) 0%,rgba(11,14,17,.94) 34%);
+  transform:translateY(115%);transition:transform .22s ease-out;pointer-events:none}
+#startbar.up{transform:none;pointer-events:auto}
+#eodbtn{background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:0 16px;font-size:16px;font-weight:600;margin-right:8px}
+#logbtn2{background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  border-radius:11px;padding:0 20px;font-size:16px;font-weight:600;margin-right:8px}
+#startbtn{width:100%;padding:19px;border-radius:12px;background:var(--ok);color:#052D14;
+  font-size:23px;font-weight:700;letter-spacing:.05em;box-shadow:0 6px 18px rgba(74,222,128,.25)}
+#startbtn:active{transform:translateY(1px)}
+
+/* ---------- header ---------- */
+#hdr{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}
+#hroom{font-size:21px;font-weight:700;letter-spacing:.04em}
+#hside{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+#batt{display:none;font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:8px;margin-left:auto}
+#batt.amber{display:block;background:rgba(251,191,36,.12);color:var(--warn)}
+#batt.red{display:block;background:rgba(248,113,113,.14);color:var(--low)}
+#hstat{padding:6px 8px;border-radius:8px;background:var(--surface);display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+#batt.amber ~ #hstat, #batt.red ~ #hstat{margin-left:0}
+#batt:not(.amber):not(.red) + #hstat{margin-left:auto}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dimmer)}
+.dot.live{background:var(--live);box-shadow:0 0 0 3px rgba(96,165,250,.18)}
+.dot.stale{background:var(--warn)}
+#note,#exit{font-family:var(--mono);font-size:11px;color:var(--dim);padding:6px 7px;border:1px solid var(--line);border-radius:8px}
+
+/* ---------- route strip ---------- */
+#route{display:flex;gap:0;padding:9px 12px;border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none}
+#route::-webkit-scrollbar{display:none}
+.tk{flex:0 0 auto;width:30px;text-align:center;position:relative;padding-top:13px}
+.tk .n{font-family:var(--mono);font-size:12px;color:var(--dimmer)}
+.tk .bar{position:absolute;top:3px;left:3px;right:3px;height:4px;border-radius:2px;background:var(--surface2)}
+.tk.done .bar{background:var(--dim)}
+.tk.done .n{color:var(--dim)}
+.tk.now .bar{background:var(--live)}
+.tk.now .n{color:var(--live);font-weight:600}
+
+/* ---------- main ---------- */
+main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
+#pos{font-size:38px;font-weight:700;line-height:.98;letter-spacing:.01em}
+#depth{font-size:27px;font-weight:600;color:var(--live);letter-spacing:.02em;margin-top:3px}
+#pos,#depth{transition:opacity .12s}
+.flash #pos,.flash #depth{opacity:.25}
+#depth .d{display:inline-block;margin-left:9px;padding:3px 10px;border-radius:6px;
+  background:var(--surface2);font-family:var(--mono);font-size:14px;color:var(--ink);
+  letter-spacing:.06em;vertical-align:3px}
+#strain{font-family:var(--mono);font-size:13px;color:var(--dim);margin-top:6px}
+#strain .tag{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:5px;
+  background:var(--surface2);font-size:10px;letter-spacing:.08em;color:var(--warn)}
+#vwcwrap{margin:auto 0 0;display:flex;align-items:baseline;gap:9px}
+#vwc{font-family:var(--mono);font-size:68px;font-weight:600;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#ecwrap{display:flex;align-items:baseline;gap:9px;margin:2px 0 auto}
+#ecbig{font-family:var(--mono);font-size:52px;font-weight:600;line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
+#ecbig.eok{color:var(--ok)} #ecbig.ewarn{color:var(--warn)} #ecbig.elow{color:var(--low)} #ecbig.enone{color:var(--dimmer)}
+#ecunit{font-family:var(--mono);font-size:17px;color:var(--dim)}
+#vwc.ok{color:var(--ok)} #vwc.warn{color:var(--warn)} #vwc.low{color:var(--low)}
+#vwc.none{color:var(--dimmer)}
+#pct{font-family:var(--mono);font-size:22px;color:var(--dim)}
+#sub{display:flex;gap:22px;font-family:var(--mono);font-size:16px;color:var(--dim);margin-bottom:12px}
+#sub b{color:var(--ink);font-weight:500}
+#nextup{font-family:var(--mono);font-size:12px;color:var(--dimmer);
+  letter-spacing:.08em;margin-top:4px}
+#ctx{font-family:var(--mono);font-size:12px;color:var(--dimmer);
+  border-top:1px solid var(--line);padding-top:10px;margin-bottom:12px;min-height:34px;line-height:1.5}
+#ctx .was{color:var(--dim)}
+#cdelta{color:var(--live)}
+#diag{font-family:var(--mono);font-size:10px;color:var(--live);
+  margin-bottom:10px;min-height:14px;word-break:break-all;line-height:1.4}
+
+/* ---------- controls ---------- */
+#pad{padding:0 16px calc(14px + env(safe-area-inset-bottom))}
+#log{width:100%;padding:26px;border-radius:13px;background:var(--ok);color:#052D14;
+  font-size:26px;font-weight:700;letter-spacing:.05em;transition:background .15s}
+#log:active{transform:scale(.985)}
+#log[disabled]{background:var(--surface2);color:var(--dimmer)}
+#log.busy{background:var(--warn);color:#3A2600}
+#log.hold{background:var(--live);color:#07121F}
+#log.dim{background:var(--surface2);color:var(--dim)}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:22px}
+.row button{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:15px 2px;font-size:14px;font-weight:600;color:var(--dim)}
+.row button:active{background:var(--surface2)}
+.row button[disabled]{opacity:.35}
+
+/* ---------- done ---------- */
+#done{flex:1;overflow-y:auto;padding:22px 16px calc(22px + env(safe-area-inset-bottom))}
+#done h2{font-size:32px;font-weight:700;margin:0 0 2px}
+#done .v{font-family:var(--mono);font-size:10px;color:var(--dimmer);margin-bottom:10px}
+#stats{font-family:var(--mono);font-size:13px;color:var(--dim);line-height:1.8;margin-bottom:20px}
+#stats .big{color:var(--ink)}
+#stats .pr{color:var(--ok)}
+#csv{width:100%;height:180px;background:var(--surface);color:var(--dim);border:1px solid var(--line);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:10px;line-height:1.5;
+  user-select:text;-webkit-user-select:text;resize:none}
+.act{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:11px}
+.act button{padding:16px 4px;border-radius:10px;font-size:16px;font-weight:600}
+#share{background:var(--ok);color:#052D14}
+#copy{background:var(--live);color:#07121F}
+#more{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.hl{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.14em;
+  text-transform:uppercase;margin:18px 0 8px}
+.hn{font-family:var(--mono);font-size:12px;color:var(--dim);padding:5px 3px;line-height:1.5}
+.hb{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;padding:12px 13px;margin-bottom:6px;font-family:var(--mono);font-size:13px;color:var(--ink)}
+#dbgd{margin-top:18px;font-family:var(--mono);font-size:11px;color:var(--dimmer)}
+#dbgd summary{cursor:pointer;letter-spacing:.14em;text-transform:uppercase}
+#dbg{white-space:pre-wrap;word-break:break-all;line-height:1.6;color:var(--dim);margin-top:8px}
+
+/* ---------- pegs ---------- */
+#pegsheet{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#pegtop{font-size:30px;font-weight:700;margin-bottom:2px}
+#pegtop .sm .st{color:var(--ink);font-weight:700;font-size:15px}
+#pegtop .sm{display:block;font-family:var(--mono);font-size:12px;color:var(--dim);
+  letter-spacing:.1em;margin-top:5px;font-weight:400}
+.pg{margin-top:16px}
+.pg .h{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.18em;
+  text-transform:uppercase;margin-bottom:7px}
+.pg .c{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:11px 15px;font-size:15px;font-weight:600;color:var(--dim)}
+.chip.on{background:var(--live);border-color:var(--live);color:#07121F}
+#pegfree{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:11px;font-family:var(--mono);font-size:14px;color:var(--ink);resize:none;
+  -webkit-user-select:text;user-select:text}
+#pegdone{margin-top:auto;width:100%;padding:21px;border-radius:12px;background:var(--ok);
+  color:#052D14;font-size:23px;font-weight:700;letter-spacing:.05em}
+
+/* ---------- CAL ---------- */
+#calsheet{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}
+#calhead{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+#calhead .badge{background:var(--warn);color:#3A2600;font-size:14px;font-weight:700;
+  letter-spacing:.1em;padding:5px 10px;border-radius:7px}
+#calhead .rm2{font-family:var(--mono);font-size:12px;color:var(--dim)}
+#calx{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--dim);padding:6px 10px;border:1px solid var(--line);border-radius:8px}
+#calbody{flex:1;display:flex;flex-direction:column;overflow-y:auto}
+.calbig{font-family:var(--mono);font-size:56px;font-weight:600;line-height:1.05;letter-spacing:-.03em}
+.calbig .u{font-size:18px;color:var(--dim)}
+.calrow{margin-top:14px}
+.callab{font-family:var(--mono);font-size:11px;color:var(--dimmer);letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+.calnote{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.6;margin-top:16px}
+.calin{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--ink);
+  font-family:var(--mono);font-size:34px;padding:12px 14px;margin-top:5px;user-select:text;-webkit-user-select:text}
+.calres{font-family:var(--mono);font-size:15px;color:var(--dim);line-height:2;margin-top:10px}
+.calres b{color:var(--warn);font-weight:600}
+#calfoot{display:grid;gap:8px;margin-top:14px}
+#calfoot button{padding:18px;border-radius:11px;font-size:19px;font-weight:700}
+#calfoot .pri{background:var(--warn);color:#3A2600}
+#calfoot .sec{background:var(--surface);border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:16px}
+
+.wbh{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.16em;
+  text-transform:uppercase;margin:16px 0 7px}
+#wb{width:100%;height:250px;background:var(--surface);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:10px;line-height:1.55;
+  user-select:text;-webkit-user-select:text;resize:none}
+.act2{margin-top:9px}
+.act2 button{width:100%;padding:15px;border-radius:10px;font-size:15px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+#copywb{background:var(--live);color:#07121F;border-color:var(--live);font-size:17px;padding:17px}
+#discard{color:var(--low);border-color:var(--low)}
+#logsheet{position:fixed;inset:0;background:var(--bg);z-index:22;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#logtop{font-size:28px;font-weight:700;margin-bottom:12px}
+.lgrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:16px}
+.lgt{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 2px;
+  font-size:15px;font-weight:600;color:var(--dim)}
+.lgt.on{background:var(--live);border-color:var(--live);color:#07121F}
+#logbody .f{margin-bottom:13px}
+#logbody .f label{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);
+  letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+#logbody input,#logbody textarea,#logbody select{width:100%;background:var(--surface);
+  border:1px solid var(--line);border-radius:9px;padding:13px;font-family:var(--mono);
+  font-size:16px;color:var(--ink);-webkit-user-select:text;user-select:text}
+#logbody .chips{display:flex;flex-wrap:wrap;gap:6px}
+.lgact{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:auto;padding-top:18px}
+.lgact button{padding:19px;border-radius:11px;font-size:19px;font-weight:700}
+#logsave{background:var(--ok);color:#052D14}
+#logclose{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+#logrecent{margin-top:16px}
+#logrecent .r{font-family:var(--mono);font-size:12px;color:var(--dim);padding:7px 0;
+  border-top:1px solid var(--line);line-height:1.5}
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:var(--ink);
+  color:var(--bg);padding:11px 22px;border-radius:22px;font-size:16px;font-weight:600;z-index:40;
+  opacity:0;pointer-events:none;transition:opacity .18s;max-width:86vw;text-align:center}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<section id="setup">
+  <div class="brand">Substrate sweep · <b>v19</b></div>
+  <div id="weekly"></div>
+  <div id="resume" class="hide">
+    <div class="t" id="rtitle">Interrupted sweep</div>
+    <div class="s" id="rsub"></div>
+    <div class="b">
+      <button class="pri" id="rgo">Resume</button>
+      <button id="rexp">Export CSV</button>
+      <button id="rdis">Discard</button>
+    </div>
+  </div>
+  <div class="lbl" style="margin-top:0">Pick a room</div>
+  <div id="rooms"></div>
+  <div class="lbl">Which side of the row</div>
+  <div class="two">
+    <button class="side on" data-side="standard">T1 on your left<span class="sub">standard</span></button>
+    <button class="side" data-side="opposite">T1 on your right<span class="sub">opposite side</span></button>
+  </div>
+  <div class="lbl">Where you start</div>
+  <div class="two">
+    <button class="dir on" data-dir="up">T1 first<span class="sub">walk up the room</span></button>
+    <button class="dir" data-dir="down">T11 first<span class="sub">walk down, alternate days</span></button>
+  </div>
+  <div id="roomhist"></div>
+  <div id="triagepick" class="hide">
+    <div class="lbl">Which tables</div>
+    <div id="tpick"></div>
+  </div>
+  <div class="lbl">Mode</div>
+  <div class="two four">
+    <button class="mode on" data-mode="sweep">Full sweep<span class="sub">every table in order</span></button>
+    <button class="mode" data-mode="triage">Triage<span class="sub">pick tables, many plants each</span></button>
+    <button class="mode" data-mode="spot">Spot check<span class="sub">scattered one-offs</span></button>
+    <button class="mode" data-mode="flush">Flush<span class="sub">durations, tanks, runoff</span></button>
+  </div>
+  <div class="lbl">Capture</div>
+  <div class="two">
+    <button class="cap on" data-cap="auto">Auto<span class="sub">stab to log — beep confirms</span></button>
+    <button class="cap" data-cap="manual">Manual<span class="sub">tap to read, like before</span></button>
+  </div>
+  <div class="lbl">Options</div>
+  <div id="toggles">
+    <button id="voice">voice readout · off</button>
+    <button id="demo">demo mode · off</button>
+    <button id="garden">garden · off</button>
+  </div>
+  <div class="lbl">Operator</div>
+  <div id="ops"></div>
+
+  <div class="lbl">Auto capture</div>
+  <div class="tiny">
+    <b>1</b> &nbsp;Stab the bag<br>
+    <b>2</b> &nbsp;Hold about 2 seconds<br>
+    <b>3</b> &nbsp;Beep means it logged<br>
+    <b>4</b> &nbsp;Pull the probe to re-arm
+  </div>
+  <div class="lbl">What the beeps mean</div>
+  <div class="tiny">
+    <b>1 beep</b> &nbsp;&nbsp;in range<br>
+    <b>2 beeps</b> &nbsp;near the floor<br>
+    <b>3 beeps</b> &nbsp;below the floor<br>
+    <b>high-low</b> &nbsp;outlier — worth a re-stab
+  </div>
+  <div class="lbl">Route</div>
+  <div class="tiny">
+    Odd tables run front to header. Even tables run header to front.<br>
+    2-gallon rooms add a mid-bag stab.<br>
+    Long-press the big button for CAL mode.
+  </div>
+
+  <div class="lbl">Saved data</div>
+  <div id="dcounts" class="tiny"></div>
+  <div id="dbtns">
+    <button class="dbtn" id="clrsweeps">Clear saved sweeps</button>
+    <button class="dbtn" id="clrprev">Clear position history</button>
+    <button class="dbtn danger" id="clrall">Start fresh</button>
+  </div>
+  <div class="tiny">Calibration pairs are never removed by these.</div>
+</section>
+<div id="startbar"><button id="logbtn2">log</button><button id="eodbtn">EOD</button><button id="startbtn">Start</button></div>
+
+<!-- ============ SWEEP ============ -->
+<div id="demobar" class="hide">demo · nothing saved</div>
+<header id="hdr" class="hide">
+  <span id="hroom"></span><span id="hside"></span>
+  <span id="batt"></span>
+  <button id="hstat"><span class="dot" id="dot"></span><span id="statxt">off</span></button>
+  <button id="note">NOTE</button>
+  <button id="exit">END</button>
+</header>
+<div id="route" class="hide"></div>
+<main class="hide" id="main">
+  <div id="pos"></div>
+  <div id="depth"></div>
+  <div id="strain"></div>
+  <div id="vwcwrap"><span id="vwc" class="none">--</span><span id="pct">%</span></div>
+  <div id="ecwrap"><span id="ecbig" class="enone">--</span><span id="ecunit">EC</span></div>
+  <div id="sub"><span><b id="tmp">--</b> °F</span><span id="roomavg"></span></div>
+  <div id="nextup"></div>
+  <div id="ctx"></div>
+  <div id="diag"></div>
+</main>
+<div id="pad" class="hide">
+  <button id="log" disabled>CONNECT</button>
+  <div class="row">
+    <button id="extra" disabled>+ plant</button>
+    <button id="skip" disabled>skip</button>
+    <button id="undo" disabled>undo</button>
+    <button id="redo" disabled>redo</button>
+  </div>
+  <div class="row" style="grid-template-columns:1fr;margin-top:7px">
+    <button id="logbtn">log a shot · fault · bulb</button>
+  </div>
+</div>
+
+<!-- ============ DONE ============ -->
+<section id="done" class="hide">
+  <h2 id="dtitle">Sweep complete</h2>
+  <div class="v">stab v19</div>
+  <div id="stats"></div>
+  <div class="wbh">Workbook paste block</div>
+  <textarea id="wb" readonly></textarea>
+  <div class="act2"><button id="copywb">Copy for workbook</button></div>
+  <div class="wbh">Raw CSV</div>
+  <textarea id="csv" readonly></textarea>
+  <div class="act">
+    <button id="share">Share CSV</button>
+    <button id="copy">Copy CSV</button>
+    <button id="more">New room</button>
+  </div>
+  <div class="act2"><button id="discard">Discard this sweep</button></div>
+  <div id="hist"></div>
+  <div id="histnotes"></div>
+  <details id="dbgd"><summary>debug</summary><pre id="dbg"></pre></details>
+</section>
+
+<div id="logsheet" class="hide">
+  <div id="logtop">Log</div>
+  <div class="lgrow" id="logtabs">
+    <button class="lgt on" data-k="shot">shot</button>
+    <button class="lgt" data-k="fault">fault</button>
+    <button class="lgt" data-k="bulb">bulb</button>
+    <button class="lgt" data-k="runoff">runoff</button>
+  </div>
+  <div id="logbody"></div>
+  <div class="lgact">
+    <button id="logsave">Save</button>
+    <button id="logclose">Close</button>
+  </div>
+  <div id="logrecent"></div>
+</div>
+
+<div id="pegsheet" class="hide">
+  <div id="pegtop"></div>
+  <div id="pegs"></div>
+  <div class="pg"><div class="h">note</div>
+    <textarea id="pegfree" rows="2" placeholder="anything the chips do not cover"></textarea></div>
+  <button id="pegdone">done</button>
+</div>
+
+<div id="calsheet" class="hide">
+  <div id="calhead"><span class="badge">CAL</span><span class="rm2" id="calrm"></span><button id="calx">exit</button></div>
+  <div id="calbody"></div>
+  <div id="calfoot"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   STAB v19 — 9/2/2026
+   New: triage and speed modes · flush mode with per-pass runoff capture ·
+   log-a-shot · fault log and bulb log with Teams-format output · implausible
+   reading prompt · delta against last sweep · room history on the picker ·
+   voice note per table · end-of-day roll-up. History 60 sessions, PREV kept
+   permanently.
+
+   STAB v18 — 9/1/2026
+   New: workbook paste block with CHECK rules · peg sheet restructured
+   (posture/color/damage/pests/blocked + free text) · tap a table in the
+   route strip to reopen its notes · discard sweep · retry counter · feed
+   EC per room · faster peg reset · garden mode retired.
+
+   STAB v17 — clean rewrite, 8/30/2026
+   Fixes from the 8/30 audit: S1 resume/recovery · S2 tap-to-reconnect ·
+   S3 request/response correlation (direct frames only, post-write) ·
+   S4 hardcoded verified trigger, hunt as fallback · S5 finish clears
+   in-flight state · S6 redo restores extra stops · S7 loud connect
+   failures, deca-scoped fallbacks · S8 CSV quote escaping · S9 undo
+   rolls back "last here" · S10 hygiene.
+   New: acked writes + frame reassembly (CRC-verified RX) · auto
+   capture (stab-to-log) with stability detection + beeps · long-press
+   CAL mode with per-media Hilhorst offsets · battery pill (30/15%) ·
+   wake lock + video fallback · coverage board · operator column ·
+   navigator.share · debug ring.
+   CSV: original 22 columns unchanged, appended: Operator, Frame,
+   Batt, Lat ms.
+   ===================================================================== */
+
+/* ===================== PURE (testable, no DOM) ===================== */
+var VER='v19';
+var WB_TEXT='';
+var SCHED_ML={A1:996,A2:996,A3:1890,A4:2269,A5:1453,A6:1750,A7:1797,
+ B1:1470,B2:997,B3:1480,B4:1292,B5:1798,B6:1688,
+ C1:1713,C2:1245,C3:1480,C4:4322,C5:2152,C6:1688};
+/* Sunshine #4 and ProMix HP are peat-perlite soilless mixes — same family as
+   Bio365, so they use the soilless cubic, NOT the mineral linear equation.
+   Declared before ROOMS because ROOMS.GARDEN references it. */
+var PEAT_MIX='Peat mix · Sunshine #4 / ProMix HP';
+var ROOMS={
+ A1:{t:12,bag:2,media:'Bio365'}, A2:{t:12,bag:2,media:'Bio365'},
+ A3:{t:12,bag:2,media:'Mother Earth coco'}, A4:{t:12,bag:1.25,media:'Bio365'},
+ A5:{t:12,bag:1.25,media:'Bio365'}, A6:{t:12,bag:1.25,media:'Bio365'},
+ A7:{t:12,bag:1.25,media:'Bio365'},
+ B1:{t:11,bag:2,media:'Bio365'}, B2:{t:11,bag:2,media:'Bio365'},
+ B3:{t:11,bag:1.25,media:'Bio365'}, B4:{t:11,bag:1.25,media:'Bio365'},
+ B5:{t:11,bag:1.25,media:'Bio365'}, B6:{t:11,bag:2,media:'Bio365'},
+ C1:{t:11,bag:2,media:'Bio365'}, C2:{t:11,bag:2,media:'Bio365'},
+ C3:{t:11,bag:1.25,media:'Bio365'}, C4:{t:11,bag:1.25,media:'Bio365'},
+ C5:{t:11,bag:1.25,media:'Bio365'}, C6:{t:11,bag:2,media:'Bio365'},
+ /* Garden: layout is static year to year, so every plant is tracked as its
+    own entity. One stop per plant; PREV keys on group+plant, which makes a
+    stab comparable to the same physical plant weeks or seasons later.
+    floor 25% — peat mixes wilt far wetter than mineral soil. */
+ GARDEN:{bag:0, media:PEAT_MIX, floor:25, kind:'garden'}
+};
+/* Back of the garden to the front. Empty row and empty panel side omitted. */
+var GARDEN_DEFAULT=[
+ {id:'TOM', name:'Tomatoes',       crop:'Tomato',        n:8},
+ {id:'PEP', name:'Peppers',        crop:'Pepper',        n:9},
+ {id:'SWP', name:'Sweet potato',   crop:'Sweet potato',  n:6},
+ {id:'BEA', name:'Beans',          crop:'Bean',          n:5},
+ {id:'CAR', name:'Carrots',        crop:'Carrot',        n:3},
+ {id:'P1A', name:'Panel 1 · side 1', crop:'Melon A',       n:1},
+ {id:'P1B', name:'Panel 1 · side 2', crop:'PMR butternut', n:1},
+ {id:'P2A', name:'Panel 2 · side 1', crop:'Melon B',       n:1},
+ {id:'P2B', name:'Panel 2 · side 2', crop:'Cucumber',      n:2},
+ {id:'P3A', name:'Panel 3 · side 1', crop:'Rampicante',    n:1}
+];
+function gardenGroup(id){
+  for(var i=0;i<GARDEN_DEFAULT.length;i++) if(GARDEN_DEFAULT[i].id===id) return GARDEN_DEFAULT[i];
+  return null;
+}
+function gardenPlantCount(){
+  var n=0; GARDEN_DEFAULT.forEach(function(g){ n+=g.n; }); return n;
+}
+function isGarden(rm){ return !!(ROOMS[rm] && ROOMS[rm].kind==='garden'); }
+function floorFor(rm){
+  var c=ROOMS[rm]; if(!c) return 22;
+  return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
+}
+var RMAP={
+ A1:{"1":["Purple Chem",""],"2":["Purple Chem","T"],"3":["Purple Chem",""],"4":["Durban Poison",""],"5":["Durban Poison",""],"6":["Durban Poison","T"],"7":["Wedding Cake",""],"8":["Wedding Cake",""],"9":["Wedding Cake","T"],"10":["Mule Fuel",""],"11":["Mule Fuel",""],"12":["Mule Fuel",""]},
+ A2:{"1":["Sour Jack",""],"2":["Ballet Slipper",""],"3":["Pretty Privilege",""],"4":["Pretty Privilege",""],"5":["Toronja",""],"6":["Toronja",""],"7":["Cobra Kush",""],"8":["Cobra Kush",""],"9":["Cobra Kush",""],"10":["Gas Plant",""],"11":["Gas Plant",""],"12":["Gas Plant",""]},
+ A3:{"1":["Gas Plant",""],"2":["Gas Plant",""],"3":["Gas Plant",""],"4":["Gas Plant","T"],"5":["King Louie OG",""],"6":["King Louie OG",""],"7":["King Louie OG","T"],"8":["King Louie OG",""],"9":["Strawberry C.R.E.A.M.","T"],"10":["Strawberry C.R.E.A.M.",""],"11":["Lemon Drop Top","T"],"12":["Lemon Drop Top",""]},
+ A4:{"1":["Pineapple Express",""],"2":["Pineapple Express",""],"3":["Banana Sherbet",""],"4":["Banana Sherbet",""],"5":["Banana Sherbet","T"],"6":["Sugar Breath",""],"7":["Sour Jack",""],"8":["Ice Cream Mintz",""],"9":["King 2","T"],"10":["King 2",""],"11":["Rum Cake",""],"12":["Rum Cake",""]},
+ A5:{"1":["Cobra Kush",""],"2":["Cobra Kush",""],"3":["Cobra Kush","T"],"4":["Purple Chem","T"],"5":["The Judge","T"],"6":["The Judge",""],"7":["The Judge",""],"8":["The Judge",""],"9":["Kush Mintz","T"],"10":["Kush Mintz",""],"11":["Kush Mintz",""],"12":["Kush Mintz",""]},
+ A6:{"1":["Bazooka Haze",""],"2":["Biker Kush",""],"3":["Biker Kush","T"],"4":["Znowflakes",""],"5":["Mule Fuel","TU"],"6":["Mule Fuel",""],"7":["Durban Poison","T"],"8":["Durban Poison",""],"9":["King Louis OG",""],"10":["King Louis OG",""],"11":["Wedding Cake","T"],"12":["Wedding Cake","U"]},
+ A7:{"1":["Cabernet","U"],"2":["Cabernet",""],"3":["White truffle","T"],"4":["Banana Kush",""],"5":["Banana Kush","T"],"6":["Honeymoon Diesel",""],"7":["Honeymoon Diesel","T"],"8":["Super Silver Haze","T"],"9":["Super Silver Haze",""],"10":["Super Silver Haze",""],"11":["GMO",""],"12":["GMO","U"]},
+ B1:{"1":["Mikado",""],"2":["Mikado",""],"3":["Runna Gal","T"],"4":["Runna Gal",""],"5":["CsxLem",""],"6":["Super Runtz x Sherbanger","T"],"7":["Super Runtz x Sherbanger",""],"8":["Gelato 41",""],"9":["VOP Kush",""],"10":["VOP Kush/Lip Smackers","T"],"11":["Lip Smackers",""]},
+ B2:{"1":["Trick Trick OG",""],"2":["Island Sunshine",""],"3":["Island Sunshine",""],"4":["Runna Gal",""],"5":["Sunshine Kush",""],"6":["Sunshine Kush",""],"7":["Runtz x Sunset Sherbert",""],"8":["Runtz x Sunset Sherbert",""],"9":["Kush Mintz P5",""],"10":["Kush Mintz P5",""],"11":["Gelato 41",""]},
+ B3:{"1":["Sour D 2",""],"2":["Milk Bone",""],"3":["Milk Bone","T"],"4":["Glitter Bomb",""],"5":["Glitter Bomb",""],"6":["Sour D","T"],"7":["Sour D",""],"8":["Brown Sugar",""],"9":["Brown Sugar",""],"10":["MAC",""],"11":["Guavanade",""]},
+ B4:{"1":["Ethanol #33",""],"2":["Cherry Paloma",""],"3":["Cherry Paloma",""],"4":["Lime Thai",""],"5":["Lime Thai","T"],"6":["Honeymoon Diesel",""],"7":["Honeymoon Diesel",""],"8":["Hot Sauce",""],"9":["Cap Junky","T"],"10":["Cap Junky",""],"11":["Pink Passionfruit",""]},
+ B5:{"1":["Sour d 2",""],"2":["Sour d 2","T"],"3":["Chemlato",""],"4":["Hindu Kush","T"],"5":["IDK",""],"6":["IDK",""],"7":["The OG","T"],"8":["Cabernet",""],"9":["Cabernet",""],"10":["Sour D","T"],"11":["Sour D",""]},
+ B6:{"1":["Pineapple Kush",""],"2":["Walkabout",""],"3":["GMO Punch",""],"4":["GMO Punch","U"],"5":["Super Boof",""],"6":["Super Boof",""],"7":["Blue Nerdz",""],"8":["Banana Kush","TU"],"9":["Banana Kush",""],"10":["Walkabout",""],"11":["Pineapple Kush",""]},
+ C1:{"1":["Deep Space #6",""],"2":["Deep Space #6",""],"3":["Pink Passionfruit",""],"4":["Pink Passionfruit",""],"5":["Milk Bone",""],"6":["Milk Bone",""],"7":["Blue Nerdz",""],"8":["Blue Nerdz",""],"9":["Glitter Bomb",""],"10":["Glitter Bomb",""],"11":["Cap Junky",""]},
+ C2:{"1":["Deep Space #6",""],"2":["Deep Space #6",""],"3":["Milk Bone",""],"4":["Milk Bone",""],"5":["Cherry Paloma",""],"6":["Hot Sauce",""],"7":["Hot sauce",""],"8":["Banana Kush",""],"9":["Banana Kush",""],"10":["Ethanol #33",""],"11":["Ethanol #33",""]},
+ C3:{"1":["Walkabout",""],"2":["Walkabout",""],"3":["Super Boof",""],"4":["Super Boof",""],"5":["Garlic Budder",""],"6":["Garlic Budder","T"],"7":["GMO Punch",""],"8":["GMO Punch",""],"9":["Velvet Breath","T"],"10":["Velvet Breath",""],"11":["Kabuki Sour",""]},
+ C4:{"1":["Lemon Cherry Sherbert",""],"2":["Gello Gelato",""],"3":["Gello Gelato","T"],"4":["Chemdawg x Rainbowbeltz",""],"5":["Chemdawg x Rainbowbeltz",""],"6":["Young Gong","T"],"7":["Petro Chem",""],"8":["Purple Flamingo",""],"9":["OG Hurricane","T"],"10":["OG Hurricane",""],"11":["King Clem",""]},
+ C5:{"1":["Kabuki Sour",""],"2":["Kabuki Sour","T"],"3":["Velvet Breath",""],"4":["Velvet Breath","T"],"5":["Blue Nerdz","T"],"6":["Runtz",""],"7":["Hellcat #15",""],"8":["Hellcat #15",""],"9":["Deep Space #6",""],"10":["Gorilla Glue #4",""],"11":["Gorilla Glue #4",""]},
+ C6:{"1":["Mule Fuel","U"],"2":["Mule Fuel","T"],"3":["Mule Fuel / Cherry 96",""],"4":["Cabernet / Cap Junky / Guavanade / Bubba Kush",""],"5":["Guavanade",""],"6":["Cobra Kush","T"],"7":["Cap Junky",""],"8":["Cherry 96","U"],"9":["Cherry 96","T"],"10":["Cabernet",""],"11":["MAC","T"]}
+};
+var FLOOR={2:22, 1.25:30};
+var SCHED={A1:['01:15',120,2],A2:['13:15',120,2],A3:['01:15',120,5],A4:['13:15',120,5],
+ A5:['01:15',120,3],A6:['13:15',120,5],A7:['09:15',120,4],B1:['01:15',120,2],B2:['01:15',120,2],
+ B3:['01:15',120,5],B4:['01:15',120,3],B5:['01:15',120,2],B6:['01:15',120,2],C1:['13:15',120,2],
+ C2:['13:15',120,2],C3:['13:15',120,5],C4:['13:15',120,4],C5:['13:15',120,3],C6:['13:15',120,2]};
+var PEGS_GARDEN=[
+ ['posture',['perky','neutral','wilting','flagging']],
+ ['colour',['dark','light','yellowing','purpling']],
+ ['fruit',['none','flowering','setting','sizing','ripening']],
+ ['damage',['holes','spots','mildew','pests','sunscald']],
+ ['uniform',['even','patchy','one plant']]
+];
+var PEGS=[
+ ['posture',['praying','neutral','rolled','drooping','flagging']],
+ ['color',['good','fading','light','yellowing','interveinal','purpling']],
+ ['damage',['tip burn','margin','necrosis','bleach','wind burn','foxtail']],
+ ['pests',['mites','thrips']],
+ ['herm',['herm']],
+ ['blocked',['crew','spray REI','maintenance']]
+];
+/* Feed EC by room, used by the CHECK rules to flag dilution as a fraction
+   of what the room should be receiving rather than an absolute floor. */
+var FEEDEC={A1:2.5,A2:2.5,A3:0,A4:0,A5:2.6,A6:2.6,A7:2.6,
+            B1:2.5,B2:2.5,B3:0,B4:2.5,B5:2.5,B6:2.5,
+            C1:2.5,C2:2.5,C3:0,C4:2.5,C5:2.5,C6:2.5};
+var DOF_REF=new Date(2026,7,28);
+var DOF={A1:10,A2:9,A3:60,A4:57,A5:45,A6:38,A7:53,B1:17,B2:1,B3:64,B4:38,B5:29,B6:24,
+         C1:16,C2:3,C3:63,C4:36,C5:29,C6:25};
+
+function hoursSinceShot(room, nowDate){
+  var c=SCHED[room]; if(!c) return null;
+  var now=nowDate||new Date(), p=c[0].split(':'), best=null;
+  for(var d=-1; d<=0; d++){
+    var t0=new Date(now); t0.setDate(t0.getDate()+d);
+    t0.setHours(+p[0],+p[1],0,0);
+    for(var k=0;k<c[2];k++){
+      var t=new Date(t0.getTime()+k*c[1]*60000);
+      if(t<=now && (best===null || t>best)) best=t;
+    }
+  }
+  return best===null ? null : (now-best)/3600000;
+}
+function dofNow(rm, nowDate){
+  var d=DOF[rm]; if(d===undefined) return '';
+  var n=nowDate?new Date(nowDate):new Date();
+  return d + Math.round((n.setHours(0,0,0,0)-DOF_REF.getTime())/86400000);
+}
+
+/* ---- probe protocol ---- */
+var SVC='deca0001-10c7-43a8-8c9f-42b70e03808d';
+var NTF='deca0003-10c7-43a8-8c9f-42b70e03808d';
+var WRT='deca0002-10c7-43a8-8c9f-42b70e03808d';
+
+function crc16(arr){
+  var c=0;
+  for(var i=0;i<arr.length;i++){ c^=arr[i]<<8;
+    for(var k=0;k<8;k++) c=(c&0x8000)?((c<<1)^0x1021)&0xFFFF:(c<<1)&0xFFFF; }
+  return c;
+}
+function frameBytes(txt){
+  var p=[], i;
+  for(i=0;i<txt.length;i++) p.push(txt.charCodeAt(i)&0xFF);
+  var tot=6+p.length, b=[0x7C,0x61,(tot>>8)&255,tot&255];
+  for(i=0;i<p.length;i++) b.push(p[i]);
+  var c=crc16(b); b.push((c>>8)&255,c&255);
+  return b;
+}
+var TRIGGER={n:'framed "sdicmd 0XR3!!"', b:frameBytes('sdicmd 0XR3!!')};
+var CANDS=(function(){
+  var L=[];
+  ['sdicmd 0XR3!!','sdicmd 0XR3!!\n','sdicmd 0XR3!','sdicmd 0XR3!\n',
+   'sdicmd 0XR3!!\r\n','0XR3!','0XR3!\n','sdicmd 0R3!!','sdicmd 0R0!!'
+  ].forEach(function(t){ L.push({n:'framed '+JSON.stringify(t), b:frameBytes(t)}); });
+  ['sdicmd 0XR3!!','sdicmd 0XR3!!\n','0XR3!','0XR3!\r\n'
+  ].forEach(function(t){ L.push({n:'raw '+JSON.stringify(t), t:t}); });
+  ['0','1','2'].forEach(function(a){ ['XR3!','XR4!','R3!','R4!'].forEach(function(c){
+    L.push({n:a+c,t:a+c}); }); });
+  [1,2,3,0,10,13].forEach(function(v){ L.push({n:'0x'+v.toString(16),b:[v]}); });
+  return L;
+})();
+function bytesOf(c){
+  if(c.b) return new Uint8Array(c.b);
+  var a=[], t=c.t||'';
+  for(var i=0;i<t.length;i++) a.push(t.charCodeAt(i)&0xFF);
+  return new Uint8Array(a);
+}
+
+/* ---- conversions (verified against METER TEROS 12 docs, 8/30/2026 audit) ---- */
+function vwcCounts(c){
+  return (6.771e-10*c*c*c - 5.105e-6*c*c + 1.302e-2*c - 10.848)*100;
+}
+function permCounts(c){
+  var v=2.887e-9*c*c*c - 2.080e-5*c*c + 5.276e-2*c - 43.39;
+  return v*v;
+}
+/* METER publishes two VWC calibrations. The facility runs soilless (cubic,
+   above). Mineral soil is linear: 3.879e-4*RAW - 0.6956, max ~0.70 in pure
+   water (TEROS 12 manual 20587). Garden beds are mineral soil, so they must
+   NOT use the soilless cubic. */
+function vwcMineral(c){ return (3.879e-4*c - 0.6956)*100; }
+var MINERAL_MEDIA={'Garden soil':1};
+function isMineral(media){ return !!MINERAL_MEDIA[media]; }
+function vwcFor(media, c){ return isMineral(media)?vwcMineral(c):vwcCounts(c); }
+
+/* Hilhorst offset by media. Bio365 fitted from two paired Aroya readings
+   (2.87 / 2.93 -> 2.90). Coco unproven — CAL-pair A3 to confirm or split.
+   Garden soil uses METER's generic 4.1 until CAL pairs say otherwise. */
+var OFFSET_BY_MEDIA={'Bio365':2.90,'Mother Earth coco':2.90,
+  'Garden soil':4.10,                 /* METER generic, mineral only */
+  'Peat mix · Sunshine #4 / ProMix HP':2.90};  /* Bio365 analogue, unfitted */
+function offsetFor(media){
+  return OFFSET_BY_MEDIA.hasOwnProperty(media)?OFFSET_BY_MEDIA[media]:2.90;
+}
+
+/* Inverses — used only by the simulator to synthesise realistic raw frames. */
+function countsForVwc(target, mineral){
+  if(mineral) return (target/100 + 0.6956)/3.879e-4;
+  var lo=1000, hi=4000, m;
+  for(var i=0;i<48;i++){ m=(lo+hi)/2; if(vwcCounts(m)<target) lo=m; else hi=m; }
+  return (lo+hi)/2;
+}
+function bulkForEC(counts, ecTarget, tC, off){
+  var eb=permCounts(counts), ep=80.3-0.37*(tC-20), d=eb-off;
+  if(d<=0.5) return 0;
+  return Math.max(0, Math.round(ecTarget*d*1000/ep));
+}
+function poreEC(counts, bulk_uS, tC, off){
+  var eb=permCounts(counts), ep=80.3-0.37*(tC-20), d=eb-off;
+  if(d<=0.5) return null;
+  return ep*(bulk_uS/1000)/d;
+}
+
+/* parseText: path 1 = direct sensor reply (temp already degC per integrator
+   guide); path 2 = ZSC status frame (counts x10, temp raw/100-50). */
+function parseText(txt){
+  var s=String(txt).replace(/[^\x20-\x7E]/g,' ');
+  var m=s.match(/(\d+\.\d+)\s+(-?\d+\.?\d*)\s+(-?\d+)\s*[gh]/);
+  if(m) return {counts:+m[1], tC:+m[2], bulk:+m[3], raw:m[0].trim(), direct:true};
+  var n=s.match(/(\d+)\s*:\s*(\d+)\s+(\d+)\s+(\d+)/);
+  if(n) return {counts:+n[2]/10, tC:+n[3]/100-50, bulk:+n[4], raw:n[0].trim(), direct:false, lead:+n[1]};
+  return null;
+}
+function bytesToText(arr){
+  var s='';
+  for(var i=0;i<arr.length;i++){
+    var v=arr[i]; s+=(v>=0x20&&v<=0x7E)?String.fromCharCode(v):' ';
+  }
+  return s;
+}
+
+/* ---- RX reassembly: framed (7C61+len+payload+CRC) and plain-text paths.
+   Hooks are assigned by the DOM layer (and by tests). ---- */
+var emitReading=function(pr){};
+var emitUnparsed=function(tag,txt){};
+var RX={buf:[], lastAt:0, flushT:null};
+function rxBytes(bytes){
+  for(var i=0;i<bytes.length;i++) RX.buf.push(bytes[i]);
+  RX.lastAt=Date.now();
+  if(RX.buf.length>600) RX.buf.splice(0,RX.buf.length-600);
+  processRx();
+}
+function tryText(txt){
+  var pr=parseText(txt);
+  if(pr){ emitReading(pr); return true; }
+  return false;
+}
+function processRx(){
+  var b=RX.buf, guard=0;
+  while(guard++<40){
+    var s=-1;
+    for(var i=0;i+1<b.length;i++){ if(b[i]===0x7C && b[i+1]===0x61){ s=i; break; } }
+    if(s>=0){
+      if(s>0){
+        var head=b.slice(0,s);
+        if(!tryText(bytesToText(head)) && head.length>6) emitUnparsed('pre', bytesToText(head));
+        b.splice(0,s);
+      }
+      if(b.length<4) return;
+      var len=(b[2]<<8)|b[3];
+      if(len<7||len>400){ b.splice(0,2); continue; }
+      if(b.length<len) return; /* wait for the rest of the frame */
+      var fr=b.slice(0,len); b.splice(0,len);
+      var want=(fr[len-2]<<8)|fr[len-1];
+      var got=crc16(fr.slice(0,len-2));
+      var payload=bytesToText(fr.slice(4,len-2));
+      if(!tryText(payload)) emitUnparsed(got===want?'frame':'crc-bad', payload);
+      continue;
+    }
+    /* no frame marker: try the whole buffer as text */
+    if(b.length && tryText(bytesToText(b))){ b.length=0; }
+    else if(b.length>240){
+      emitUnparsed('overflow', bytesToText(b.slice(0,120)));
+      b.splice(0,b.length-120);
+    }
+    return;
+  }
+}
+function rxFlushStale(){
+  if(RX.buf.length && Date.now()-RX.lastAt>900){
+    if(!tryText(bytesToText(RX.buf))) emitUnparsed('stale', bytesToText(RX.buf));
+    RX.buf.length=0;
+  }
+}
+
+/* ---- route ---- */
+function buildRoute(room, dir, mode){
+  var cfg=ROOMS[room], r=[];
+  if(mode==='triage'){
+    var picks=(S.triage||[]).slice();
+    if(!picks.length){ for(var z0=1;z0<=cfg.t;z0++) picks.push(z0); }
+    if(dir==='down') picks.reverse();
+    picks.forEach(function(t){
+      var seq=(t%2===1)?['front','center','header']:['header','center','front'];
+      seq.forEach(function(p){
+        r.push({t:t,pos:p,depth:'reference'});
+        if(cfg.bag===2) r.push({t:t,pos:p,depth:'mid-bag'});
+      });
+    });
+    return r;
+  }
+  if(mode==='flush'){
+    for(var q2=0;q2<60;q2++) r.push({t:'?',pos:'spot',depth:'reference',spot:true});
+    return r;
+  }
+  if(mode==='spot'){
+    for(var q=0;q<40;q++) r.push({t:'?',pos:'spot',depth:'reference',spot:true});
+    return r;
+  }
+  if(cfg.kind==='garden'){
+    var L=GARDEN_DEFAULT.slice();
+    if(dir==='down') L.reverse();
+    L.forEach(function(g){
+      for(var q=1;q<=g.n;q++){
+        r.push({t:g.id, group:g.name, crop:g.crop, plant:q, of:g.n,
+                pos:'plant '+q, depth:'reference', garden:true});
+      }
+    });
+    return r;
+  }
+  var order=[]; for(var z=1;z<=cfg.t;z++) order.push(z);
+  if(dir==='down') order.reverse();
+  var garden=(cfg.kind==='garden');
+  for(var oi=0;oi<order.length;oi++){ var t=order[oi];
+    var seq=garden
+      ? ((t%2===1)?['start','middle','end']:['end','middle','start'])
+      : ((t%2===1)?['front','center','header']:['header','center','front']);
+    for(var p=0;p<3;p++){
+      r.push({t:t,pos:seq[p],depth:'reference'});
+      if(cfg.bag===2) r.push({t:t,pos:seq[p],depth:'mid-bag'});
+    }
+  }
+  return r;
+}
+function med(a){ var x=a.slice().sort(function(p,q){return p-q;});
+  if(!x.length) return null;
+  return x.length%2 ? x[(x.length-1)/2] : (x[x.length/2-1]+x[x.length/2])/2; }
+function csvq(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; }
+function fmtDur(ms){
+  var s=Math.max(0,Math.round(ms/1000));
+  return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2);
+}
+/* ===================== END PURE ===================== */
+
+/* ===================== DOM / APP ===================== */
+var $=function(id){ return document.getElementById(id); };
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true, speech:false,
+  op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
+  dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null,
+  trigger:null, verifying:false, connecting:false, everConn:false,
+  awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
+  paused:false, pegsOpen:false, cal:false, finished:false, roomStarted:false,
+  redo:[], logOpen:false, triage:[], skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
+  flaggedTable:false, reconnB:false, pausedBeforeCal:false};
+var A={state:'air', buf:[], lastAir:null, t0:0};
+var CAL={stage:'live', frozen:null, released:false};
+var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[]};
+var WAIT=[];
+
+function cropOf(gid){
+  if(CROPS[gid]) return CROPS[gid];
+  var g=gardenGroup(gid); return g?g.crop:'';
+}
+var CROPS={};
+try{ CROPS=JSON.parse(localStorage.getItem('stab_crops')||'{}'); }catch(e){ CROPS={}; }
+var PREV={};
+try{ PREV=JSON.parse(localStorage.getItem('stab_prev')||'{}'); }catch(e){ PREV={}; }
+var PREF={side:'standard',dir:null,mode:'sweep',cap:'auto',voice:false,lastDir:null};
+try{ var _p=JSON.parse(localStorage.getItem('stab_setup')||'null'); if(_p) PREF=Object.assign(PREF,_p); }catch(e){}
+try{ var _o=localStorage.getItem('stab_op'); if(_o) S.op=_o; }catch(e){}
+
+function lsSet(k,v){
+  try{ localStorage.setItem(k,v); }
+  catch(e){
+    try{ if(!localStorage.getItem('stab_qt')){ localStorage.setItem('stab_qt','1'); } }catch(e2){}
+    toast('storage full — CSV export still works');
+  }
+}
+function saveSession(){
+  if(DEMO) return;
+  lsSet('stab_session',JSON.stringify({v:17,room:S.room,side:S.side,dir:S.dir,mode:S.mode,
+    op:S.op,i:S.i,notes:S.notes,route:S.route,startedAt:S.startedAt}));
+  lsSet('stab_rows',JSON.stringify(S.rows));
+}
+function clearSession(){
+  try{ localStorage.removeItem('stab_session'); localStorage.removeItem('stab_rows'); }catch(e){}
+}
+function savePrefs(){
+  lsSet('stab_setup',JSON.stringify({side:S.side,dir:S.dir,mode:S.mode,
+    cap:S.auto?'auto':'manual',voice:S.speech,lastDir:PREF.lastDir}));
+  lsSet('stab_op',S.op);
+}
+
+/* ---------------- audio ---------------- */
+var AC=null;
+function audio(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(AC && AC.state==='suspended'){ try{ AC.resume(); }catch(e){} }
+  return AC;
+}
+var TONES={ok:[[880,80]], warn:[[660,80],[660,80]], floor:[[440,90],[440,90],[440,90]],
+  out:[[660,70],[330,150]], tick:[[1320,35]], tableDone:[[523,70],[659,70],[784,120]],
+  sweepDone:[[523,80],[659,80],[784,80],[1047,180]], cal:[[988,70],[1319,80]],
+  battLow:[[494,120],[392,120],[330,220]], drop:[[330,170],[262,220]]};
+function beep(name){
+  var a=audio(); if(!a) return;
+  var t=a.currentTime+0.01, seq=TONES[name]||[];
+  for(var i=0;i<seq.length;i++){
+    var o=a.createOscillator(), g=a.createGain();
+    o.type='triangle'; o.frequency.value=seq[i][0];
+    var dur=seq[i][1]/1000, peak=(name==='tick')?0.08:0.3;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(peak,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t+dur+0.03);
+    t+=dur+0.07;
+  }
+}
+function say(txt){
+  if(!S.speech || !window.speechSynthesis) return;
+  try{ speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(txt); u.rate=1.15;
+    speechSynthesis.speak(u); }catch(e){}
+}
+
+/* ---------------- wake lock ---------------- */
+var WL={lock:null, vid:null, advised:false};
+function wlAcquire(){
+  if(!('wakeLock' in navigator)) return Promise.resolve(false);
+  return navigator.wakeLock.request('screen').then(function(l){
+    WL.lock=l; return true;
+  }).catch(function(){ return false; });
+}
+function makeKeepAwakeVideo(){
+  return new Promise(function(res){
+    try{
+      if(typeof MediaRecorder==='undefined'){ res(null); return; }
+      var cv=document.createElement('canvas'); cv.width=64; cv.height=64;
+      var cx=cv.getContext('2d');
+      var stream=cv.captureStream(5);
+      var mime=MediaRecorder.isTypeSupported('video/mp4')?'video/mp4':
+        (MediaRecorder.isTypeSupported('video/webm')?'video/webm':'');
+      if(!mime){ res(null); return; }
+      var rec=new MediaRecorder(stream,{mimeType:mime}), chunks=[];
+      rec.ondataavailable=function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop=function(){ res(chunks.length?new Blob(chunks,{type:mime}):null); };
+      rec.start();
+      var t0=Date.now();
+      (function draw(){
+        cx.fillStyle=((Date.now()>>7)&1)?'#000':'#010101';
+        cx.fillRect(0,0,64,64);
+        if(Date.now()-t0<700) requestAnimationFrame(draw); else { try{rec.stop();}catch(e){res(null);} }
+      })();
+      setTimeout(function(){ try{ if(rec.state!=='inactive') rec.stop(); }catch(e){} },2500);
+    }catch(e){ res(null); }
+  });
+}
+function wlAdvise(){
+  if(WL.advised) return;
+  WL.advised=true;
+  var seen=false; try{ seen=!!localStorage.getItem('stab_wlt'); }catch(e){}
+  if(!seen){
+    try{ localStorage.setItem('stab_wlt','1'); }catch(e){}
+    toast('screen may auto-lock — set Auto-Lock to Never for sweeps');
+  }
+}
+function keepAwake(){
+  wlAcquire().then(function(ok){
+    if(ok) return;
+    if(WL.vid){ WL.vid.play().catch(function(){}); return; }
+    makeKeepAwakeVideo().then(function(blob){
+      if(!blob){ wlAdvise(); return; }
+      var v=document.createElement('video');
+      v.muted=true; v.loop=true; v.playsInline=true; v.setAttribute('playsinline','');
+      v.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none';
+      v.src=URL.createObjectURL(blob);
+      document.body.appendChild(v); WL.vid=v;
+      v.play().catch(function(){ wlAdvise(); });
+    });
+  });
+}
+function releaseAwake(){
+  if(WL.lock){ try{ WL.lock.release(); }catch(e){} WL.lock=null; }
+  if(WL.vid){ try{ WL.vid.pause(); }catch(e){} }
+}
+
+/* ---------------- history / coverage helpers ---------------- */
+function getHist(){
+  try{ return JSON.parse(localStorage.getItem('stab_hist')||'[]'); }catch(e){ return []; }
+}
+function histTs(h){
+  if(h.ts) return h.ts;
+  var t=Date.parse(h.when||''); return isNaN(t)?0:t;
+}
+
+/* ---------------- setup screen ---------------- */
+(function buildSetup(){
+  /* operator chips */
+  var ops=['APG','EGY'];
+  if(S.op && ops.indexOf(S.op)<0) ops.push(S.op);
+  var ob=$('ops'), html='';
+  ops.forEach(function(o){ html+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+o+'</button>'; });
+  html+='<button class="opc" data-op="+">+</button>';
+  ob.innerHTML=html;
+  ob.addEventListener('click',function(e){
+    var b=e.target.closest('.opc'); if(!b) return;
+    var v=b.dataset.op;
+    if(v==='+'){
+      var x=prompt('Initials (2–3 letters):','');
+      if(!x) return;
+      v=x.trim().toUpperCase().slice(0,3);
+      if(!v) return;
+    }
+    S.op=v; savePrefs();
+    buildOps();
+  });
+  function buildOps(){
+    var ops2=['APG','EGY'];
+    if(S.op && ops2.indexOf(S.op)<0) ops2.push(S.op);
+    var h2='';
+    ops2.forEach(function(o){ h2+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+o+'</button>'; });
+    h2+='<button class="opc" data-op="+">+</button>';
+    ob.innerHTML=h2;
+  }
+
+  /* coverage from history */
+  var hist=getHist(), latest={}, now=Date.now();
+  hist.forEach(function(h){
+    if(h.mode && h.mode!=='sweep') return;
+    var t=histTs(h); if(!t) return;
+    if(!latest[h.room] || t>latest[h.room]) latest[h.room]=t;
+  });
+  /* weekly line */
+  var wkRooms={}, wkN=0;
+  hist.forEach(function(h){
+    var t=histTs(h);
+    if(t && now-t<7*86400000){
+      if((!h.mode || h.mode==='sweep') && !isGarden(h.room)) wkRooms[h.room]=1;
+      wkN+=h.n||0;
+    }
+  });
+  var wr=Object.keys(wkRooms).length;
+  $('weekly').textContent=wr?('this week '+wr+'/19 rooms · '+wkN+' stabs'):'no sweeps logged this week';
+
+  /* rooms grid */
+  var wings=['A','B','C'], box=$('rooms');
+  wings.forEach(function(w){
+    var lab=document.createElement('div'); lab.className='wl';
+    lab.textContent=w+' WING';
+    box.appendChild(lab);
+    var d=document.createElement('div'); d.className='wing';
+    Object.keys(ROOMS).filter(function(k){return k[0]===w;}).forEach(function(k){
+      var b=document.createElement('button'); b.className='rm'; b.dataset.room=k;
+      var days=latest[k]?Math.floor((now-latest[k])/86400000):null;
+      var age=(days===null)?'—':(days===0?'today':days+'d');
+      var cls=(days===null)?'':(days<=3?'g':(days<=7?'a':'r'));
+      b.innerHTML=k+'<span class="sub">'+ROOMS[k].bag+' gal · '+age+'</span><span class="cov '+cls+'"></span>';
+      d.appendChild(b);
+    });
+    box.appendChild(d);
+  });
+  box.addEventListener('click',function(e){
+    var b=e.target.closest('.rm'); if(!b) return;
+    [].forEach.call(box.querySelectorAll('.rm'),function(x){x.classList.remove('on');});
+    b.classList.add('on'); S.room=b.dataset.room;
+    S.triage=[];
+    $('startbtn').textContent='Start '+S.room;
+    $('startbar').classList.add('up');
+    syncModeUI();
+    showRoomHistory();
+  });
+
+  /* side / dir / mode / capture */
+  S.side=PREF.side||'standard';
+  S.dir=PREF.lastDir?(PREF.lastDir==='up'?'down':'up'):(PREF.dir||'up');
+  S.mode=PREF.mode||'sweep';
+  if(PREF.showHist===undefined) PREF.showHist=true;
+  S.auto=(PREF.cap!=='manual');
+  S.speech=!!PREF.voice;
+  function mark(cls,val,attr){
+    [].forEach.call(document.querySelectorAll('.'+cls),function(x){
+      x.classList.toggle('on',x.dataset[attr]===val);
+    });
+  }
+  mark('side',S.side,'side'); mark('dir',S.dir,'dir');
+  mark('mode',S.mode,'mode'); syncModeUI(); mark('cap',S.auto?'auto':'manual','cap');
+  $('voice').textContent='voice readout · '+(S.speech?'on':'off');
+  $('voice').classList.toggle('on',S.speech);
+
+  $('setup').addEventListener('click',function(e){
+    var b=e.target.closest('.side,.dir,.mode,.cap'); if(!b) return;
+    var cls=b.classList.contains('side')?'side':
+            b.classList.contains('dir')?'dir':
+            b.classList.contains('mode')?'mode':'cap';
+    [].forEach.call(document.querySelectorAll('.'+cls),function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    if(cls==='side') S.side=b.dataset.side;
+    else if(cls==='dir') S.dir=b.dataset.dir;
+    else if(cls==='mode'){ S.mode=b.dataset.mode; syncModeUI(); }
+    else S.auto=(b.dataset.cap==='auto');
+    savePrefs();
+  });
+  $('garden').onclick=function(){
+    return; // garden mode retired 9/1/2026
+    GARDENMODE=!GARDENMODE;
+    $('garden').textContent='garden · '+(GARDENMODE?'on':'off');
+    $('garden').classList.toggle('on',GARDENMODE);
+    $('rooms').classList.toggle('off',GARDENMODE);
+    if(GARDENMODE){
+      S.room='GARDEN';
+      $('startbtn').textContent='Start GARDEN · '+gardenPlantCount()+' plants';
+      $('startbar').classList.add('up');
+    }else{
+      S.room=null;
+      [].forEach.call($('rooms').querySelectorAll('.rm'),function(x){x.classList.remove('on');});
+      $('startbar').classList.remove('up');
+    }
+  };
+  $('demo').onclick=function(){
+    DEMO=!DEMO;
+    $('demo').textContent='demo mode · '+(DEMO?'on':'off');
+    $('demo').classList.toggle('on',DEMO);
+  };
+  function dataCounts(){
+    var h=getHist().length, pv=Object.keys(PREV).length, cal=0;
+    try{ cal=JSON.parse(localStorage.getItem('stab_cal')||'[]').length; }catch(e){}
+    $('dcounts').innerHTML=
+      '<b>'+h+'</b> saved sweep'+(h===1?'':'s')+'<br>'+
+      '<b>'+pv+'</b> position histor'+(pv===1?'y':'ies')+'<br>'+
+      '<b>'+cal+'</b> calibration pair'+(cal===1?'':'s');
+    $('clrsweeps').disabled=!h; $('clrprev').disabled=!pv;
+  }
+  dataCounts();
+  $('clrsweeps').onclick=function(){
+    var h=getHist();
+    if(!h.length) return;
+    if(!confirm('Remove '+h.length+' saved sweep CSV'+(h.length===1?'':'s')+
+      '?\n\nExport anything you still need first. Calibration pairs and position history stay.')) return;
+    try{ localStorage.removeItem('stab_hist'); }catch(e){}
+    dataCounts(); toast('saved sweeps cleared');
+  };
+  $('clrprev').onclick=function(){
+    var n=Object.keys(PREV).length;
+    if(!n) return;
+    if(!confirm('Remove '+n+' position baselines?\n\nThe "last here" line and Δ comparisons start over. Saved sweeps and calibration pairs stay.')) return;
+    PREV={};
+    try{ localStorage.removeItem('stab_prev'); }catch(e){}
+    dataCounts(); toast('position history cleared');
+  };
+  $('clrall').onclick=function(){
+    if(!confirm('Start fresh?\n\nRemoves saved sweeps, position history and any interrupted sweep.\n\nKeeps calibration pairs, crop names and your settings.')) return;
+    PREV={};
+    ['stab_hist','stab_prev','stab_session','stab_rows'].forEach(function(k){
+      try{ localStorage.removeItem(k); }catch(e){}
+    });
+    dataCounts();
+    $('resume').classList.add('hide');
+    toast('clean slate — calibration kept');
+  };
+  $('voice').onclick=function(){
+    S.speech=!S.speech;
+    $('voice').textContent='voice readout · '+(S.speech?'on':'off');
+    $('voice').classList.toggle('on',S.speech);
+    savePrefs();
+  };
+})();
+
+/* ---------------- recovery banner ---------------- */
+(function recovery(){
+  var sess=null, rows=[];
+  try{ sess=JSON.parse(localStorage.getItem('stab_session')||'null'); }catch(e){}
+  try{ rows=JSON.parse(localStorage.getItem('stab_rows')||'[]'); }catch(e){}
+  if(!(rows&&rows.length) && !(sess&&sess.route&&sess.route.length)) return;
+  var room=(sess&&sess.room)||(rows[0]&&rows[0].room)||'?';
+  $('resume').classList.remove('hide');
+  $('rtitle').textContent='Interrupted sweep — '+room;
+  $('rsub').textContent=(rows.length||0)+' readings saved'+
+    (sess?(' · stop '+((sess.i||0)+1)+'/'+(sess.route?sess.route.length:'?')):'');
+  if(!sess) $('rgo').style.display='none';
+  if(!rows.length) $('rexp').style.display='none';
+  $('rdis').onclick=function(){ clearSession(); $('resume').classList.add('hide'); };
+  function hydrate(){
+    if(sess){
+      S.room=sess.room; S.side=sess.side||S.side; S.dir=sess.dir||S.dir;
+      S.mode=sess.mode||S.mode; S.op=sess.op||S.op;
+      S.notes=sess.notes||{}; S.route=sess.route||[]; S.i=sess.i||0;
+      S.startedAt=sess.startedAt||Date.now();
+    }else{
+      var r0=rows[0]||{};
+      S.room=r0.room||'?'; S.side=r0.side||S.side; S.dir=r0.dir||S.dir;
+      S.mode=r0.mode||S.mode; S.notes={}; S.route=[]; S.i=rows.length;
+      S.startedAt=Date.now();
+    }
+    S.rows=rows||[];
+  }
+  $('rexp').onclick=function(){ hydrate(); S.roomStarted=true; finish(); };
+  $('rgo').onclick=function(){
+    hydrate();
+    S.roomStarted=true;
+    $('setup').classList.add('hide'); $('startbar').classList.remove('up');
+    ['hdr','route','main','pad'].forEach(function(id){$(id).classList.remove('hide');});
+    $('hroom').textContent=S.room;
+    hdrInfo();
+    drawRoute(); render(); setBig();
+    keepAwake(); audio();
+    connect();
+  };
+})();
+
+/* ---------------- start ---------------- */
+function hdrInfo(){
+  if(isGarden(S.room)){
+    $('hside').textContent=(DEMO?'DEMO · ':'')+gardenPlantCount()+' PLANTS · PEAT MIX';
+    return;
+  }
+  var hs=hoursSinceShot(S.room);
+  $('hside').textContent=(DEMO?'DEMO · ':'')+(S.mode==='spot'?'SPOT · ':'')+'DOF '+dofNow(S.room)+
+    (hs===null?'':' · '+hs.toFixed(1)+'h');
+}
+$('startbtn').onclick=function(){
+  if(!S.room) return;
+  S.route=buildRoute(S.room,S.dir,S.mode); S.i=0; S.rows=[]; S.notes={};
+  S.startedAt=Date.now(); S.roomStarted=true;
+  S.skips=0; S.unstable=0; S.redo=[];
+  saveSession();
+  $('setup').classList.add('hide'); $('startbar').classList.remove('up');
+  ['hdr','route','main','pad'].forEach(function(id){$(id).classList.remove('hide');});
+  $('hroom').textContent=S.room;
+  hdrInfo();
+  drawRoute(); render(); setBig();
+  audio(); keepAwake();
+  $('demobar').classList.toggle('hide',!DEMO);
+  if(DEMO){
+    S.trigger=TRIGGER; S.everConn=true;
+    ['log','extra','skip','undo','redo'].forEach(function(id){$(id).disabled=false;});
+    $('dot').className='dot live'; $('statxt').textContent='demo';
+    A.state='air'; A.buf=[]; SIM.phase='air';
+    setBig(); step('demo probe — tap TAP TO STAB to simulate a reading');
+    return;
+  }
+  connect();
+};
+
+/* ---------------- render ---------------- */
+function drawRoute(){
+  var el=$('route'); el.innerHTML='';
+  var cur=S.route[S.i], spot=(S.mode==='spot');
+  var tv={};
+  S.rows.forEach(function(r){
+    if(r.depth==='reference' && typeof r.table==='number'){ (tv[r.table]=tv[r.table]||[]).push(r.vwc); }
+  });
+  var f=floorFor(S.room);
+  if(isGarden(S.room)){
+    var seen={}, groups=[];
+    S.route.forEach(function(st,ix){
+      if(!seen[st.t]){ seen[st.t]={id:st.t, last:ix, vals:[]}; groups.push(seen[st.t]); }
+      else seen[st.t].last=ix;
+    });
+    S.rows.forEach(function(r){ if(seen[r.table]) seen[r.table].vals.push(r.vwc); });
+    groups.forEach(function(g){
+      var d=document.createElement('div'); d.className='tk wide';
+      if(cur && cur.t===g.id) d.className+=' now';
+      else if(S.i>g.last) d.className+=' done';
+      var c2='';
+      if(g.vals.length){ var m2=med(g.vals);
+        c2=m2<f?'var(--low)':(m2<f+6?'var(--warn)':'var(--ok)'); }
+      d.innerHTML='<span class="bar"'+(c2&&d.className.indexOf('now')<0?' style="background:'+c2+'"':'')+
+        '></span><span class="n">'+g.id+'</span>';
+      el.appendChild(d);
+    });
+    var ng=el.querySelector('.now'); if(ng) ng.scrollIntoView({inline:'center',block:'nearest'});
+    return;
+  }
+  for(var t=1;t<=ROOMS[S.room].t;t++){
+    var d=document.createElement('div'); d.className='tk';
+    if(!spot){
+      if(cur && t===cur.t) d.className+=' now';
+      else if(!cur || t<cur.t) d.className+=' done';
+    }
+    var col='';
+    if(tv[t]){ var mv=med(tv[t]);
+      col=mv<f?'var(--low)':(mv<f+6?'var(--warn)':'var(--ok)'); }
+    d.dataset.t=t;
+    d.onclick=function(){ if(!S.finished && !isGarden(S.room)) openPegs(+this.dataset.t); };
+    d.style.cursor='pointer';
+    d.innerHTML='<span class="bar"'+(col&&d.className.indexOf('now')<0?' style="background:'+col+'"':'')+
+      '></span><span class="n">'+t+'</span>';
+    el.appendChild(d);
+  }
+  var now=el.querySelector('.now'); if(now) now.scrollIntoView({inline:'center',block:'nearest'});
+}
+function render(){
+  var s=S.route[S.i];
+  if(!s){ finish(); return; }
+  if(s.garden){
+    $('pos').textContent=s.group;
+    $('depth').innerHTML='plant '+s.plant+'<span class="d">'+s.plant+' / '+s.of+'</span>';
+  }else{
+    $('pos').textContent=(s.spot?'Spot '+(S.i+1):'Table '+s.t);
+    $('depth').innerHTML=s.pos+'<span class="d">'+(s.depth==='reference'?'REF':'MID')+'</span>';
+  }
+  if(s.garden){
+    $('strain').innerHTML=cropOf(s.t)+'<span class="tag">tap to rename</span>';
+    $('strain').onclick=function(){
+      var v=prompt('Crop for '+s.group+':', cropOf(s.t));
+      if(v===null) return;
+      v=v.trim();
+      if(v) CROPS[s.t]=v; else delete CROPS[s.t];
+      if(!DEMO) lsSet('stab_crops',JSON.stringify(CROPS));
+      render();
+    };
+  }else{
+  var rm=RMAP[S.room]||{}, info=rm[String(s.t)]||['',''];
+  $('strain').onclick=null;
+  $('strain').innerHTML=info[0]
+    ? info[0]+(info[1].indexOf('U')>=0?'<span class="tag">underlights</span>':'')
+             +(info[1].indexOf('T')>=0?'<span class="tag">saucer</span>':'') : '';
+  }
+  var nx=S.route[S.i+1];
+  $('nextup').textContent=nx
+    ? 'next  '+(nx.spot?'spot':'T'+nx.t+' '+nx.pos+' '+(nx.depth==='reference'?'ref':'mid'))
+    : 'last one';
+  var rv=S.rows.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;});
+  $('roomavg').innerHTML=rv.length>2?'room <b>'+med(rv).toFixed(0)+'</b> · n'+rv.length:'';
+  var key=S.room+'|'+s.t+'|'+s.pos+'|'+s.depth, p=PREV[key];
+  $('ctx').innerHTML=p
+    ? '<span class="was">last here '+p.d+'</span> &nbsp; '+p.v+'% &nbsp; '+(p.e==null?'—':p.e)+' dS/m &nbsp; <span id="cdelta"></span>'
+    : '<span class="was">no prior reading here</span>';
+  drawRoute(); paint();
+}
+function ecClass(ec){
+  if(ec==null) return 'enone';
+  if(ec>=3&&ec<=6) return 'eok';
+  if((ec>=2.5&&ec<3)||(ec>6&&ec<=7)) return 'ewarn';
+  return 'elow';
+}
+function paint(){
+  var v=$('vwc');
+  if(!S.last){ v.textContent='--'; v.className='none';
+    $('ecbig').textContent='--'; $('ecbig').className='enone';
+    $('tmp').textContent='--';
+  }else{
+    v.textContent=S.last.vwc.toFixed(1);
+    var f=floorFor(S.room);
+    v.className=S.last.vwc<f?'low':(S.last.vwc<f+6?'warn':'ok');
+    $('ecbig').textContent=(S.last.ec==null?'--':S.last.ec.toFixed(2));
+    $('ecbig').className=ecClass(S.last.ec);
+    $('tmp').textContent=(S.last.tmp*9/5+32).toFixed(1);
+    var cd=$('cdelta');
+    if(cd){
+      var s=S.route[S.i];
+      var p=s?PREV[S.room+'|'+s.t+'|'+s.pos+'|'+s.depth]:null;
+      if(p && S.last.vwc>=8){
+        var dv=S.last.vwc-p.v, txt='Δ '+(dv>=0?'+':'')+dv.toFixed(1);
+        if(p.e!=null && S.last.ec!=null){
+          var de=S.last.ec-p.e; txt+=' / '+(de>=0?'+':'')+de.toFixed(2);
+        }
+        cd.textContent=txt;
+      }else cd.textContent='';
+    }
+  }
+  battPaint();
+  setBig();
+}
+function battPaint(){
+  var b=$('batt');
+  if(S.batt==null||S.batt>30){ b.className=''; b.textContent=''; return; }
+  b.className=S.batt<=15?'red':'amber';
+  b.textContent='batt '+S.batt+'%';
+}
+function isConn(){ if(DEMO) return true;
+  return !!(S.dev && S.dev.gatt && S.dev.gatt.connected && S.chr); }
+function setBig(){
+  var b=$('log'); if(!S.roomStarted) return;
+  b.disabled=false;
+  b.classList.remove('busy','hold','dim');
+  if(S.connecting){ b.textContent='CONNECTING…'; b.classList.add('dim'); return; }
+  if(!isConn()){ b.textContent=S.everConn?'RECONNECT':'CONNECT'; return; }
+  if(S.verifying){ b.textContent='CHECKING PROBE…'; b.classList.add('busy'); return; }
+  if(!S.trigger){ b.textContent='RETRY PROBE'; return; }
+  if(!S.auto){
+    if(S.awaiting){ b.textContent='READING…'; b.classList.add('busy'); }
+    else b.textContent='TAKE READING';
+    return;
+  }
+  if(DEMO){
+    if(A.state==='settling'){ b.textContent='READING…'; b.classList.add('busy'); }
+    else if(A.state==='hold'){ b.textContent='LOGGED · TAP TO PULL'; b.classList.add('hold'); }
+    else b.textContent='TAP TO STAB';
+    return;
+  }
+  if(S.paused){ b.textContent='PAUSED — TAP TO ARM'; b.classList.add('dim'); return; }
+  if(A.state==='settling'){ b.textContent='READING…'; b.classList.add('busy'); }
+  else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('hold'); }
+  else b.textContent='ARMED · STAB TO LOG';
+}
+function step(m){ var d=$('diag'); if(d) d.textContent=m; }
+function flash(){
+  var m=$('main'); if(!m) return;
+  m.classList.add('flash');
+  setTimeout(function(){ m.classList.remove('flash'); },130);
+}
+var tmr;
+function toast(msg){
+  var t=$('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('show');},2400);
+}
+
+/* ---------------- bluetooth ---------------- */
+function dbgUnparsedPush(tag,txt){
+  DBG.unparsed.push(new Date().toLocaleTimeString('en-US',{hour12:false})+' ['+tag+'] '+String(txt).slice(0,60));
+  if(DBG.unparsed.length>20) DBG.unparsed.shift();
+}
+emitUnparsed=function(tag,txt){
+  dbgUnparsedPush(tag,txt);
+  step('unparsed ['+tag+'] '+String(txt).slice(0,26));
+};
+emitReading=function(pr){
+  var now=Date.now();
+  if(pr.direct) DBG.directs++; else DBG.statusFrames++;
+  var media=S.room?ROOMS[S.room].media:'Bio365';
+  var ec=poreEC(pr.counts,pr.bulk,pr.tC,offsetFor(media));
+  var r={vwc:+vwcFor(media,pr.counts).toFixed(1), tmp:+pr.tC.toFixed(1),
+    ec:(ec==null?null:+ec.toFixed(2)), bulk:+(pr.bulk/1000).toFixed(3),
+    counts:pr.counts, raw:pr.raw, direct:pr.direct, ts:now};
+  S.last=r; S.lastAt=now; paint();
+  step((pr.direct?'':'status · ')+pr.raw);
+  if(pr.direct && S.tWrite && now>=S.tWrite) S.lastLat=Math.round(now-S.tWrite);
+  for(var i=WAIT.length-1;i>=0;i--){
+    if(!WAIT[i].direct || pr.direct){
+      var w=WAIT.splice(i,1)[0]; clearTimeout(w.t); w.res(r);
+    }
+  }
+  if(S.cal){ CAL.live=r; if(CAL.stage==='live') calPaint(); return; }
+  if(!pr.direct) return;                      /* status frames never commit */
+  if(S.tWrite && now<S.tWrite) return;        /* pre-write straggler guard */
+  if(S.awaiting){
+    S.awaiting=false; clearTimeout(S.rt);
+    doCommit(r,{});
+    return;
+  }
+  if(S.auto && !S.paused && !S.pegsOpen && !S.logOpen && !S.finished && S.trigger) autoFeed(r);
+};
+function onPacket(e){
+  DBG.pkts++;
+  var dv=e.target.value, bytes=[];
+  for(var i=0;i<dv.byteLength;i++) bytes.push(dv.getUint8(i));
+  rxBytes(bytes);
+}
+function onDrop(){
+  S.chr=null; S.wchr=null; S.svc=null; S.batC=null;
+  S.verifying=false; S.awaiting=false; clearTimeout(S.rt);
+  $('dot').className='dot'; $('statxt').textContent='dropped';
+  if(S.cal && CAL.released){ calPaint(); }
+  else if(!S.finished){ beep('drop'); toast('probe disconnected'); step('probe disconnected — tap to reconnect'); }
+  setBig();
+}
+function waitDirect(ms){
+  return new Promise(function(res){
+    var w={direct:true,res:res};
+    w.t=setTimeout(function(){
+      var k=WAIT.indexOf(w); if(k>=0) WAIT.splice(k,1);
+      res(null);
+    },ms);
+    WAIT.push(w);
+  });
+}
+function sendTrigger(){
+  if(!S.wchr) return Promise.reject(new Error('no write characteristic'));
+  var cand=S.trigger||TRIGGER, data=bytesOf(cand);
+  DBG.polls++;
+  var useAck=!!(S.wchr.properties && S.wchr.properties.write);
+  var p=useAck?S.wchr.writeValue(data):S.wchr.writeValueWithoutResponse(data);
+  return p.then(function(){ S.tWrite=Date.now(); });
+}
+function connect(){
+  if(!navigator.bluetooth){ step('no Web Bluetooth — open in Bluefy'); return Promise.resolve(); }
+  if(S.connecting) return Promise.resolve();
+  S.connecting=true; setBig(); step('connecting…');
+  var p;
+  if(S.dev){
+    p=S.dev.gatt.connect().catch(function(){ S.dev=null; return pickAndConnect(); });
+  }else p=pickAndConnect();
+  return p.then(function(){
+    step('connected — settling');
+    return sleep(700);
+  }).then(function(){
+    var g=S.dev.gatt;
+    step('finding service');
+    return g.getPrimaryService(SVC).catch(function(){
+      return g.getPrimaryServices().then(function(list){
+        for(var i=0;i<list.length;i++){ if(list[i].uuid.indexOf('deca')===0) return list[i]; }
+        throw new Error('probe service not found');
+      });
+    });
+  }).then(function(svc){
+    S.svc=svc; step('finding characteristics');
+    return svc.getCharacteristic(NTF).catch(function(){
+      return svc.getCharacteristics().then(function(cs){
+        for(var i=0;i<cs.length;i++){
+          if(cs[i].uuid.indexOf('deca')===0 && cs[i].properties.notify) return cs[i];
+        }
+        throw new Error('notify characteristic not found');
+      });
+    });
+  }).then(function(c){
+    S.chr=c;
+    c.addEventListener('characteristicvaluechanged',onPacket);
+    return c.startNotifications();
+  }).then(function(){
+    return S.svc.getCharacteristic(WRT).catch(function(){
+      return S.svc.getCharacteristics().then(function(cs){
+        for(var i=0;i<cs.length;i++){
+          if(cs[i].uuid.indexOf('deca')===0 &&
+             (cs[i].properties.write||cs[i].properties.writeWithoutResponse)) return cs[i];
+        }
+        throw new Error('write characteristic not found');
+      });
+    });
+  }).then(function(w){
+    S.wchr=w;
+    S.everConn=true; S.connecting=false;
+    ['log','extra','skip','undo','redo'].forEach(function(id){$(id).disabled=false;});
+    $('statxt').textContent='waiting';
+    readBattery(S.dev.gatt);
+    setBig();
+    return verifyTrigger();
+  }).catch(function(err){
+    S.connecting=false;
+    setBig();
+    $('log').disabled=false;
+    step('connect failed: '+((err&&err.message)||err));
+  });
+}
+function pickAndConnect(){
+  step('requesting device');
+  return navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC,'battery_service']})
+    .catch(function(){
+      step('retry with all devices');
+      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,'battery_service']});
+    })
+    .then(function(dev){
+      S.dev=dev;
+      dev.addEventListener('gattserverdisconnected',onDrop);
+      step('connecting GATT');
+      return dev.gatt.connect();
+    });
+}
+function verifyTrigger(){
+  S.verifying=true; setBig(); step('checking probe…');
+  S.trigger=TRIGGER;
+  function tryOnce(){
+    return sendTrigger().catch(function(){ DBG.writeFails++; })
+      .then(function(){ return waitDirect(1600); });
+  }
+  return tryOnce().then(function(r){
+    if(r) return r;
+    return tryOnce();
+  }).then(function(r){
+    if(r){
+      S.verifying=false;
+      step('probe ok — '+TRIGGER.n);
+      ready();
+      return;
+    }
+    S.trigger=null;
+    step('default trigger not confirmed — hunting');
+    return huntFallback().then(function(){
+      S.verifying=false;
+      if(S.trigger) ready();
+      else{ setBig(); step('no trigger found — tap RETRY PROBE'); }
+    });
+  });
+}
+function huntFallback(){
+  var i=0;
+  function next(){
+    if(i>=CANDS.length) return Promise.resolve();
+    var c=CANDS[i++];
+    step('hunt '+i+'/'+CANDS.length+' '+c.n);
+    var save=S.trigger; S.trigger=c;
+    return sendTrigger().catch(function(){ DBG.writeFails++; })
+      .then(function(){ return waitDirect(950); })
+      .then(function(r){
+        if(r){ step('★ trigger = '+c.n); return; }
+        S.trigger=save;
+        return next();
+      });
+  }
+  return next();
+}
+function ready(){
+  setBig();
+  if(S.auto){ A.state='air'; A.buf=[]; }
+  if(S.batt!=null && S.batt<=15){ beep('battLow'); toast('probe battery '+S.batt+'% — bring spares'); }
+  if(S.cal && CAL.stage==='saved'){ CAL.stage='live'; calPaint(); }
+  step('ready');
+}
+function readBattery(g){
+  g.getPrimaryService('battery_service').then(function(s){
+    return s.getCharacteristic('battery_level');
+  }).then(function(c){
+    S.batC=c;
+    return c.readValue().then(function(v){
+      S.batt=v.getUint8(0); battPaint();
+      c.addEventListener('characteristicvaluechanged',function(e){
+        S.batt=e.target.value.getUint8(0); battPaint();
+      });
+      return c.startNotifications().catch(function(){});
+    });
+  }).catch(function(){ S.batt=null; });
+}
+setInterval(function(){
+  if(S.batC && isConn()){
+    S.batC.readValue().then(function(v){ S.batt=v.getUint8(0); battPaint(); }).catch(function(){});
+  }
+},300000);
+
+/* ---------------- manual capture ---------------- */
+function bigTap(){
+  audio();
+  if(DEMO){
+    if(SIM.phase==='air') simStab();
+    else{ SIM.phase='air'; SIM.backAt=0; setBig(); }
+    return;
+  }
+  if(S.connecting) return;
+  if(!isConn()){ connect(); return; }
+  if(S.verifying) return;
+  if(!S.trigger){ verifyTrigger(); return; }
+  if(S.auto){
+    S.paused=!S.paused;
+    if(!S.paused){ A.state='air'; A.buf=[]; }
+    setBig();
+    return;
+  }
+  if(S.awaiting) return;
+  S.awaiting=true; S.tries=0;
+  setBig(); step('reading…');
+  attempt();
+}
+function attempt(){
+  S.tries++;
+  sendTrigger().catch(function(){
+    DBG.writeFails++;
+    if(S.awaiting && S.tries<4) setTimeout(attempt,260);
+  });
+  clearTimeout(S.rt);
+  S.rt=setTimeout(function(){
+    if(!S.awaiting) return;
+    if(S.tries<2){ step('retry…'); attempt(); }
+    else{
+      S.awaiting=false; DBG.timeouts++;
+      setBig(); step('NO RESPONSE — tap again');
+      beep('warn'); toast('no reading — tap again');
+    }
+  },2200);
+}
+
+/* ---------------- auto capture ---------------- */
+var POLL=1200, AIR=8, INS=13, JUMP=6, STAB_V=0.5, STAB_E=0.15, STAB_B=0.05,
+    MIN_SETTLE=1200, MAX_SETTLE=10000;
+setInterval(function(){
+  if(!S.roomStarted||S.finished||!S.auto||S.paused||S.cal||S.pegsOpen||S.logOpen) return;
+  if(DEMO) return;
+  if(S.awaiting||S.verifying||S.connecting||!S.trigger||!isConn()) return;
+  if(document.visibilityState!=='visible') return;
+  if(Date.now()-S.lastPoll<POLL) return;
+  S.lastPoll=Date.now();
+  sendTrigger().catch(function(){ DBG.writeFails++; });
+},300);
+function autoFeed(r){
+  if(!S.route[S.i]) return;
+  if(A.state==='hold'){
+    if(r.vwc<AIR){ A.state='air'; A.buf=[]; A.lastAir=r.vwc; beep('tick'); setBig(); }
+    return;
+  }
+  if(r.vwc<AIR){
+    if(A.state!=='air'){ A.state='air'; A.buf=[]; setBig(); }
+    A.lastAir=r.vwc;
+    return;
+  }
+  if(A.state==='air'){
+    if(r.vwc>=INS || (A.lastAir!=null && r.vwc-A.lastAir>=JUMP)){
+      A.state='settling'; A.buf=[r]; A.t0=Date.now(); setBig();
+    }
+    return;
+  }
+  /* settling */
+  A.buf.push(r); if(A.buf.length>4) A.buf.shift();
+  var n=A.buf.length;
+  if(n>=2){
+    var a=A.buf[n-2], b=r;
+    var ecOk=(a.ec!=null&&b.ec!=null)?Math.abs(a.ec-b.ec)<=STAB_E:Math.abs(a.bulk-b.bulk)<=STAB_B;
+    if(Math.abs(a.vwc-b.vwc)<=STAB_V && ecOk && Date.now()-A.t0>=MIN_SETTLE){
+      A.state='hold'; doCommit(b,{}); setBig(); return;
+    }
+  }
+  if(Date.now()-A.t0>MAX_SETTLE){
+    var byV=A.buf.slice().sort(function(p,q){return p.vwc-q.vwc;});
+    var m=byV[Math.floor(byV.length/2)];
+    A.state='hold'; S.unstable++;
+    doCommit(m,{unstable:true}); setBig();
+  }
+}
+
+/* ---------------- demo probe ----------------
+   No hardware. Synthesises raw sensor frames and pushes them through
+   rxBytes(), so demo mode runs the same CRC/reassembly/parse/commit path
+   as the real probe — a demo is also a live self-test. Demo never writes
+   facility data to storage. */
+var DEMO=false, GARDENMODE=false;
+var SIM={phase:'air', t0:0, target:0, targetEC:0, backAt:0};
+function simTarget(rm,t,pos,depth){
+  var s=(String(t)+pos+depth), seed=0;
+  for(var i=0;i<s.length;i++) seed+=s.charCodeAt(i);
+  var base=isGarden(rm)?38:46;
+  var d=(depth==='mid-bag')?-5:0;
+  var p=(pos==='header'||pos==='end')?2:((pos==='front'||pos==='start')?-2:0);
+  return Math.max(9, base+d+p+((seed%13)-6)*0.9);
+}
+function simTargetEC(rm,t,pos){
+  var s=(String(t)+pos), seed=0;
+  for(var i=0;i<s.length;i++) seed+=s.charCodeAt(i);
+  return isGarden(rm)?(1.2+(seed%9)*0.12):(3.4+(seed%11)*0.22);
+}
+function simStab(){
+  var st=S.route[S.i]; if(!st) return;
+  SIM.target=simTarget(S.room,st.t,st.pos,st.depth);
+  SIM.targetEC=simTargetEC(S.room,st.t,st.pos);
+  SIM.phase='in'; SIM.t0=Date.now(); SIM.backAt=0;
+  setBig();
+}
+function simInject(){
+  var media=S.room?ROOMS[S.room].media:'Bio365', tC=22.0, vwc;
+  if(SIM.phase==='air'){ vwc=1.4+Math.random()*1.6; }
+  else{
+    var el=Date.now()-SIM.t0;
+    if(el<1300){ var f=el/1300; vwc=2+(SIM.target-2)*f+(Math.random()-0.5)*1.6; }
+    else vwc=SIM.target+(Math.random()-0.5)*0.3;
+  }
+  var c=countsForVwc(vwc, isMineral(media));
+  var bulk=(SIM.phase==='air')?0:bulkForEC(c, SIM.targetEC, tC, offsetFor(media));
+  rxBytes(frameBytes('0\t'+c.toFixed(1)+' '+tC.toFixed(1)+' '+bulk+'\rg8'));
+}
+setInterval(function(){
+  if(!DEMO||!S.roomStarted||S.finished||S.pegsOpen) return;
+  if(SIM.phase==='in' && A.state==='hold' && !SIM.backAt) SIM.backAt=Date.now()+900;
+  if(SIM.backAt && Date.now()>SIM.backAt){ SIM.phase='air'; SIM.backAt=0; }
+  simInject();
+},600);
+
+/* ---------------- commit / advance ---------------- */
+function doCommit(r, meta){
+  var stop=S.route[S.i]; if(!stop){ return; }
+  var f=floorFor(S.room);
+  var key=S.room+'|'+stop.t+'|'+stop.pos+'|'+stop.depth;
+  var pc=PREV[key];
+  var tblVals=S.rows.filter(function(x){return x.table===stop.t&&x.depth===stop.depth;})
+                    .map(function(x){return x.vwc;});
+  var tmed=tblVals.length>=2?med(tblVals):null;
+  var outlier=(pc&&Math.abs(r.vwc-pc.v)>8)||(tmed!=null&&Math.abs(r.vwc-tmed)>10);
+  var row={
+    date:new Date().toLocaleDateString('en-US'),
+    time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
+    room:S.room, table:stop.t, position:stop.pos, depth:stop.depth,
+    strain:stop.garden?cropOf(stop.t):((RMAP[S.room]||{})[String(stop.t)]||['',''])[0],
+    flags:((RMAP[S.room]||{})[String(stop.t)]||['',''])[1],
+    hrs:(function(){var h=hoursSinceShot(S.room); return h===null?'':h.toFixed(1);})(),
+    mode:S.mode, dir:S.dir,
+    plant:stop.garden?(stop.t+'-'+stop.plant+(stop.extra?'a':'')):(stop.extra?'adjacent':''),
+    bag:ROOMS[S.room].bag, media:ROOMS[S.room].media,
+    side:S.side, vwc:r.vwc, ec:r.ec, bulk:r.bulk, tmp:r.tmp,
+    flag:r.vwc<f, raw:r.raw,
+    op:DEMO?(S.op+' (DEMO)'):S.op, frame:r.direct?'direct':'status', tries:(S.tries||0),
+    batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
+    _pc:pc||null, _out:!!outlier
+  };
+  S.rows.push(row);
+  PREV[key]={d:row.date,v:row.vwc,e:row.ec};
+  if(!DEMO) lsSet('stab_prev',JSON.stringify(PREV));
+  S.redo=[];
+  if(row.flag && S.mode==='sweep' && !stop.spot) S.flaggedTable=true;
+  /* feedback */
+  if(row.flag){ beep('floor'); toast('below floor · '+row.vwc+'%'); }
+  else if(meta.unstable){ beep('out'); toast('unstable — logged median'); }
+  else if(outlier){
+    beep('out');
+    var dref=pc?(r.vwc-pc.v):(r.vwc-tmed);
+    toast('outlier Δ'+(dref>=0?'+':'')+dref.toFixed(1)+' — undo?');
+  }
+  else if(row.vwc<f+6) beep('warn');
+  else beep('ok');
+  var nxt=S.route[S.i+1];
+  say(Math.round(r.vwc)+(r.ec!=null?', '+r.ec.toFixed(1):'')+
+    (nxt?(', next '+(nxt.spot?'spot':('table '+nxt.t+' '+nxt.pos+' '+(nxt.depth==='reference'?'ref':'mid')))):''));
+  step('logged '+(stop.spot?'spot':'T'+stop.t+' '+stop.pos+' '+(stop.depth==='reference'?'ref':'mid'))+
+    ' '+r.vwc.toFixed(1)+'%');
+  advance(stop);
+}
+function advance(stop){
+  S.i++; saveSession();
+  var nxt=S.route[S.i];
+  var tableDone=S.mode==='sweep' && !stop.spot && (!nxt || nxt.t!==stop.t);
+  if(tableDone) beep('tableDone');
+  if(!nxt){ setTimeout(finish,450); return; }
+  if(tableDone && S.flaggedTable){
+    S.flaggedTable=false;
+    setTimeout(function(){ openPegs(stop.t); },150);
+    render();
+    return;
+  }
+  if(tableDone) S.flaggedTable=false;
+  render(); flash();
+}
+
+/* ---------------- controls ---------------- */
+$('log').addEventListener('click',function(){
+  if(LP.fired){ LP.fired=false; return; }
+  bigTap();
+});
+var LP={t:null,fired:false};
+$('log').addEventListener('pointerdown',function(){
+  LP.fired=false; clearTimeout(LP.t);
+  if(!S.roomStarted||!isConn()||S.cal) return;
+  LP.t=setTimeout(function(){ LP.fired=true; openCal(); },600);
+});
+['pointerup','pointerleave','pointercancel'].forEach(function(ev){
+  $('log').addEventListener(ev,function(){ clearTimeout(LP.t); });
+});
+$('log').addEventListener('contextmenu',function(e){ e.preventDefault(); });
+
+$('extra').onclick=function(){
+  if(S.awaiting) return;
+  var j=S.i-1;
+  if(j<0){ toast('take a reading first'); return; }
+  var last=S.route[j];
+  while(j>=0 && S.route[j].t===last.t && S.route[j].pos===last.pos && !S.route[j].extra) j--;
+  j++;
+  var grp=[];
+  for(var k=j;k<S.i;k++) grp.push({t:S.route[k].t,pos:S.route[k].pos,depth:S.route[k].depth,extra:true,spot:S.route[k].spot});
+  if(!grp.length){ toast('nothing to repeat'); return; }
+  Array.prototype.splice.apply(S.route,[S.i,0].concat(grp));
+  S.redo=[]; A.state='air'; A.buf=[];
+  saveSession(); render(); flash();
+  toast('adjacent plant · '+(last.spot?'spot':'T'+last.t+' '+last.pos));
+};
+$('skip').onclick=function(){
+  S.redo=[]; S.skips++; S.i++;
+  saveSession(); render(); flash(); toast('skipped');
+};
+$('undo').onclick=function(){
+  if(!S.rows.length){ toast('nothing to undo'); return; }
+  var r=S.rows.pop();
+  if(S.i>0) S.i--;
+  var extraStop=null;
+  if(S.route[S.i] && S.route[S.i].extra){ extraStop=S.route.splice(S.i,1)[0]; }
+  S.redo.push({row:r, extraStop:extraStop});
+  var key=r.room+'|'+r.table+'|'+r.position+'|'+r.depth;
+  if(r._pc) PREV[key]=r._pc; else delete PREV[key];
+  lsSet('stab_prev',JSON.stringify(PREV));
+  S.last={vwc:r.vwc,ec:r.ec,tmp:r.tmp,bulk:r.bulk,raw:r.raw,direct:true,counts:0};
+  S.lastAt=Date.now();
+  A.state='hold'; A.buf=[];
+  saveSession(); render(); flash();
+  step('undone T'+r.table+' '+r.position+' — pull probe, re-stab');
+  toast('undone — re-stab');
+};
+$('redo').onclick=function(){
+  if(!S.redo.length){ toast('nothing to redo'); return; }
+  var rec=S.redo.pop();
+  if(rec.extraStop) S.route.splice(S.i,0,rec.extraStop);
+  S.rows.push(rec.row); S.i++;
+  var r=rec.row, key=r.room+'|'+r.table+'|'+r.position+'|'+r.depth;
+  PREV[key]={d:r.date,v:r.vwc,e:r.ec};
+  lsSet('stab_prev',JSON.stringify(PREV));
+  S.last={vwc:r.vwc,ec:r.ec,tmp:r.tmp,bulk:r.bulk,raw:r.raw,direct:true,counts:0};
+  S.lastAt=Date.now();
+  saveSession(); render(); flash();
+  step('redone T'+r.table+' '+r.position+' '+r.vwc.toFixed(1)+'%');
+};
+$('note').onclick=function(){
+  var s=S.route[S.i], t=s?s.t:(S.rows.length?S.rows[S.rows.length-1].table:null);
+  if(t==null||t==='?'){ toast('notes are per table'); return; }
+  openPegs(t);
+};
+$('exit').onclick=function(){
+  if(S.rows.length && !confirm('End sweep with '+S.rows.length+' readings?')) return;
+  finish();
+};
+$('hstat').onclick=function(){
+  if(isConn()){ toast('connected'); return; }
+  connect();
+};
+
+/* ---------------- pegs ---------------- */
+function rowNote(t){
+  var c=S.notes[t]||'', f=(S.free&&S.free[t])||'';
+  return c && f ? c+'. '+f : (c||f);
+}
+var PEGSEL={};
+function openPegs(tbl){
+  PEGSEL={};
+  S.pegsOpen=true;
+  var existing=(S.notes[tbl]||'').split(' · ').filter(Boolean);
+  existing.forEach(function(w){ PEGSEL[w]=1; });
+  var garden=isGarden(S.room), list=garden?PEGS_GARDEN:PEGS;
+  var rm=RMAP[S.room]||{}, info=rm[String(tbl)]||[''
+,''];
+  var gg=garden?gardenGroup(tbl):null;
+  $('pegtop').innerHTML=(garden?(gg?gg.name:tbl):('Table '+tbl))+
+    '<span class="sm"><b class="st">'+(garden?cropOf(tbl):(info[0]||S.room))+
+    '</b> · tap only what stands out</span>';
+  var h='';
+  list.forEach(function(p,pi){
+    h+='<div class="pg"><div class="h">'+p[0]+'</div><div class="c">';
+    p[1].forEach(function(w){
+      h+='<button class="chip'+(PEGSEL[w]?' on':'')+'" data-w="'+w+'">'+w+'</button>';
+    });
+    h+='</div></div>';
+  });
+  $('pegs').innerHTML=h;
+  $('pegfree').value=(S.free&&S.free[tbl])||'';
+  [].forEach.call(document.querySelectorAll('#pegs .chip'),function(b){
+    b.onclick=function(){
+      b.classList.toggle('on');
+      var k=b.dataset.w;
+      if(PEGSEL[k]) delete PEGSEL[k]; else PEGSEL[k]=1;
+    };
+  });
+  $('pegdone').onclick=function(){
+    var w=Object.keys(PEGSEL);
+    if(w.length) S.notes[tbl]=w.join(' · ');
+    else delete S.notes[tbl];
+    S.free=S.free||{};
+    var ft=($('pegfree').value||'').trim();
+    if(ft) S.free[tbl]=ft; else delete S.free[tbl];
+    S.pegsOpen=false;
+    if(A.state==='settling'){ A.buf=[]; A.t0=Date.now(); }
+    saveSession();
+    $('pegsheet').classList.add('hide');
+    render(); flash();
+  };
+  $('pegsheet').classList.remove('hide');
+}
+
+/* ---------------- CAL mode ---------------- */
+function getPairs(){
+  try{ return JSON.parse(localStorage.getItem('stab_cal')||'[]'); }catch(e){ return []; }
+}
+function pairStats(media){
+  var ps=getPairs().filter(function(p){return p.media===media&&p.off!=null;});
+  if(!ps.length) return null;
+  var sum=0; ps.forEach(function(p){sum+=p.off;});
+  return {n:ps.length, mean:sum/ps.length};
+}
+function openCal(){
+  if(!S.roomStarted) return;
+  S.cal=true; S.pausedBeforeCal=S.paused;
+  CAL={stage:'live', frozen:null, released:false, live:S.last};
+  $('calsheet').classList.remove('hide');
+  beep('cal');
+  calPaint();
+}
+function closeCal(){
+  S.cal=false;
+  $('calsheet').classList.add('hide');
+  S.paused=S.pausedBeforeCal;
+  if(A.state==='settling'){ A.buf=[]; A.t0=Date.now(); }
+  A.state='air'; A.buf=[];
+  setBig();
+  if(!isConn()) step('probe released — tap RECONNECT');
+}
+function calPaint(){
+  var media=S.room?ROOMS[S.room].media:'Bio365';
+  $('calrm').textContent=S.room+' · '+media+' · offset '+offsetFor(media).toFixed(2);
+  var b=$('calbody'), f=$('calfoot'), n=getPairs().length;
+  if(CAL.stage==='live'){
+    var r=CAL.live||S.last;
+    b.innerHTML=(r?
+      '<div class="calrow"><div class="callab">live</div>'+
+      '<div class="calbig">'+r.vwc.toFixed(1)+'<span class="u"> %</span>&nbsp;&nbsp;'+
+      (r.ec==null?'--':r.ec.toFixed(2))+'<span class="u"> EC</span></div>'+
+      '<div class="calres">bulk '+r.bulk.toFixed(3)+' · '+r.tmp.toFixed(1)+' °C · counts '+r.counts.toFixed(1)+'</div></div>'
+      :'<div class="calrow"><div class="calbig">--</div></div>')+
+      '<div class="calnote">Stab, wait for the numbers to steady, then capture. The probe stays put until you\'ve read it in Aroya too.</div>';
+    f.innerHTML='<button class="pri" data-act="cap">Capture</button>'+
+      '<button class="sec" data-act="exp">Pairs · '+n+' · export</button>';
+  }else if(CAL.stage==='frozen'){
+    var z=CAL.frozen;
+    b.innerHTML='<div class="calrow"><div class="callab">captured — hold the probe still</div>'+
+      '<div class="calbig">'+z.vwc.toFixed(1)+'<span class="u"> %</span>&nbsp;&nbsp;'+
+      (z.ec==null?'--':z.ec.toFixed(2))+'<span class="u"> EC</span></div>'+
+      '<div class="calres">bulk '+z.bulk.toFixed(3)+' · '+z.tmp.toFixed(1)+' °C · counts '+z.counts.toFixed(1)+'</div></div>'+
+      '<div class="calnote">Release drops the Bluetooth link so Aroya can connect. Keep the probe exactly where it is.</div>';
+    f.innerHTML='<button class="pri" data-act="rel">Release probe</button>'+
+      '<button class="sec" data-act="retake">Retake</button>';
+  }else if(CAL.stage==='enter'){
+    b.innerHTML='<div class="calnote">Connect Aroya, read the same stab, then enter its numbers.</div>'+
+      '<div class="calrow"><div class="callab">Aroya VWC %</div>'+
+      '<input class="calin" id="caV" inputmode="decimal" placeholder="56.0"></div>'+
+      '<div class="calrow"><div class="callab">Aroya pore EC</div>'+
+      '<input class="calin" id="caE" inputmode="decimal" placeholder="3.13"></div>';
+    f.innerHTML='<button class="pri" data-act="save">Save pair</button>';
+  }else{ /* saved */
+    var p=CAL.saved, st=pairStats(p.media);
+    b.innerHTML='<div class="calrow"><div class="callab">pair saved</div>'+
+      '<div class="calres">this pair offset <b>'+(p.off==null?'—':p.off.toFixed(2))+'</b><br>'+
+      (st?'mean <b>'+st.mean.toFixed(2)+'</b> · n='+st.n+' ('+p.media+')<br>':'')+
+      'ΔVWC '+(p.dv>=0?'+':'')+p.dv.toFixed(1)+' vs Aroya<br>'+
+      'applied in app: '+offsetFor(p.media).toFixed(2)+'</div></div>'+
+      '<div class="calnote">Offsets update in code once a media has 4–6 agreeing pairs.</div>';
+    f.innerHTML='<button class="pri" data-act="recon">Reconnect · another pair</button>'+
+      '<button class="sec" data-act="exp">Export pairs</button>'+
+      '<button class="sec" data-act="done">Done</button>';
+  }
+}
+$('calx').onclick=closeCal;
+$('calfoot').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  var act=b.dataset.act;
+  if(act==='cap'){
+    var r=CAL.live||S.last;
+    if(!r||!r.counts){ toast('no live reading yet'); return; }
+    CAL.frozen=r; CAL.stage='frozen'; beep('cal'); calPaint();
+  }else if(act==='retake'){
+    CAL.stage='live'; calPaint();
+  }else if(act==='rel'){
+    CAL.released=true; CAL.stage='enter';
+    try{ if(S.dev&&S.dev.gatt&&S.dev.gatt.connected) S.dev.gatt.disconnect(); }catch(e){}
+    calPaint();
+  }else if(act==='save'){
+    var aV=parseFloat(($('caV').value||'').replace(',','.'));
+    var aE=parseFloat(($('caE').value||'').replace(',','.'));
+    if(isNaN(aV)&&isNaN(aE)){ toast('enter at least one Aroya number'); return; }
+    var z=CAL.frozen, media=ROOMS[S.room].media;
+    var eb=permCounts(z.counts), ep=80.3-0.37*(z.tmp-20);
+    var off=(!isNaN(aE)&&aE>0.05&&z.bulk>0.005)?+(eb-ep*z.bulk/aE).toFixed(2):null;
+    var pair={ts:Date.now(),
+      date:new Date().toLocaleDateString('en-US'),
+      time:new Date().toLocaleTimeString('en-US',{hour12:false}),
+      room:S.room, media:media, counts:z.counts, vwc:z.vwc, ec:z.ec, bulk:z.bulk,
+      tmp:z.tmp, raw:z.raw, aV:(isNaN(aV)?null:aV), aE:(isNaN(aE)?null:aE), off:off};
+    var ps=getPairs(); ps.push(pair);
+    lsSet('stab_cal',JSON.stringify(ps));
+    CAL.saved={media:media, off:off, dv:(isNaN(aV)?0:z.vwc-aV)};
+    CAL.stage='saved'; beep('cal'); calPaint();
+  }else if(act==='recon'){
+    connect();
+    toast('reconnecting…');
+  }else if(act==='done'){
+    closeCal();
+  }else if(act==='exp'){
+    var ps2=getPairs();
+    if(!ps2.length){ toast('no pairs yet'); return; }
+    var head='Date,Time,Room,Media,Counts,App VWC,App pore EC,App bulk,Temp C,Aroya VWC,Aroya EC,Implied offset,Raw\n';
+    var body=ps2.map(function(p){
+      return [p.date,p.time,p.room,csvq(p.media),p.counts,p.vwc,(p.ec==null?'':p.ec),p.bulk,p.tmp,
+        (p.aV==null?'':p.aV),(p.aE==null?'':p.aE),(p.off==null?'':p.off),csvq(p.raw)].join(',');
+    }).join('\n');
+    shareOrCopy(head+body,'cal_pairs_'+fnameDate()+'.csv','pairs');
+  }
+});
+
+/* ---------------- finish / done ---------------- */
+function fnameDate(){
+  var d=new Date();
+  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+
+    '_'+('0'+d.getHours()).slice(-2)+('0'+d.getMinutes()).slice(-2);
+}
+var CSV_TEXT='', CSV_NAME='';
+function canShareFiles(){
+  try{
+    return !!(navigator.canShare &&
+      navigator.canShare({files:[new File([''],'t.csv',{type:'text/csv'})]}));
+  }catch(e){ return false; }
+}
+function shareOrCopy(text,name,label){
+  if(canShareFiles()){
+    var f=new File([text],name,{type:'text/csv'});
+    navigator.share({files:[f]}).then(function(){ toast(label+' shared'); })
+      .catch(function(){});
+  }else{
+    var ta=$('csv'); var old=ta.value; ta.value=text; ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    if(navigator.clipboard) navigator.clipboard.writeText(text).catch(function(){});
+    ta.value=old;
+    toast(label+' copied');
+  }
+}
+
+
+/* ============ EVENT LOG ============
+   Shots, faults and bulbs. One store, one shape, so an end-of-day roll-up
+   and a maintenance message can both be generated from it. */
+function getEv(){ try{ return JSON.parse(localStorage.getItem('stab_events')||'[]'); }catch(e){ return []; } }
+function addEv(e){
+  e.ts=Date.now();
+  e.when=new Date().toLocaleString('en-US');
+  e.op=S.op||'';
+  var a=getEv(); a.unshift(e);
+  lsSet('stab_events',JSON.stringify(a.slice(0,400)));
+  return e;
+}
+function evToday(){
+  var d=new Date(); d.setHours(0,0,0,0);
+  return getEv().filter(function(e){ return e.ts>=d.getTime(); });
+}
+function mlFor(room,mins){
+  var cfg=ROOMS[room]; if(!cfg) return null;
+  var rate = (room.charAt(0)==='A') ? 70 : 95;   /* mL per plant per minute */
+  return Math.round(mins*rate);
+}
+/* Maintenance message in the format the Teams thread expects: room first,
+   then table, then what is wrong. Chris has had to ask "what room" before. */
+function faultMsg(e){
+  return e.room+(e.table?' T'+e.table:'')+' — '+e.what+(e.detail?'. '+e.detail:'');
+}
+function bulbMsg(e){
+  return e.room+' — '+e.n+' bulb'+(e.n>1?'s':'')+' out over T'+e.tables;
+}
+
+/* ============ WORKBOOK PASTE BLOCK ============
+   Row notes in the format used in BB_fert_data, the notes-column
+   paragraph, and a CHECK section generated from the data. */
+function feelWord(v,bag){
+  var b = bag===2
+    ? [[18,'dry'],[22,'dry ok'],[26,'ok'],[30,'ok good'],[34,'good'],[38,'good solid'],[44,'solid'],[50,'solid heavy']]
+    : [[22,'dry'],[26,'dry ok'],[30,'ok'],[34,'ok good'],[38,'good'],[43,'good solid'],[48,'solid'],[53,'solid heavy']];
+  for(var i=0;i<b.length;i++) if(v<b[i][0]) return b[i][1];
+  return 'heavy';
+}
+function byTable(){
+  var t={};
+  S.rows.forEach(function(r){ (t[r.table]=t[r.table]||[]).push(r); });
+  return t;
+}
+function checkLines(){
+  var out=[], tabs=byTable(), bag=ROOMS[S.room]?ROOMS[S.room].bag:2;
+  var f=floorFor(S.room), feed=FEEDEC[S.room];
+  var allRef=S.rows.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;});
+  var roomMed=allRef.length?med(allRef):null;
+  var strainTabs={};
+  Object.keys(tabs).forEach(function(t){
+    var st=(tabs[t][0].strain||'').trim();
+    if(st) (strainTabs[st]=strainTabs[st]||[]).push(t);
+  });
+  Object.keys(tabs).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    var rr=tabs[t];
+    var ref=rr.filter(function(r){return r.depth==='reference';});
+    var mid=rr.filter(function(r){return r.depth==='mid-bag';});
+    var rv=ref.map(function(r){return r.vwc;});
+    if(!rv.length) return;
+    var tm=med(rv), hrs=parseFloat(rr[0].hrs);
+
+    /* inverted profile — only a fault soon after a shot */
+    if(mid.length && !isNaN(hrs) && hrs<4){
+      var mm=med(mid.map(function(r){return r.vwc;}));
+      if(mm>tm+2) out.push('T'+t+'  mid '+mm.toFixed(0)+' above ref '+tm.toFixed(0)+
+        ' at '+hrs.toFixed(1)+'h — sequence error or stalled wetting front');
+    }
+    /* dilution — EC well under what the room is being fed */
+    if(feed>0){
+      var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
+      if(ecs.length){
+        var em=med(ecs);
+        if(em < feed*0.6 && tm < f+8)
+          out.push('T'+t+'  EC '+em.toFixed(1)+' vs '+feed.toFixed(1)+' feed, moisture '+
+            tm.toFixed(0)+' — dilution, check the valve path');
+      }
+      var zero=ref.filter(function(r){return r.bulk!=null && r.bulk<0.12 && r.vwc<20;}).length;
+      if(zero>=2) out.push({k:'nofeed', t:t, s:'T'+t+'  '+zero+' readings at near-zero EC with low moisture — no feed reaching these bags'});
+    }
+    /* table-level fault — collapsed to a room line below if it is everywhere */
+    var below=rv.filter(function(v){return v<f;}).length;
+    if(below>=Math.ceil(rv.length/2) && below>1)
+      out.push({k:'floor', t:t, s:'T'+t+'  '+below+' of '+rv.length+' below floor — table-level fault'});
+    /* outlier both directions */
+    if(roomMed!=null && Math.abs(tm-roomMed)>=10)
+      out.push('T'+t+'  median '+tm.toFixed(0)+' vs room '+roomMed.toFixed(0)+
+        ' — '+(tm<roomMed?'dry':'wet')+' outlier');
+    /* one table of a strain deviating from its siblings */
+    var st=(rr[0].strain||'').trim();
+    if(st && strainTabs[st] && strainTabs[st].length>=3){
+      var sibs=strainTabs[st].filter(function(x){return x!==t;})
+        .map(function(x){ var v=tabs[x].filter(function(r){return r.depth==='reference';})
+          .map(function(r){return r.vwc;}); return v.length?med(v):null; })
+        .filter(function(x){return x!=null;});
+      if(sibs.length>=2){
+        var sm=med(sibs);
+        if(Math.abs(tm-sm)>=8)
+          out.push('T'+t+'  '+st+' at '+tm.toFixed(0)+' vs '+sm.toFixed(0)+
+            ' on its other tables — delivery, not demand');
+      }
+    }
+  });
+  /* A rule that fires on more than half the tables is describing the room,
+     not a table. Collapse it so the genuine outliers stay visible. */
+  var nT=Object.keys(tabs).length, byKind={}, keep=[];
+  out.forEach(function(o){
+    if(typeof o==='string'){ keep.push(o); return; }
+    (byKind[o.k]=byKind[o.k]||[]).push(o);
+  });
+  Object.keys(byKind).forEach(function(k){
+    var g=byKind[k];
+    if(g.length > nT/2){
+      keep.unshift(k==='floor'
+        ? 'ROOM  '+g.length+' of '+nT+' tables below floor — this is the room, not the tables'
+        : 'ROOM  '+g.length+' of '+nT+' tables at near-zero EC — feed is not reaching this room');
+    } else g.forEach(function(o){ keep.push(o.s); });
+  });
+  return keep;
+}
+function buildWorkbook(){
+  if(!S.rows.length) return '';
+  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag, f=floorFor(S.room);
+  var tabs=byTable();
+  var ref=S.rows.filter(function(r){return r.depth==='reference';});
+  var rv=ref.map(function(r){return r.vwc;});
+  var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
+  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var tm=S.rows[0].time.slice(0,5), hrs=S.rows[0].hrs;
+  var vol=(SCHED_ML&&SCHED_ML[S.room])||null;
+
+  var prevMed=null;
+  try{
+    var ph=getHist().filter(function(x){return x.room===S.room && x.med!=null;});
+    if(ph.length) prevMed=ph[0].med;
+  }catch(e){}
+  var curMed=rv.length?med(rv):null;
+  var delta=(prevMed!=null && curMed!=null)
+    ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
+  var head=S.room+' · DOF '+dofNow(S.room)+' · '+bag+' gal'+
+    (vol?' · '+vol+' mL':'')+
+    (hrs?' · '+hrs+'h':'')+
+    ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
+    ' · '+lows+'/'+S.rows.length+' below floor'+
+    (ecs.length?' · EC '+med(ecs).toFixed(1):'');
+
+  var lines=[];
+  Object.keys(tabs).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    var rr=tabs[t];
+    var rf=rr.filter(function(r){return r.depth==='reference';});
+    var md=rr.filter(function(r){return r.depth==='mid-bag';});
+    if(!rf.length) return;
+    var vals=rf.map(function(r){return r.vwc;});
+    var d1=feelWord(Math.min.apply(null,vals),bag), d2=feelWord(Math.max.apply(null,vals),bag);
+    var desc=(d1===d2)?d1:(d2+'/'+d1);
+    var parts=rf.map(function(r){
+      var p=r.vwc.toFixed(0)+(r.ec!=null?'/'+r.ec.toFixed(2):'');
+      if(r.plant) p+=' '+r.plant;
+      return p;
+    });
+    var line=tm+' '+desc+' '+parts.join(' · ');
+    if(md.length) line+=' — mid '+md.map(function(r){return r.vwc.toFixed(0);}).join(' · ');
+    var st=(rf[0].strain||'').trim(); if(st) line+=' '+st;
+    var fl=rf[0].flags||'';
+    if(fl.indexOf('U')>=0) line+=', underlights';
+    if(fl.indexOf('T')>=0) line+=', saucer';
+    var nt=rowNote(t); if(nt) line+='. '+nt;
+    lines.push(line);
+  });
+
+  var para=tm+' '+(S.rows[0].depth&&S.rows.some(function(r){return r.depth==='mid-bag';})
+      ?'reference + mid':'reference')+' sweep, '+S.side+' side, '+S.dir+
+    ' direction, '+S.rows.length+' stabs'+(hrs?', '+hrs+' hrs since shot':'')+'. Room '+
+    (rv.length?Math.min.apply(null,rv).toFixed(0)+'-'+Math.max.apply(null,rv).toFixed(0):'--')+
+    ', median '+(curMed==null?'--':curMed.toFixed(1))+delta+', '+lows+' of '+S.rows.length+
+    ' below the '+f+' floor.'+(ecs.length?' EC median '+med(ecs).toFixed(1)+
+    ', range '+Math.min.apply(null,ecs).toFixed(2)+'-'+Math.max.apply(null,ecs).toFixed(2)+'.':'')+
+    ' Operator '+S.op+'.';
+
+  var chk=checkLines();
+  return head+'\n\nROW NOTES  (paste down the Row Notes column, one per table)\n'+lines.join('\n')+
+    '\n\nNOTES  (Notes column, spans rows)\n'+para+
+    '\n\nCHECK\n'+(chk.length?chk.join('\n'):'nothing flagged');
+}
+
+function finish(){
+  if(S.finished) return;
+  S.finished=true;
+  S.awaiting=false; clearTimeout(S.rt); S.paused=true;
+  releaseAwake();
+  ['hdr','route','main','pad'].forEach(function(id){$(id).classList.add('hide');});
+  $('pegsheet').classList.add('hide'); $('calsheet').classList.add('hide');
+  $('done').classList.remove('hide');
+  var v=S.rows.filter(function(r){return r.depth==='reference';})
+              .map(function(r){return r.vwc;}).sort(function(a,b){return a-b;});
+  var m=v.length?med(v):null;
+  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var dur=S.startedAt?Date.now()-S.startedAt:0;
+  var clean=(DBG.timeouts===0 && S.skips===0 && S.unstable===0);
+  /* previous same-room sweep for delta + PR */
+  var hist=getHist(), prev=null, pr=null;
+  for(var i=0;i<hist.length;i++){
+    var h=hist[i];
+    if(h.room!==S.room) continue;
+    if(h.mode && h.mode!=='sweep') continue;
+    if(!prev && h.med!=null) prev=h;
+    if(h.clean && h.dur){ if(pr==null||h.dur<pr) pr=h.dur; }
+  }
+  $('dtitle').textContent=S.room+' · '+S.rows.length+' readings';
+  var html='reference median <b class="big">'+(m==null?'--':m.toFixed(1)+'%')+'</b>';
+  if(prev && m!=null){
+    var dm=m-prev.med;
+    html+=' &nbsp;Δ '+(dm>=0?'+':'')+dm.toFixed(1)+' vs '+(prev.when?prev.when.split(',')[0]:'last');
+  }
+  html+='<br>';
+  if(v.length) html+='range '+v[0].toFixed(1)+' – '+v[v.length-1].toFixed(1)+'%<br>';
+  html+='below floor '+lows+' · skips '+S.skips+' · misses '+DBG.timeouts+'<br>';
+  html+='time '+fmtDur(dur);
+  if(S.mode==='sweep'){
+    if(clean){
+      html+=' · <span class="pr">clean ✓</span>';
+      if(pr==null || dur<pr) html+=' <span class="pr">new PR</span>';
+      else html+=' · PR '+fmtDur(pr);
+    }else if(pr!=null) html+=' · PR '+fmtDur(pr);
+  }
+  html+='<br>operator '+S.op+' · side '+S.side;
+  $('stats').innerHTML=html;
+  /* CSV: original 22 columns, then appended */
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms,Retries\n';
+  var body=S.rows.map(function(r){
+    return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
+      r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
+      (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
+      r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries)].join(',');
+  }).join('\n');
+  CSV_TEXT=head+body;
+  CSV_NAME=S.room+'_'+fnameDate()+'.csv';
+  $('csv').value=CSV_TEXT;
+  WB_TEXT=buildWorkbook();
+  $('wb').value=WB_TEXT;
+  try{
+    if(DEMO) throw 0;
+    var h2=getHist();
+    h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
+      n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)),
+      dur:dur, clean:clean, csv:CSV_TEXT, wb:WB_TEXT,
+      notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
+    lsSet('stab_hist',JSON.stringify(h2.slice(0,60)));
+  }catch(e){}
+  clearSession();
+  PREF.lastDir=S.dir; savePrefs();
+  if(!canShareFiles()) $('share').style.display='none';
+  $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
+    ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
+    ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
+    (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
+  showHist();
+  beep('sweepDone');
+}
+function showHist(){
+  var el=$('hist'); if(!el) return;
+  var h=getHist();
+  if(h.length<2){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="hl">earlier sweeps</div>'+h.slice(1).map(function(x,i){
+    return '<button class="hb" data-i="'+(i+1)+'">'+x.room+' · '+x.n+' · '+
+      (x.when?x.when.split(', ')[1]||x.when:'')+'</button>';
+  }).join('');
+  [].forEach.call(el.querySelectorAll('.hb'),function(b){
+    b.onclick=function(){
+      var hh=getHist(), it=hh[+b.dataset.i]; if(!it) return;
+      $('csv').value=it.csv;
+      if(it.wb) $('wb').value=it.wb;
+      var ns=[]; var nn=it.notes||{}, ff=it.free||{};
+      Object.keys(nn).forEach(function(k){ ns.push('T'+k+' '+nn[k]+(ff[k]?'. '+ff[k]:'')); });
+      Object.keys(ff).forEach(function(k){ if(!nn[k]) ns.push('T'+k+' '+ff[k]); });
+      $('histnotes').innerHTML = ns.length
+        ? '<div class="hl">'+it.room+' notes · '+(it.when||'')+'</div>'+
+          ns.map(function(x){return '<div class="hn">'+x+'</div>';}).join('')
+        : '<div class="hl">'+it.room+' · no table notes</div>';
+      var t=$('wb').value?$('wb'):$('csv');
+      t.select();
+      if(navigator.clipboard) navigator.clipboard.writeText(t.value).catch(function(){});
+      toast('loaded '+it.room);
+    };
+  });
+}
+$('share').onclick=function(){
+  if(!CSV_TEXT) return;
+  var f=new File([CSV_TEXT],CSV_NAME,{type:'text/csv'});
+  navigator.share({files:[f]}).then(function(){ S.shared=true; toast('CSV shared'); })
+    .catch(function(){});
+};
+$('copy').onclick=function(){
+  var t=$('csv');
+  t.select(); t.setSelectionRange(0,999999);
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  S.copied=true;
+  if(navigator.clipboard) navigator.clipboard.writeText(t.value)
+    .then(function(){toast('CSV copied');},function(){});
+  else toast(ok?'CSV copied':'select the text and copy');
+};
+$('copywb').onclick=function(){
+  var t=$('wb');
+  t.select(); t.setSelectionRange(0,999999);
+  var ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  S.copied=true;
+  if(navigator.clipboard) navigator.clipboard.writeText(t.value)
+    .then(function(){toast('workbook block copied');},function(){});
+  else toast(ok?'workbook block copied':'select the text and copy');
+};
+$('discard').onclick=function(){
+  if(!confirm('Discard this sweep? '+S.rows.length+' readings will be deleted and no history kept.')) return;
+  try{
+    var h=getHist();
+    if(h.length && h[0].room===S.room){ h.shift(); lsSet('stab_hist',JSON.stringify(h)); }
+  }catch(e){}
+  clearSession();
+  location.reload();
+};
+$('more').onclick=function(){
+  if(S.rows.length && !S.copied && !S.shared &&
+     !confirm('Start a new room? Share or copy the CSV first if you have not.')) return;
+  location.reload();
+};
+
+
+
+/* ============ END OF DAY ROLL-UP ============ */
+function buildEOD(){
+  var d=new Date(), ds=d.toLocaleDateString('en-US');
+  var h=getHist().filter(function(x){ var t=new Date(x.ts||0); t.setHours(0,0,0,0);
+    var dd=new Date(); dd.setHours(0,0,0,0); return t.getTime()===dd.getTime(); });
+  var ev=evToday();
+  var out=['FERTIGATION — '+ds+'  ·  '+(S.op||'')];
+  out.push('');
+  if(h.length){
+    out.push('SWEPT  '+h.length+' room'+(h.length>1?'s':''));
+    h.slice().reverse().forEach(function(x){
+      out.push('  '+x.room+'  median '+(x.med==null?'--':x.med.toFixed(1))+
+        '  ·  '+x.n+' stabs  ·  '+(x.when||'').split(', ')[1]);
+    });
+  } else out.push('SWEPT  none');
+  var shots=ev.filter(function(e){return e.kind==='shot';});
+  if(shots.length){
+    out.push(''); out.push('SHOTS');
+    shots.slice().reverse().forEach(function(e){ out.push('  '+summarizeEv(e)); });
+  }
+  var f=ev.filter(function(e){return e.kind==='fault';});
+  if(f.length){
+    out.push(''); out.push('FAULTS');
+    f.slice().reverse().forEach(function(e){ out.push('  '+faultMsg(e)); });
+  }
+  var b=ev.filter(function(e){return e.kind==='bulb';});
+  if(b.length){
+    out.push(''); out.push('BULBS');
+    b.slice().reverse().forEach(function(e){ out.push('  '+bulbMsg(e)); });
+  }
+  var ro=ev.filter(function(e){return e.kind==='runoff';});
+  if(ro.length){
+    out.push(''); out.push('RUNOFF');
+    ro.slice().reverse().forEach(function(e){ out.push('  '+summarizeEv(e)); });
+  }
+  var openf=getEv().filter(function(e){
+    return (e.kind==='fault'||e.kind==='bulb') && e.status==='open'; });
+  if(openf.length){
+    out.push(''); out.push('STILL OPEN');
+    openf.forEach(function(e){
+      var age=Math.floor((Date.now()-e.ts)/86400000);
+      out.push('  '+(e.kind==='fault'?faultMsg(e):bulbMsg(e))+
+        (age>0?'  ('+age+'d)':'  (today)'));
+    });
+  }
+  /* coverage: rooms not seen in three days */
+  var latest={}; getHist().forEach(function(x){
+    if(!latest[x.room]||x.ts>latest[x.room]) latest[x.room]=x.ts; });
+  var stale=Object.keys(ROOMS).filter(function(k){
+    return !ROOMS[k].kind && (!latest[k] || (Date.now()-latest[k])>3*86400000); });
+  if(stale.length){
+    out.push(''); out.push('NOT SEEN IN 3 DAYS  '+stale.join(' · '));
+  }
+  return out.join('\n');
+}
+
+/* ---------------- log sheet ---------------- */
+var LOGKIND='shot';
+function openLog(kind){
+  LOGKIND=kind||'shot';
+  S.logOpen=true;
+  $('logtop').textContent='Log · '+(S.room||'');
+  drawLog();
+  [].forEach.call(document.querySelectorAll('#logtabs .lgt'),function(b){
+    b.classList.toggle('on', b.dataset.k===LOGKIND);
+    b.onclick=function(){ LOGKIND=b.dataset.k; openLog(LOGKIND); };
+  });
+  $('logsheet').classList.remove('hide');
+}
+function fld(label,inner){ return '<div class="f"><label>'+label+'</label>'+inner+'</div>'; }
+
+/* Room history on the picker — three numbers and any open faults, so the
+   walk to the room primes the brain before the first stab. */
+function showRoomHistory(){
+  var el=$('roomhist'); if(!el) return;
+  if(!S.room || !PREF.showHist){ el.innerHTML=''; return; }
+  var h=getHist().filter(function(x){return x.room===S.room && x.med!=null;}).slice(0,4);
+  var line=h.length
+    ? h.map(function(x){
+        var d=(x.when||'').split(',')[0];
+        return d+' <span class="k">'+x.med.toFixed(1)+'</span>';
+      }).join('  ·  ')
+    : 'no history';
+  var open=getEv().filter(function(e){
+    return e.room===S.room && (e.kind==='fault'||e.kind==='bulb') && e.status==='open'; });
+  var faults=open.length
+    ? '<div class="out">open · '+open.map(function(e){
+        return e.kind==='fault'?faultMsg(e):bulbMsg(e); }).join(' · ')+'</div>'
+    : '';
+  el.innerHTML=line+faults;
+}
+
+function syncModeUI(){
+  var tp=$('triagepick');
+  if(!tp) return;
+  if(S.mode==='triage' && S.room && ROOMS[S.room] && !ROOMS[S.room].kind){
+    tp.classList.remove('hide');
+    var n=ROOMS[S.room].t, h='';
+    for(var t=1;t<=n;t++)
+      h+='<button data-t="'+t+'"'+((S.triage||[]).indexOf(t)>=0?' class="on"':'')+'>'+t+'</button>';
+    $('tpick').innerHTML=h;
+    [].forEach.call($('tpick').children,function(b){
+      b.onclick=function(){
+        var t=+b.dataset.t; S.triage=S.triage||[];
+        var i=S.triage.indexOf(t);
+        if(i>=0) S.triage.splice(i,1); else S.triage.push(t);
+        S.triage.sort(function(x,y){return x-y;});
+        b.classList.toggle('on');
+      };
+    });
+  } else tp.classList.add('hide');
+}
+function drawLog(){
+  var rm=S.room||'', h='';
+  if(LOGKIND==='shot'){
+    h+=fld('room','<input id="lg_room" value="'+rm+'">');
+    h+=fld('tables — blank means whole room','<input id="lg_tables" placeholder="5  or  7,8">');
+    h+=fld('minutes','<input id="lg_min" inputmode="decimal" value="12">');
+    h+=fld('source','<select id="lg_src"><option>feed</option><option>water</option></select>');
+    h+=fld('why','<div class="chips" id="lg_why">'+
+      ['dry','drooping','flagging','wilted','kink fixed','valve fixed','prime','other']
+        .map(function(w){return '<button class="chip" data-w="'+w+'">'+w+'</button>';}).join('')+'</div>');
+    h+=fld('note','<textarea id="lg_note" rows="2"></textarea>');
+  } else if(LOGKIND==='fault'){
+    h+=fld('room','<input id="lg_room" value="'+rm+'">');
+    h+=fld('table — blank if room level','<input id="lg_table" placeholder="5">');
+    h+=fld('what','<div class="chips" id="lg_what">'+
+      ['valve not opening','valve clicks, no flow','leak','kinked line','unhooked dripper',
+       'dual source','no master valve','breaker reset','header crack']
+        .map(function(w){return '<button class="chip" data-w="'+w+'">'+w+'</button>';}).join('')+'</div>');
+    h+=fld('detail','<textarea id="lg_detail" rows="2" placeholder="crack before the screen in the header"></textarea>');
+  } else if(LOGKIND==='bulb'){
+    h+=fld('room','<input id="lg_room" value="'+rm+'">');
+    h+=fld('over which tables','<input id="lg_tables" placeholder="2,3  or  9">');
+    h+=fld('how many out','<input id="lg_n" inputmode="numeric" value="1">');
+    h+=fld('note','<textarea id="lg_note" rows="2"></textarea>');
+  } else {
+    h+=fld('room','<input id="lg_room" value="'+rm+'">');
+    h+=fld('table','<input id="lg_table" placeholder="3">');
+    h+=fld('pass','<select id="lg_pass"><option>1</option><option>2</option><option>3</option></select>');
+    h+=fld('volume mL — dry if none','<input id="lg_vol" placeholder="400 or dry">');
+    h+=fld('runoff EC','<input id="lg_ec" inputmode="decimal" placeholder="6.0">');
+    h+=fld('runoff pH','<input id="lg_ph" inputmode="decimal" placeholder="6.3">');
+  }
+  $('logbody').innerHTML=h;
+  [].forEach.call(document.querySelectorAll('#logbody .chip'),function(b){
+    b.onclick=function(){
+      var p=b.parentNode;
+      if(p.id==='lg_what'){ [].forEach.call(p.children,function(c){c.classList.remove('on');}); }
+      b.classList.toggle('on');
+    };
+  });
+  var recent=getEv().filter(function(e){return e.kind===LOGKIND;}).slice(0,6);
+  $('logrecent').innerHTML = recent.length
+    ? '<div class="hl">recent</div>'+recent.map(function(e){
+        return '<div class="r">'+(e.when||'').split(', ')[1]+'  '+summarizeEv(e)+'</div>'; }).join('')
+    : '';
+}
+function summarizeEv(e){
+  if(e.kind==='shot') return e.room+(e.tables?' T'+e.tables:'')+'  '+e.min+' min '+e.src+
+    (e.ml?'  ~'+e.ml+' mL':'')+(e.why?'  '+e.why:'');
+  if(e.kind==='fault') return faultMsg(e)+(e.status&&e.status!=='open'?'  ['+e.status+']':'');
+  if(e.kind==='bulb') return bulbMsg(e);
+  return e.room+' T'+e.table+' pass '+e.pass+'  '+(e.vol||'')+(e.ec?'  '+e.ec+' EC':'')+(e.ph?' / '+e.ph:'');
+}
+function pick(id){
+  var el=$(id); if(!el) return '';
+  var on=el.querySelector('.chip.on');
+  return on?on.dataset.w:'';
+}
+function pickAll(id){
+  var el=$(id); if(!el) return '';
+  return [].map.call(el.querySelectorAll('.chip.on'),function(b){return b.dataset.w;}).join(' · ');
+}
+function val(id){ var el=$(id); return el?(el.value||'').trim():''; }
+$('logsave').onclick=function(){
+  var room=(val('lg_room')||S.room||'').toUpperCase();
+  if(!room){ toast('room?'); return; }
+  var e;
+  if(LOGKIND==='shot'){
+    var mins=parseFloat(val('lg_min'))||0;
+    if(!mins){ toast('minutes?'); return; }
+    e=addEv({kind:'shot', room:room, tables:val('lg_tables'), min:mins,
+      src:val('lg_src')||'feed', ml:mlFor(room,mins), why:pickAll('lg_why'), note:val('lg_note')});
+  } else if(LOGKIND==='fault'){
+    var what=pick('lg_what');
+    if(!what){ toast('what is wrong?'); return; }
+    e=addEv({kind:'fault', room:room, table:val('lg_table'), what:what,
+      detail:val('lg_detail'), status:'open'});
+    var msg=faultMsg(e);
+    if(navigator.clipboard) navigator.clipboard.writeText(msg).catch(function(){});
+    toast('logged · message copied for Teams');
+    drawLog(); return;
+  } else if(LOGKIND==='bulb'){
+    var n=parseInt(val('lg_n'),10)||1;
+    e=addEv({kind:'bulb', room:room, tables:val('lg_tables'), n:n, note:val('lg_note'), status:'open'});
+    var bm=bulbMsg(e);
+    if(navigator.clipboard) navigator.clipboard.writeText(bm).catch(function(){});
+    toast('logged · message copied for Teams');
+    drawLog(); return;
+  } else {
+    e=addEv({kind:'runoff', room:room, table:val('lg_table'), pass:val('lg_pass'),
+      vol:val('lg_vol'), ec:val('lg_ec'), ph:val('lg_ph')});
+  }
+  toast('logged');
+  drawLog();
+};
+$('logbtn').onclick=function(){ openLog('shot'); };
+$('logbtn2').onclick=function(){ openLog('shot'); };
+$('eodbtn').onclick=function(){
+  var t=buildEOD();
+  S.logOpen=true;
+  $('logtop').textContent='End of day';
+  $('logtabs').style.display='none';
+  $('logbody').innerHTML='<textarea id="eodtext" rows="22" style="font-size:12px;line-height:1.55">'+
+    t.replace(/</g,'&lt;')+'</textarea>';
+  $('logrecent').innerHTML='';
+  $('logsave').textContent='Copy';
+  $('logsave').onclick=function(){
+    var e=$('eodtext'); e.select();
+    if(navigator.clipboard) navigator.clipboard.writeText(e.value).catch(function(){});
+    toast('roll-up copied');
+  };
+  $('logclose').onclick=function(){
+    S.logOpen=false; $('logsheet').classList.add('hide');
+    $('logtabs').style.display=''; $('logsave').textContent='Save';
+    location.reload();
+  };
+  $('logsheet').classList.remove('hide');
+};
+$('logclose').onclick=function(){ S.logOpen=false; $('logsheet').classList.add('hide'); };
+
+/* ---------------- housekeeping loops ---------------- */
+setInterval(function(){
+  if(S.roomStarted && !S.finished){
+    if(S.last) paint();
+    var d=$('dot');
+    if(isConn()){
+      var stale=Date.now()-S.lastAt>9000;
+      d.className='dot '+(stale?'stale':'live');
+      $('statxt').textContent=S.lastAt?(stale?'stale':'live'):'waiting';
+    }
+  }
+  rxFlushStale();
+},1000);
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible') return;
+  if(S.roomStarted && !S.finished){
+    wlAcquire();
+    if(!isConn() && S.dev && !S.connecting && !(S.cal&&CAL.released)){
+      connect();
+    }
+  }
+});
+</script>
+</body>
+</html>
