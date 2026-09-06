@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "eslint": "^10.10.0",
+    "jsdom": "^30.0.1"
+  }
+}

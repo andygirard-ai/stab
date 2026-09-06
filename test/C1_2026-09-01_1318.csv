@@ -1,0 +1,51 @@
+Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms
+9/1/2026,13:06:31,C1,1,front,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,34.4,4.7,0.446,84.0,,"neutral · dark","2349.5 28.9 446 g",APG,direct,,421
+9/1/2026,13:06:42,C1,1,front,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,30.7,2.89,0.192,83.5,,"neutral · dark","2225.8 28.6 192 g",APG,direct,,421
+9/1/2026,13:06:54,C1,1,center,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,27.7,4.72,0.234,83.3,,"neutral · dark","2151.4 28.5 234 g",APG,direct,,421
+9/1/2026,13:07:00,C1,1,center,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,13.8,,0.071,83.3,YES,"neutral · dark","1936.5 28.5 71 g",APG,direct,,421
+9/1/2026,13:07:11,C1,1,header,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,35.7,2.96,0.321,83.3,,"neutral · dark","2407.6 28.5 321 g",APG,direct,,420
+9/1/2026,13:07:17,C1,1,header,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,30.2,4.83,0.306,83.3,,"neutral · dark","2212.5 28.5 306 g",APG,direct,,421
+9/1/2026,13:07:34,C1,2,header,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,35.2,2.95,0.303,83.3,,"","2383.7 28.5 303 g",APG,direct,,420
+9/1/2026,13:07:54,C1,2,header,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,31.4,3.15,0.222,83.1,,"","2244.8 28.4 222 g",APG,direct,,421
+9/1/2026,13:08:05,C1,2,center,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,26.3,3.36,0.144,83.1,,"","2121.9 28.4 144 g",APG,direct,,422
+9/1/2026,13:08:11,C1,2,center,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,18.5,9.44,0.136,83.3,YES,"","1994.5 28.5 136 g",APG,direct,,421
+9/1/2026,13:08:22,C1,2,front,reference,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,31.8,3.22,0.237,83.1,,"","2258.3 28.4 237 g",APG,direct,,420
+9/1/2026,13:08:28,C1,2,front,mid-bag,,"Deep Space #6",,21.9,sweep,up,2,Bio365,standard,22.7,3.5,0.099,83.1,,"","2057.1 28.4 99 g",APG,direct,,421
+9/1/2026,13:08:51,C1,3,front,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,16.5,17.95,0.155,83.7,YES,"","1968.1 28.7 155 g",APG,direct,,422
+9/1/2026,13:08:57,C1,3,front,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,11.5,,0.053,83.7,YES,"","1910.9 28.7 53 g",APG,direct,,420
+9/1/2026,13:09:09,C1,3,center,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,20.1,8.34,0.163,83.7,YES,"","2017.7 28.7 163 g",APG,direct,,420
+9/1/2026,13:09:17,C1,3,center,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,16.5,18.04,0.157,83.8,YES,"","1968.4 28.8 157 g",APG,direct,,421
+9/1/2026,13:09:29,C1,3,header,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,17.4,12.25,0.137,83.7,YES,"","1979.8 28.7 137 g",APG,direct,,452
+9/1/2026,13:09:39,C1,3,header,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,13.7,,0.029,83.7,YES,"","1934.4 28.7 29 g",APG,direct,,421
+9/1/2026,13:10:43,C1,4,header,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,28.6,3.77,0.205,84.4,,"dark · neutral","2172.3 29.1 205 g",APG,direct,,421
+9/1/2026,13:10:50,C1,4,header,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,21.1,4.09,0.093,84.2,YES,"dark · neutral","2031.9 29.0 93 g",APG,direct,,421
+9/1/2026,13:11:08,C1,4,center,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,16.5,22.91,0.198,84.0,YES,"dark · neutral","1968.1 28.9 198 g",APG,direct,,420
+9/1/2026,13:11:14,C1,4,center,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,14.2,,0.184,84.2,YES,"dark · neutral","1941.1 29.0 184 g",APG,direct,,420
+9/1/2026,13:11:25,C1,4,front,reference,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,19.7,6.14,0.111,84.2,YES,"dark · neutral","2011.0 29.0 111 g",APG,direct,,420
+9/1/2026,13:11:30,C1,4,front,mid-bag,,"Pink Passionfruit",,21.9,sweep,up,2,Bio365,standard,14,,0.126,84.2,YES,"dark · neutral","1938.3 29.0 126 g",APG,direct,,421
+9/1/2026,13:12:07,C1,5,front,reference,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,17.9,10.23,0.131,84.4,YES,"","1987.1 29.1 131 g",APG,direct,,420
+9/1/2026,13:12:13,C1,5,front,mid-bag,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,10.8,,0.019,84.4,YES,"","1903.0 29.1 19 g",APG,direct,,420
+9/1/2026,13:12:24,C1,5,center,reference,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,11.2,,0.048,84.4,YES,"","1907.3 29.1 48 g",APG,direct,,450
+9/1/2026,13:12:57,C1,5,center,mid-bag,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,8.1,,0.014,85.1,YES,"","1875.5 29.5 14 g",APG,direct,,420
+9/1/2026,13:13:14,C1,6,header,reference,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,28.9,3.41,0.191,85.3,,"","2179.1 29.6 191 g",APG,direct,,421
+9/1/2026,13:13:20,C1,6,header,mid-bag,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,21,1.99,0.045,85.1,YES,"","2030.8 29.5 45 g",APG,direct,,421
+9/1/2026,13:13:30,C1,6,center,reference,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,19.5,6.6,0.116,84.9,YES,"","2008.5 29.4 116 g",APG,direct,,421
+9/1/2026,13:13:34,C1,6,center,mid-bag,,"Milk Bone",,22.0,sweep,up,2,Bio365,standard,14,,0.037,84.9,YES,"","1938.0 29.4 37 g",APG,direct,,421
+9/1/2026,13:14:39,C1,7,front,reference,,"Blue Nerdz",,22.0,sweep,up,2,Bio365,standard,26.1,4.4,0.186,85.5,,"","2118.1 29.7 186 g",APG,direct,,421
+9/1/2026,13:14:54,C1,7,front,mid-bag,,"Blue Nerdz",,22.0,sweep,up,2,Bio365,standard,16.5,12.55,0.111,85.1,YES,"","1968.9 29.5 111 g",APG,direct,,421
+9/1/2026,13:15:08,C1,7,center,reference,,"Blue Nerdz",,0.0,sweep,up,2,Bio365,standard,28.2,3.49,0.183,84.9,,"","2163.2 29.4 183 g",APG,direct,,421
+9/1/2026,13:15:19,C1,7,center,mid-bag,,"Blue Nerdz",,0.0,sweep,up,2,Bio365,standard,17.3,4.68,0.052,84.9,YES,"","1979.3 29.4 52 g",APG,direct,,421
+9/1/2026,13:15:34,C1,8,center,reference,,"Blue Nerdz",,0.0,sweep,up,2,Bio365,standard,33.1,3.42,0.286,84.7,,"","2300.4 29.3 286 g",APG,direct,,421
+9/1/2026,13:15:43,C1,8,center,mid-bag,,"Blue Nerdz",,0.0,sweep,up,2,Bio365,standard,21,4.3,0.096,84.6,YES,"","2030.0 29.2 96 g",APG,direct,,451
+9/1/2026,13:16:14,C1,9,front,reference,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,14.1,,0.071,84.7,YES,"","1940.1 29.3 71 g",APG,direct,,421
+9/1/2026,13:16:20,C1,9,front,mid-bag,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,11.3,,0.022,84.6,YES,"","1908.2 29.2 22 g",APG,direct,,421
+9/1/2026,13:16:35,C1,9,center,reference,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,18.1,10.67,0.142,84.7,YES,"","1989.3 29.3 142 g",APG,direct,,421
+9/1/2026,13:16:43,C1,9,center,mid-bag,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,11.2,,0.048,84.7,YES,"","1907.6 29.3 48 g",APG,direct,,421
+9/1/2026,13:17:03,C1,10,center,reference,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,17.5,5.73,0.066,84.7,YES,"","1981.2 29.3 66 g",APG,direct,,421
+9/1/2026,13:17:08,C1,10,center,mid-bag,,"Glitter Bomb",,0.0,sweep,up,2,Bio365,standard,12.1,,0.024,84.7,YES,"","1917.5 29.3 24 g",APG,direct,,420
+9/1/2026,13:17:32,C1,11,front,reference,,"Cap Junky",,0.0,sweep,up,2,Bio365,standard,31,3.19,0.219,85.3,,"","2234.8 29.6 219 g",APG,direct,,421
+9/1/2026,13:17:39,C1,11,front,mid-bag,,"Cap Junky",,0.0,sweep,up,2,Bio365,standard,29.5,10.81,0.643,84.9,,"","2194.3 29.4 643 g",APG,direct,,421
+9/1/2026,13:17:53,C1,11,center,reference,,"Cap Junky",,0.0,sweep,up,2,Bio365,standard,28.2,5.16,0.268,84.6,,"","2161.4 29.2 268 g",APG,direct,,421
+9/1/2026,13:17:58,C1,11,center,mid-bag,,"Cap Junky",,0.0,sweep,up,2,Bio365,standard,20.4,8.21,0.169,84.4,YES,"","2022.2 29.1 169 g",APG,direct,,390
+9/1/2026,13:18:10,C1,11,header,reference,,"Cap Junky",,0.1,sweep,up,2,Bio365,standard,28.2,4.86,0.254,84.0,,"","2162.9 28.9 254 g",APG,direct,,420
+9/1/2026,13:18:21,C1,11,header,mid-bag,,"Cap Junky",,0.1,sweep,up,2,Bio365,standard,22.5,6.77,0.188,84.0,,"","2054.3 28.9 188 g",APG,direct,,421

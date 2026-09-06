@@ -1,0 +1,36 @@
+Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms
+9/1/2026,12:08:13,C4,1,front,reference,,"Lemon Cherry Sherbert",,16.9,sweep,up,1.25,Bio365,standard,33.3,3.66,0.305,75.6,,"mites · neutral · dark","2308.0 24.2 305 g",APG,direct,,420
+9/1/2026,12:08:25,C4,1,center,reference,,"Lemon Cherry Sherbert",,16.9,sweep,up,1.25,Bio365,standard,32,3.44,0.253,75.6,,"mites · neutral · dark","2264.4 24.2 253 g",APG,direct,,421
+9/1/2026,12:08:39,C4,1,header,reference,,"Lemon Cherry Sherbert",,16.9,sweep,up,1.25,Bio365,standard,25.6,4.57,0.178,75.6,YES,"mites · neutral · dark","2107.9 24.2 178 g",APG,direct,,421
+9/1/2026,12:09:28,C4,2,header,reference,,"Gello Gelato",,16.9,sweep,up,1.25,Bio365,standard,21,8.78,0.192,76.5,YES,"mites · dark · tip burn","2030.0 24.7 192 g",APG,direct,,420
+9/1/2026,12:10:05,C4,2,center,reference,,"Gello Gelato",,16.9,sweep,up,1.25,Bio365,standard,17.2,7.64,0.08,77.0,YES,"mites · dark · tip burn","1977.4 25.0 80 g",APG,direct,,421
+9/1/2026,12:10:18,C4,2,front,reference,,"Gello Gelato",,16.9,sweep,up,1.25,Bio365,standard,21.6,5.91,0.142,77.0,YES,"mites · dark · tip burn","2039.6 25.0 142 g",APG,direct,,420
+9/1/2026,12:13:02,C4,3,front,reference,,"Gello Gelato",T,17.0,sweep,up,1.25,Bio365,standard,25.8,5.47,0.22,79.0,YES,"neutral · dark","2112.2 26.1 220 g",APG,direct,,420
+9/1/2026,12:13:14,C4,3,center,reference,,"Gello Gelato",T,17.0,sweep,up,1.25,Bio365,standard,12.3,,0.035,79.2,YES,"neutral · dark","1918.9 26.2 35 g",APG,direct,,420
+9/1/2026,12:13:25,C4,3,center,reference,adjacent,"Gello Gelato",T,17.0,sweep,up,1.25,Bio365,standard,22.6,6.1,0.168,79.2,YES,"neutral · dark","2054.9 26.2 168 g",APG,direct,,420
+9/1/2026,12:13:45,C4,3,header,reference,,"Gello Gelato",T,17.0,sweep,up,1.25,Bio365,standard,15.8,15.21,0.104,79.0,YES,"neutral · dark","1960.2 26.1 104 g",APG,direct,,420
+9/1/2026,12:14:05,C4,4,header,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,22.7,5.84,0.164,79.3,YES,"praying · interveinal · tight","2057.4 26.3 164 g",APG,direct,,451
+9/1/2026,12:14:19,C4,4,center,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,13.7,,0.043,79.3,YES,"praying · interveinal · tight","1935.1 26.3 43 g",APG,direct,,421
+9/1/2026,12:14:31,C4,4,center,reference,adjacent,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,11.5,,0.08,79.5,YES,"praying · interveinal · tight","1910.3 26.4 80 g",APG,direct,,420
+9/1/2026,12:14:44,C4,4,front,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,17.1,7.57,0.079,79.5,YES,"praying · interveinal · tight","1976.9 26.4 79 g",APG,direct,,421
+9/1/2026,12:15:21,C4,5,front,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,18.7,6.12,0.092,79.5,YES,"praying · interveinal","1998.1 26.4 92 g",APG,direct,,421
+9/1/2026,12:15:36,C4,5,center,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,19.5,6.93,0.12,79.9,YES,"praying · interveinal","2008.4 26.6 120 g",APG,direct,,420
+9/1/2026,12:15:49,C4,5,header,reference,,"Chemdawg x Rainbowbeltz",,17.0,sweep,up,1.25,Bio365,standard,14.8,,0.077,79.9,YES,"praying · interveinal","1947.3 26.6 77 g",APG,direct,,421
+9/1/2026,12:16:07,C4,6,header,reference,,"Young Gong",T,17.0,sweep,up,1.25,Bio365,standard,20.3,5.9,0.118,80.2,YES,"praying · dark · tight","2020.5 26.8 118 g",APG,direct,,420
+9/1/2026,12:16:29,C4,6,center,reference,,"Young Gong",T,17.0,sweep,up,1.25,Bio365,standard,24.6,4.79,0.17,80.2,YES,"praying · dark · tight","2090.4 26.8 170 g",APG,direct,,421
+9/1/2026,12:16:46,C4,6,front,reference,,"Young Gong",T,17.0,sweep,up,1.25,Bio365,standard,27.9,3.74,0.187,80.4,YES,"praying · dark · tight","2155.0 26.9 187 g",APG,direct,,421
+9/1/2026,12:17:42,C4,7,front,reference,,"Petro Chem",,17.0,sweep,up,1.25,Bio365,standard,30.8,3,0.199,81.1,,"tip burn · tight · neutral","2227.9 27.3 199 g",APG,direct,,420
+9/1/2026,12:17:53,C4,7,center,reference,,"Petro Chem",,17.0,sweep,up,1.25,Bio365,standard,21,5.4,0.121,81.0,YES,"tip burn · tight · neutral","2031.2 27.2 121 g",APG,direct,,421
+9/1/2026,12:18:03,C4,7,header,reference,,"Petro Chem",,17.1,sweep,up,1.25,Bio365,standard,25.7,6.71,0.27,81.0,YES,"tip burn · tight · neutral","2111.2 27.2 270 g",APG,direct,,421
+9/1/2026,12:18:32,C4,8,header,reference,,"Purple Flamingo",,17.1,sweep,up,1.25,Bio365,standard,40.8,3.83,0.69,81.1,,"","2658.2 27.3 690 g",APG,direct,,421
+9/1/2026,12:18:43,C4,8,center,reference,,"Purple Flamingo",,17.1,sweep,up,1.25,Bio365,standard,32.3,3.84,0.295,80.8,,"","2274.3 27.1 295 g",APG,direct,,420
+9/1/2026,12:18:58,C4,8,front,reference,,"Purple Flamingo",,17.1,sweep,up,1.25,Bio365,standard,40.7,3.91,0.701,80.8,,"","2656.3 27.1 701 g",APG,direct,,420
+9/1/2026,12:19:23,C4,9,front,reference,,"OG Hurricane",T,17.1,sweep,up,1.25,Bio365,standard,26.8,4.31,0.193,80.6,YES,"praying · dark","2131.5 27.0 193 g",APG,direct,,421
+9/1/2026,12:21:30,C4,9,center,reference,,"OG Hurricane",T,17.1,sweep,up,1.25,Bio365,standard,24.6,3.58,0.127,82.0,YES,"praying · dark","2089.3 27.8 127 g",APG,direct,,421
+9/1/2026,12:21:53,C4,9,header,reference,,"OG Hurricane",T,17.1,sweep,up,1.25,Bio365,standard,27.3,4.89,0.232,82.4,YES,"praying · dark","2142.6 28.0 232 g",APG,direct,,418
+9/1/2026,12:22:11,C4,10,header,reference,,"OG Hurricane",,17.1,sweep,up,1.25,Bio365,standard,16.7,8.93,0.082,82.0,YES,"neutral · dark","1970.8 27.8 82 g",APG,direct,,421
+9/1/2026,12:22:24,C4,10,center,reference,,"OG Hurricane",,17.1,sweep,up,1.25,Bio365,standard,24.3,4.01,0.138,82.0,YES,"neutral · dark","2084.8 27.8 138 g",APG,direct,,421
+9/1/2026,12:22:34,C4,10,front,reference,,"OG Hurricane",,17.1,sweep,up,1.25,Bio365,standard,21.1,4.22,0.096,81.9,YES,"neutral · dark","2032.5 27.7 96 g",APG,direct,,421
+9/1/2026,12:23:05,C4,11,front,reference,,"King Clem",,17.1,sweep,up,1.25,Bio365,standard,34.7,3.23,0.314,82.0,,"","2361.9 27.8 314 g",APG,direct,,422
+9/1/2026,12:23:17,C4,11,center,reference,,"King Clem",,17.1,sweep,up,1.25,Bio365,standard,31,3.52,0.239,81.9,,"","2233.8 27.7 239 g",APG,direct,,421
+9/1/2026,12:23:32,C4,11,header,reference,,"King Clem",,17.1,sweep,up,1.25,Bio365,standard,30.9,4.94,0.331,81.9,,"","2230.0 27.7 331 g",APG,direct,,421

@@ -1,0 +1,67 @@
+Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms
+9/1/2026,12:44:29,C2,1,front,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,37.6,3.13,0.413,81.0,,"","2502.5 27.2 413 g",APG,direct,,420
+9/1/2026,12:44:33,C2,1,front,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,31.8,2.65,0.193,81.0,,"","2256.9 27.2 193 g",APG,direct,,421
+9/1/2026,12:44:48,C2,1,center,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,36.4,4.14,0.481,80.8,,"","2442.2 27.1 481 g",APG,direct,,420
+9/1/2026,12:44:53,C2,1,center,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,33.5,3.23,0.277,80.8,,"","2314.1 27.1 277 g",APG,direct,,420
+9/1/2026,12:45:12,C2,1,header,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,36.3,4.68,0.537,80.6,,"","2436.5 27.0 537 g",APG,direct,,420
+9/1/2026,12:45:23,C2,1,header,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,33.7,3.96,0.347,80.6,,"","2322.1 27.0 347 g",APG,direct,,421
+9/1/2026,12:45:50,C2,2,header,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,38.1,4.55,0.635,80.6,,"","2530.6 27.0 635 g",APG,direct,,421
+9/1/2026,12:45:56,C2,2,header,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,37.6,4.27,0.565,80.6,,"","2504.2 27.0 565 g",APG,direct,,421
+9/1/2026,12:46:09,C2,2,center,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,34.4,5.44,0.512,80.2,,"","2350.7 26.8 512 g",APG,direct,,452
+9/1/2026,12:46:16,C2,2,center,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,31.5,3.19,0.225,80.4,,"","2247.3 26.9 225 g",APG,direct,,390
+9/1/2026,12:46:29,C2,2,front,reference,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,38.6,3.29,0.483,80.4,,"","2555.2 26.9 483 g",APG,direct,,421
+9/1/2026,12:46:41,C2,2,front,mid-bag,,"Deep Space #6",,21.5,sweep,up,2,Bio365,standard,35.2,2.97,0.304,80.4,,"","2385.8 26.9 304 g",APG,direct,,419
+9/1/2026,12:50:09,C2,3,front,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,35.7,4.56,0.491,82.0,,"praying · dark · interveinal","2405.5 27.8 491 g",APG,direct,,421
+9/1/2026,12:50:14,C2,3,front,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,32.1,3.02,0.228,82.0,,"praying · dark · interveinal","2268.0 27.8 228 g",APG,direct,,451
+9/1/2026,12:50:28,C2,3,center,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,27,2.47,0.114,82.0,,"praying · dark · interveinal","2137.3 27.8 114 g",APG,direct,,421
+9/1/2026,12:50:33,C2,3,center,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,21.6,1.93,0.047,82.0,YES,"praying · dark · interveinal","2039.9 27.8 47 g",APG,direct,,421
+9/1/2026,12:50:44,C2,3,header,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,29.3,4.66,0.27,82.2,,"praying · dark · interveinal","2189.3 27.9 270 g",APG,direct,,421
+9/1/2026,12:50:49,C2,3,header,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,20.5,3.84,0.08,82.2,YES,"praying · dark · interveinal","2023.8 27.9 80 g",APG,direct,,421
+9/1/2026,12:51:09,C2,4,header,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,31.1,3.01,0.206,82.6,,"interveinal · praying · dark","2236.0 28.1 206 g",APG,direct,,420
+9/1/2026,12:51:14,C2,4,header,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,27.3,3.71,0.177,82.6,,"interveinal · praying · dark","2143.4 28.1 177 g",APG,direct,,421
+9/1/2026,12:51:28,C2,4,center,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,22.6,6.05,0.168,82.4,,"interveinal · praying · dark","2054.9 28.0 168 g",APG,direct,,420
+9/1/2026,12:51:36,C2,4,center,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,16.6,6.73,0.06,82.6,YES,"interveinal · praying · dark","1969.5 28.1 60 g",APG,direct,,420
+9/1/2026,12:51:48,C2,4,front,reference,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,26,4.99,0.207,82.6,,"interveinal · praying · dark","2115.8 28.1 207 g",APG,direct,,421
+9/1/2026,12:52:00,C2,4,front,mid-bag,,"Milk Bone",,21.6,sweep,up,2,Bio365,standard,16.9,7.28,0.071,82.4,YES,"interveinal · praying · dark","1973.4 28.0 71 g",APG,direct,,420
+9/1/2026,12:52:29,C2,5,front,reference,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,34.6,4.9,0.473,82.8,,"","2358.3 28.2 473 g",APG,direct,,420
+9/1/2026,12:52:34,C2,5,front,mid-bag,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,33.9,3.75,0.336,82.9,,"","2328.8 28.3 336 g",APG,direct,,420
+9/1/2026,12:52:47,C2,5,center,reference,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,33.6,5.43,0.472,82.9,,"","2317.1 28.3 472 g",APG,direct,,420
+9/1/2026,12:52:52,C2,5,center,mid-bag,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,26.4,4.6,0.199,83.1,,"","2123.6 28.4 199 g",APG,direct,,420
+9/1/2026,12:53:09,C2,5,header,reference,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,34.3,7.96,0.744,82.9,,"","2345.2 28.3 744 g",APG,direct,,420
+9/1/2026,12:53:15,C2,5,header,mid-bag,,"Cherry Paloma",,21.6,sweep,up,2,Bio365,standard,30.7,3.59,0.237,82.9,,"","2224.7 28.3 237 g",APG,direct,,420
+9/1/2026,12:53:30,C2,6,header,reference,,"Hot Sauce",,21.6,sweep,up,2,Bio365,standard,27,4.75,0.219,82.9,,"drooping · dark","2136.5 28.3 219 g",APG,direct,,421
+9/1/2026,12:53:52,C2,6,header,mid-bag,,"Hot Sauce",,21.6,sweep,up,2,Bio365,standard,17.9,11.19,0.143,82.9,YES,"drooping · dark","1987.2 28.3 143 g",APG,direct,,421
+9/1/2026,12:54:04,C2,6,center,reference,,"Hot Sauce",,21.7,sweep,up,2,Bio365,standard,18.2,8.83,0.119,83.1,YES,"drooping · dark","1990.3 28.4 119 g",APG,direct,,421
+9/1/2026,12:54:09,C2,6,center,mid-bag,,"Hot Sauce",,21.7,sweep,up,2,Bio365,standard,15.5,,0.073,83.3,YES,"drooping · dark","1955.9 28.5 73 g",APG,direct,,421
+9/1/2026,12:54:23,C2,6,front,reference,,"Hot Sauce",,21.7,sweep,up,2,Bio365,standard,24.4,7.87,0.274,83.5,,"drooping · dark","2085.9 28.6 274 g",APG,direct,,421
+9/1/2026,12:54:30,C2,6,front,mid-bag,,"Hot Sauce",,21.7,sweep,up,2,Bio365,standard,20.8,5.71,0.125,83.5,YES,"drooping · dark","2028.2 28.6 125 g",APG,direct,,421
+9/1/2026,12:55:16,C2,7,front,reference,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,24.5,5.83,0.207,83.8,,"neutral · dark","2088.8 28.8 207 g",APG,direct,,421
+9/1/2026,12:55:22,C2,7,front,mid-bag,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,20.6,6.45,0.136,83.8,YES,"neutral · dark","2024.5 28.8 136 g",APG,direct,,421
+9/1/2026,12:55:36,C2,7,center,reference,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,20.6,9.75,0.205,83.7,YES,"neutral · dark","2024.3 28.7 205 g",APG,direct,,421
+9/1/2026,12:55:44,C2,7,center,mid-bag,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,16.5,14.78,0.128,83.8,YES,"neutral · dark","1968.2 28.8 128 g",APG,direct,,420
+9/1/2026,12:55:53,C2,7,header,reference,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,25.2,5.39,0.206,83.8,,"neutral · dark","2101.0 28.8 206 g",APG,direct,,421
+9/1/2026,12:56:02,C2,7,header,mid-bag,,"Hot sauce",,21.7,sweep,up,2,Bio365,standard,17.2,4.61,0.05,83.8,YES,"neutral · dark","1978.2 28.8 50 g",APG,direct,,420
+9/1/2026,12:56:25,C2,8,header,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,25.5,4.75,0.187,83.8,,"","2106.1 28.8 187 g",APG,direct,,421
+9/1/2026,12:56:30,C2,8,header,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,23.4,4.12,0.128,83.8,,"","2069.2 28.8 128 g",APG,direct,,421
+9/1/2026,12:56:52,C2,8,center,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,30.7,4.05,0.269,83.8,,"","2226.1 28.8 269 g",APG,direct,,420
+9/1/2026,12:56:59,C2,8,center,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,23.5,3.91,0.122,83.8,,"","2069.7 28.8 122 g",APG,direct,,391
+9/1/2026,12:57:11,C2,8,front,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,26.3,6.96,0.299,83.8,,"","2121.8 28.8 299 g",APG,direct,,421
+9/1/2026,12:57:16,C2,8,front,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,19.2,8.4,0.14,83.7,YES,"","2004.7 28.7 140 g",APG,direct,,420
+9/1/2026,12:57:46,C2,9,front,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,32.7,4.84,0.391,84.4,,"","2288.4 29.1 391 g",APG,direct,,420
+9/1/2026,12:57:52,C2,9,front,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,28.5,3.22,0.172,84.0,,"","2168.4 28.9 172 g",APG,direct,,421
+9/1/2026,12:58:05,C2,9,center,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,28,4.24,0.217,84.0,,"","2158.3 28.9 217 g",APG,direct,,421
+9/1/2026,12:58:10,C2,9,center,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,28.9,2.77,0.155,84.0,,"","2179.4 28.9 155 g",APG,direct,,420
+9/1/2026,12:58:25,C2,9,header,reference,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,30.2,5.16,0.325,83.8,,"","2210.8 28.8 325 g",APG,direct,,420
+9/1/2026,12:58:30,C2,9,header,mid-bag,,"Banana Kush",,21.7,sweep,up,2,Bio365,standard,25.1,3.32,0.125,83.8,,"","2098.1 28.8 125 g",APG,direct,,421
+9/1/2026,12:58:41,C2,10,header,reference,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,33.6,4.57,0.402,83.8,,"","2320.0 28.8 402 g",APG,direct,,420
+9/1/2026,12:58:46,C2,10,header,mid-bag,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,28.2,3.85,0.201,83.8,,"","2163.2 28.8 201 g",APG,direct,,421
+9/1/2026,12:59:00,C2,10,center,reference,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,36.4,3.51,0.409,84.0,,"","2439.5 28.9 409 g",APG,direct,,420
+9/1/2026,12:59:11,C2,10,center,mid-bag,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,32.7,2.57,0.206,84.0,,"","2285.9 28.9 206 g",APG,direct,,421
+9/1/2026,12:59:24,C2,10,front,reference,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,32.9,3.28,0.268,83.8,,"","2292.9 28.8 268 g",APG,direct,,421
+9/1/2026,12:59:29,C2,10,front,mid-bag,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,28.3,3.34,0.176,83.8,,"","2165.2 28.8 176 g",APG,direct,,421
+9/1/2026,12:59:46,C2,11,front,reference,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,38.2,3.63,0.514,83.8,,"","2532.8 28.8 514 g",APG,direct,,421
+9/1/2026,12:59:52,C2,11,front,mid-bag,,"Ethanol #33",,21.7,sweep,up,2,Bio365,standard,35.4,3.53,0.371,83.8,,"","2393.0 28.8 371 g",APG,direct,,421
+9/1/2026,13:00:06,C2,11,center,reference,,"Ethanol #33",,21.8,sweep,up,2,Bio365,standard,28.2,5.16,0.269,83.7,,"","2162.6 28.7 269 g",APG,direct,,421
+9/1/2026,13:00:12,C2,11,center,mid-bag,,"Ethanol #33",,21.8,sweep,up,2,Bio365,standard,28.9,3.9,0.218,83.7,,"","2179.2 28.7 218 g",APG,direct,,421
+9/1/2026,13:00:23,C2,11,header,reference,,"Ethanol #33",,21.8,sweep,up,2,Bio365,standard,33.7,4.21,0.374,83.7,,"","2324.4 28.7 374 g",APG,direct,,421
+9/1/2026,13:00:34,C2,11,header,mid-bag,,"Ethanol #33",,21.8,sweep,up,2,Bio365,standard,31,3.21,0.219,83.5,,"","2233.8 28.6 219 g",APG,direct,,421

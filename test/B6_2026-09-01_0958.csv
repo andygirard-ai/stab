@@ -1,0 +1,67 @@
+Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms
+9/1/2026,09:30:53,B6,1,front,reference,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,40.5,5.13,0.903,81.1,,"","2646.3 27.3 903 g",APG,direct,,420
+9/1/2026,09:30:58,B6,1,front,mid-bag,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,36.6,3.43,0.409,81.1,,"","2453.4 27.3 409 g",APG,direct,,420
+9/1/2026,09:31:11,B6,1,center,reference,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,45.6,6.29,1.574,80.6,,"","2820.3 27.0 1574 g",APG,direct,,451
+9/1/2026,09:31:16,B6,1,center,mid-bag,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,31.9,6.99,0.516,80.6,,"","2261.6 27.0 516 g",APG,direct,,421
+9/1/2026,09:31:30,B6,1,header,reference,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,41.3,4.53,0.854,80.6,,"","2681.3 27.0 854 g",APG,direct,,420
+9/1/2026,09:31:35,B6,1,header,mid-bag,,"Pineapple Kush",,6.3,sweep,up,2,Bio365,standard,35,5.34,0.536,80.6,,"","2376.8 27.0 536 g",APG,direct,,420
+9/1/2026,09:31:50,B6,2,header,reference,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,37.1,6.13,0.77,80.4,,"","2478.8 26.9 770 g",APG,direct,,420
+9/1/2026,09:31:55,B6,2,header,mid-bag,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,28,3.09,0.157,80.2,,"","2158.7 26.8 157 g",APG,direct,,420
+9/1/2026,09:32:26,B6,2,center,reference,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,37.1,6.46,0.808,80.4,,"","2477.0 26.9 808 g",APG,direct,,420
+9/1/2026,09:32:32,B6,2,center,mid-bag,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,34,3.77,0.34,80.6,,"","2333.0 27.0 340 g",APG,direct,,420
+9/1/2026,09:32:52,B6,2,front,reference,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,34.9,5.87,0.584,81.0,,"","2373.1 27.2 584 g",APG,direct,,421
+9/1/2026,09:32:57,B6,2,front,mid-bag,,"Walkabout",,6.3,sweep,up,2,Bio365,standard,31.5,2.96,0.211,81.1,,"","2249.2 27.3 211 g",APG,direct,,451
+9/1/2026,09:38:28,B6,3,front,reference,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,41.5,6.38,1.224,82.2,,"","2688.0 27.9 1224 g",APG,direct,,452
+9/1/2026,09:38:34,B6,3,front,mid-bag,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,37.5,4.77,0.627,82.0,,"","2499.3 27.8 627 g",APG,direct,,420
+9/1/2026,09:39:04,B6,3,center,reference,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,39,5.83,0.894,82.4,,"","2575.3 28.0 894 g",APG,direct,,420
+9/1/2026,09:39:09,B6,3,center,mid-bag,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,35.7,4.85,0.524,82.4,,"","2407.0 28.0 524 g",APG,direct,,419
+9/1/2026,09:39:27,B6,3,header,reference,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,44.8,3.87,0.928,82.4,,"","2798.1 28.0 928 g",APG,direct,,420
+9/1/2026,09:39:32,B6,3,header,mid-bag,,"GMO Punch",,6.4,sweep,up,2,Bio365,standard,39.4,3.7,0.589,82.2,,"","2594.0 27.9 589 g",APG,direct,,420
+9/1/2026,09:39:52,B6,4,header,reference,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,37.8,4,0.544,82.0,,"","2515.6 27.8 544 g",APG,direct,,420
+9/1/2026,09:39:57,B6,4,header,mid-bag,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,31.1,3.37,0.232,82.2,,"","2237.9 27.9 232 g",APG,direct,,420
+9/1/2026,09:40:16,B6,4,center,reference,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,36.4,4.89,0.57,82.4,,"","2441.0 28.0 570 g",APG,direct,,420
+9/1/2026,09:40:21,B6,4,center,mid-bag,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,30.7,2.66,0.176,82.6,,"","2225.3 28.1 176 g",APG,direct,,421
+9/1/2026,09:40:37,B6,4,front,reference,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,23.8,10.27,0.333,82.8,,"","2075.5 28.2 333 g",APG,direct,,421
+9/1/2026,09:40:49,B6,4,front,mid-bag,,"GMO Punch",U,6.4,sweep,up,2,Bio365,standard,26.6,6.78,0.3,83.1,,"","2128.1 28.4 300 g",APG,direct,,421
+9/1/2026,09:42:03,B6,5,front,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,11.5,,0.056,83.7,YES,"neutral · yellowing","1910.6 28.7 56 g",APG,direct,,421
+9/1/2026,09:42:09,B6,5,front,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,15.5,,0.115,83.7,YES,"neutral · yellowing","1956.1 28.7 115 g",APG,direct,,421
+9/1/2026,09:42:47,B6,5,center,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,8.4,,0.007,83.5,YES,"neutral · yellowing","1878.7 28.6 7 g",APG,direct,,420
+9/1/2026,09:42:53,B6,5,center,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,11.9,,0.046,83.7,YES,"neutral · yellowing","1914.3 28.7 46 g",APG,direct,,419
+9/1/2026,09:43:07,B6,5,header,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,10.6,,0.016,83.5,YES,"neutral · yellowing","1900.4 28.6 16 g",APG,direct,,420
+9/1/2026,09:43:12,B6,5,header,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,14.1,,0.098,83.5,YES,"neutral · yellowing","1939.5 28.6 98 g",APG,direct,,420
+9/1/2026,09:45:03,B6,6,header,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,41.9,5.02,0.993,82.8,,"neutral · dark · mites","2703.0 28.2 993 g",APG,direct,,420
+9/1/2026,09:45:09,B6,6,header,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,38.1,3.51,0.49,82.8,,"neutral · dark · mites","2528.0 28.2 490 g",APG,direct,,420
+9/1/2026,09:45:21,B6,6,center,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,40.3,4.94,0.858,82.6,,"neutral · dark · mites","2637.7 28.1 858 g",APG,direct,,420
+9/1/2026,09:45:25,B6,6,center,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,36.3,4.65,0.535,82.8,,"neutral · dark · mites","2435.2 28.2 535 g",APG,direct,,419
+9/1/2026,09:45:37,B6,6,front,reference,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,38.6,4.85,0.714,82.8,,"neutral · dark · mites","2553.7 28.2 714 g",APG,direct,,420
+9/1/2026,09:45:43,B6,6,front,mid-bag,,"Super Boof",,6.5,sweep,up,2,Bio365,standard,35.4,5.34,0.559,82.8,,"neutral · dark · mites","2392.8 28.2 559 g",APG,direct,,421
+9/1/2026,09:51:30,B6,7,front,reference,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,38.3,5.7,0.821,86.9,,"mites","2537.8 30.5 821 g",APG,direct,,420
+9/1/2026,09:51:35,B6,7,front,mid-bag,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,31.9,3.6,0.27,86.7,,"mites","2261.0 30.4 270 g",APG,direct,,420
+9/1/2026,09:51:54,B6,7,center,reference,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,38.2,5.28,0.751,85.8,,"mites","2533.1 29.9 751 g",APG,direct,,419
+9/1/2026,09:51:58,B6,7,center,mid-bag,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,35.5,3.49,0.372,85.8,,"mites","2397.1 29.9 372 g",APG,direct,,421
+9/1/2026,09:52:22,B6,7,header,reference,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,38.5,5.88,0.864,85.5,,"mites","2549.1 29.7 864 g",APG,direct,,419
+9/1/2026,09:52:27,B6,7,header,mid-bag,,"Blue Nerdz",,6.6,sweep,up,2,Bio365,standard,35.5,4.19,0.447,85.1,,"mites","2398.2 29.5 447 g",APG,direct,,421
+9/1/2026,09:52:45,B6,8,header,reference,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,44.6,4.54,1.086,84.7,,"","2793.7 29.3 1086 g",APG,direct,,450
+9/1/2026,09:52:50,B6,8,header,mid-bag,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,37.4,4.21,0.548,84.7,,"","2491.0 29.3 548 g",APG,direct,,420
+9/1/2026,09:53:07,B6,8,center,reference,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,46.9,2.79,0.757,84.4,,"","2853.0 29.1 757 g",APG,direct,,421
+9/1/2026,09:53:13,B6,8,center,mid-bag,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,38.2,3.2,0.454,84.6,,"","2533.7 29.2 454 g",APG,direct,,420
+9/1/2026,09:53:35,B6,8,front,reference,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,41.5,4.19,0.81,84.9,,"","2688.2 29.4 810 g",APG,direct,,420
+9/1/2026,09:53:41,B6,8,front,mid-bag,,"Banana Kush",TU,6.6,sweep,up,2,Bio365,standard,36.5,3.51,0.417,84.9,,"","2446.8 29.4 417 g",APG,direct,,421
+9/1/2026,09:54:08,B6,9,front,reference,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,47.3,3.14,0.87,84.9,,"","2862.1 29.4 870 g",APG,direct,,419
+9/1/2026,09:54:12,B6,9,front,mid-bag,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,40.1,2.79,0.479,84.6,,"","2629.8 29.2 479 g",APG,direct,,422
+9/1/2026,09:54:26,B6,9,center,reference,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,39.8,5.03,0.84,84.2,,"","2615.4 29.0 840 g",APG,direct,,420
+9/1/2026,09:54:42,B6,9,center,mid-bag,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,39,3.53,0.544,84.4,,"","2574.6 29.1 544 g",APG,direct,,422
+9/1/2026,09:55:05,B6,9,header,reference,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,41.6,3.85,0.753,84.7,,"","2693.8 29.3 753 g",APG,direct,,420
+9/1/2026,09:55:17,B6,9,header,mid-bag,,"Banana Kush",,6.7,sweep,up,2,Bio365,standard,38.6,3.02,0.447,84.6,,"","2553.5 29.2 447 g",APG,direct,,423
+9/1/2026,09:55:50,B6,10,header,reference,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,39.1,5.26,0.823,84.9,,"","2581.4 29.4 823 g",APG,direct,,419
+9/1/2026,09:56:02,B6,10,header,mid-bag,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,34.2,2.95,0.275,84.4,,"","2342.9 29.1 275 g",APG,direct,,420
+9/1/2026,09:56:50,B6,10,center,reference,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,38.5,5.6,0.823,84.0,,"","2551.8 28.9 823 g",APG,direct,,421
+9/1/2026,09:56:56,B6,10,center,mid-bag,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,32.6,3.91,0.311,84.0,,"","2283.8 28.9 311 g",APG,direct,,420
+9/1/2026,09:57:08,B6,10,front,reference,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,45.3,4.65,1.157,84.0,,"","2813.5 28.9 1157 g",APG,direct,,449
+9/1/2026,09:57:19,B6,10,front,mid-bag,,"Walkabout",,6.7,sweep,up,2,Bio365,standard,37.2,5.23,0.67,83.8,,"","2484.3 28.8 670 g",APG,direct,,421
+9/1/2026,09:57:34,B6,11,front,reference,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,44.9,3.92,0.95,83.5,,"","2800.6 28.6 950 g",APG,direct,,420
+9/1/2026,09:57:39,B6,11,front,mid-bag,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,38.7,4.14,0.62,83.5,,"","2561.0 28.6 620 g",APG,direct,,421
+9/1/2026,09:57:50,B6,11,center,reference,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,36.1,9.13,1.035,82.9,,"","2427.7 28.3 1035 g",APG,direct,,450
+9/1/2026,09:57:54,B6,11,center,mid-bag,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,35.5,5.64,0.599,83.1,,"","2398.5 28.4 599 g",APG,direct,,420
+9/1/2026,09:58:07,B6,11,header,reference,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,47.1,5.01,1.362,82.9,,"","2856.4 28.3 1362 g",APG,direct,,447
+9/1/2026,09:58:10,B6,11,header,mid-bag,,"Pineapple Kush",,6.7,sweep,up,2,Bio365,standard,37.7,5.38,0.725,82.9,,"","2509.7 28.3 725 g",APG,direct,,389

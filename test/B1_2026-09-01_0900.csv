@@ -1,0 +1,67 @@
+Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Operator,Frame,Batt,Lat ms
+9/1/2026,08:34:49,B1,1,front,reference,,"Mikado",,5.3,sweep,up,2,Bio365,standard,52.3,2.54,0.852,76.8,,"","2958.6 24.9 852 g",APG,direct,,421
+9/1/2026,08:34:55,B1,1,front,mid-bag,,"Mikado",,5.3,sweep,up,2,Bio365,standard,41.3,3.09,0.577,77.2,,"","2681.1 25.1 577 g",APG,direct,,420
+9/1/2026,08:35:11,B1,1,center,reference,,"Mikado",,5.3,sweep,up,2,Bio365,standard,35.4,4.02,0.416,77.4,,"","2393.3 25.2 416 g",APG,direct,,421
+9/1/2026,08:35:18,B1,1,center,mid-bag,,"Mikado",,5.3,sweep,up,2,Bio365,standard,33.5,2.98,0.255,77.5,,"","2316.1 25.3 255 g",APG,direct,,421
+9/1/2026,08:35:34,B1,1,header,reference,,"Mikado",,5.3,sweep,up,2,Bio365,standard,44.1,3.22,0.734,77.7,,"","2779.6 25.4 734 g",APG,direct,,420
+9/1/2026,08:35:40,B1,1,header,mid-bag,,"Mikado",,5.3,sweep,up,2,Bio365,standard,39.8,2.76,0.452,77.9,,"","2614.0 25.5 452 g",APG,direct,,421
+9/1/2026,08:35:56,B1,2,header,reference,,"Mikado",,5.3,sweep,up,2,Bio365,standard,35.5,5.76,0.602,77.9,,"","2397.4 25.5 602 g",APG,direct,,421
+9/1/2026,08:36:01,B1,2,header,mid-bag,,"Mikado",,5.4,sweep,up,2,Bio365,standard,31.6,5.07,0.361,78.1,,"","2251.9 25.6 361 g",APG,direct,,421
+9/1/2026,08:36:10,B1,2,center,reference,,"Mikado",,5.4,sweep,up,2,Bio365,standard,31.7,2,0.144,78.1,,"","2255.7 25.6 144 g",APG,direct,,421
+9/1/2026,08:36:16,B1,2,center,mid-bag,,"Mikado",,5.4,sweep,up,2,Bio365,standard,25.4,3.1,0.12,78.4,,"","2105.3 25.8 120 g",APG,direct,,420
+9/1/2026,08:36:27,B1,2,front,reference,,"Mikado",,5.4,sweep,up,2,Bio365,standard,31.3,4.38,0.302,78.4,,"","2241.5 25.8 302 g",APG,direct,,420
+9/1/2026,08:36:33,B1,2,front,mid-bag,,"Mikado",,5.4,sweep,up,2,Bio365,standard,27.8,4.99,0.246,78.6,,"","2152.9 25.9 246 g",APG,direct,,421
+9/1/2026,08:37:15,B1,3,front,reference,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,41.3,4.69,0.881,79.0,,"","2681.3 26.1 881 g",APG,direct,,420
+9/1/2026,08:37:21,B1,3,front,mid-bag,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,36.4,3.87,0.446,79.2,,"","2439.9 26.2 446 g",APG,direct,,420
+9/1/2026,08:37:43,B1,3,center,reference,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,40.1,3.21,0.543,79.2,,"","2628.8 26.2 543 g",APG,direct,,420
+9/1/2026,08:37:48,B1,3,center,mid-bag,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,38.1,2.86,0.396,79.3,,"","2528.1 26.3 396 g",APG,direct,,421
+9/1/2026,08:38:08,B1,3,header,reference,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,42.8,3.13,0.657,79.5,,"","2736.6 26.4 657 g",APG,direct,,420
+9/1/2026,08:38:14,B1,3,header,mid-bag,,"Runna Gal",T,5.4,sweep,up,2,Bio365,standard,37.4,2.74,0.352,79.5,,"","2490.6 26.4 352 g",APG,direct,,420
+9/1/2026,08:38:37,B1,4,header,reference,,"Runna Gal",,5.4,sweep,up,2,Bio365,standard,48.6,2.32,0.673,80.2,,"","2889.3 26.8 673 g",APG,direct,,420
+9/1/2026,08:38:44,B1,4,header,mid-bag,,"Runna Gal",,5.4,sweep,up,2,Bio365,standard,39.3,2.88,0.451,80.2,,"","2588.3 26.8 451 g",APG,direct,,420
+9/1/2026,08:39:16,B1,4,center,reference,,"Runna Gal",,5.4,sweep,up,2,Bio365,standard,40.8,2.55,0.461,80.1,,"","2661.0 26.7 461 g",APG,direct,,420
+9/1/2026,08:39:22,B1,4,center,mid-bag,,"Runna Gal",,5.4,sweep,up,2,Bio365,standard,39.2,2.79,0.436,80.2,,"","2587.1 26.8 436 g",APG,direct,,420
+9/1/2026,08:39:46,B1,4,front,reference,,"Runna Gal",,5.4,sweep,up,2,Bio365,standard,40.8,3.23,0.585,80.2,,"","2661.5 26.8 585 g",APG,direct,,421
+9/1/2026,08:48:15,B1,5,front,reference,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,22.3,9.67,0.259,81.0,,"praying","2050.9 27.2 259 g",APG,direct,,421
+9/1/2026,08:48:21,B1,5,front,mid-bag,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,25.4,7.53,0.291,81.1,,"praying","2104.0 27.3 291 g",APG,direct,,421
+9/1/2026,08:48:36,B1,5,center,reference,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,28.2,5.24,0.272,81.3,,"praying","2163.2 27.4 272 g",APG,direct,,421
+9/1/2026,08:48:41,B1,5,center,mid-bag,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,27.1,4.63,0.215,81.5,,"praying","2138.4 27.5 215 g",APG,direct,,420
+9/1/2026,08:49:04,B1,5,header,reference,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,22.4,11.74,0.319,82.0,,"praying","2052.3 27.8 319 g",APG,direct,,421
+9/1/2026,08:49:10,B1,5,header,mid-bag,,"CsxLem",,5.6,sweep,up,2,Bio365,standard,27,6.79,0.311,81.9,,"praying","2135.7 27.7 311 g",APG,direct,,420
+9/1/2026,08:49:27,B1,6,header,reference,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,22.8,9.98,0.286,81.9,,"praying · dark","2059.0 27.7 286 g",APG,direct,,420
+9/1/2026,08:49:32,B1,6,header,mid-bag,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,29.5,6.35,0.373,81.9,,"praying · dark","2193.1 27.7 373 g",APG,direct,,421
+9/1/2026,08:49:52,B1,6,center,reference,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,28.8,7.6,0.419,81.9,,"praying · dark","2177.1 27.7 419 g",APG,direct,,420
+9/1/2026,08:49:57,B1,6,center,mid-bag,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,24.1,4.71,0.158,81.9,,"praying · dark","2080.8 27.7 158 g",APG,direct,,420
+9/1/2026,08:50:03,B1,6,front,reference,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,15.3,,0,82.0,YES,"praying · dark","1954.0 27.8 0 g",APG,direct,,390
+9/1/2026,08:50:13,B1,6,front,mid-bag,,"Super Runtz x Sherbanger",T,5.6,sweep,up,2,Bio365,standard,34.7,6.23,0.608,82.0,,"praying · dark","2363.8 27.8 608 g",APG,direct,,421
+9/1/2026,08:50:40,B1,7,front,reference,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,35.1,5.01,0.509,82.0,,"","2380.1 27.8 509 g",APG,direct,,420
+9/1/2026,08:51:15,B1,7,front,mid-bag,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,37.6,3.92,0.521,81.7,,"","2504.6 27.6 521 g",APG,direct,,420
+9/1/2026,08:52:18,B1,7,center,reference,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,29.8,3.43,0.208,82.9,,"","2200.8 28.3 208 g",APG,direct,,421
+9/1/2026,08:52:23,B1,7,center,mid-bag,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,22.6,2.45,0.069,83.1,,"","2056.3 28.4 69 g",APG,direct,,420
+9/1/2026,08:52:42,B1,7,header,reference,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,32.1,4.86,0.369,82.9,,"","2268.5 28.3 369 g",APG,direct,,420
+9/1/2026,08:52:48,B1,7,header,mid-bag,,"Super Runtz x Sherbanger",,5.6,sweep,up,2,Bio365,standard,25.1,4.64,0.175,82.9,,"","2099.0 28.3 175 g",APG,direct,,420
+9/1/2026,08:53:05,B1,8,header,reference,,"Gelato 41",,5.6,sweep,up,2,Bio365,standard,25,5.1,0.191,83.1,,"","2097.7 28.4 191 g",APG,direct,,420
+9/1/2026,08:53:11,B1,8,header,mid-bag,,"Gelato 41",,5.6,sweep,up,2,Bio365,standard,29.5,2.37,0.14,83.1,,"","2194.0 28.4 140 g",APG,direct,,360
+9/1/2026,08:53:27,B1,8,center,reference,,"Gelato 41",,5.6,sweep,up,2,Bio365,standard,32,3.25,0.243,82.8,,"","2263.9 28.2 243 g",APG,direct,,421
+9/1/2026,08:53:32,B1,8,center,mid-bag,,"Gelato 41",,5.6,sweep,up,2,Bio365,standard,28.6,2.94,0.159,82.9,,"","2171.5 28.3 159 g",APG,direct,,421
+9/1/2026,08:54:34,B1,8,front,reference,,"Gelato 41",,5.7,sweep,up,2,Bio365,standard,26.7,8.2,0.367,82.6,,"","2130.6 28.1 367 g",APG,direct,,450
+9/1/2026,08:54:41,B1,8,front,mid-bag,,"Gelato 41",,5.7,sweep,up,2,Bio365,standard,24.5,13.22,0.467,82.8,,"","2088.4 28.2 467 g",APG,direct,,419
+9/1/2026,08:55:35,B1,9,front,reference,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,27.9,2.43,0.123,83.1,,"praying · dark","2156.2 28.4 123 g",APG,direct,,420
+9/1/2026,08:55:40,B1,9,front,mid-bag,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,27.3,3.23,0.154,83.3,,"praying · dark","2142.8 28.5 154 g",APG,direct,,420
+9/1/2026,08:55:58,B1,9,center,reference,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,31.1,2.45,0.169,83.5,,"praying · dark","2237.6 28.6 169 g",APG,direct,,420
+9/1/2026,08:56:05,B1,9,center,mid-bag,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,27.9,4.56,0.23,83.5,,"praying · dark","2155.3 28.6 230 g",APG,direct,,420
+9/1/2026,08:56:25,B1,9,header,reference,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,17.3,5.23,0.058,83.3,YES,"praying · dark","1979.4 28.5 58 g",APG,direct,,420
+9/1/2026,08:56:33,B1,9,header,mid-bag,,"VOP Kush",,5.7,sweep,up,2,Bio365,standard,20.4,4.74,0.096,83.3,YES,"praying · dark","2020.9 28.5 96 g",APG,direct,,421
+9/1/2026,08:57:19,B1,10,header,reference,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,30.5,5.18,0.338,83.7,,"","2220.6 28.7 338 g",APG,direct,,420
+9/1/2026,08:57:25,B1,10,header,mid-bag,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,26.8,5.94,0.27,83.5,,"","2133.0 28.6 270 g",APG,direct,,421
+9/1/2026,08:57:42,B1,10,center,reference,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,21.9,5.53,0.14,83.3,YES,"","2043.7 28.5 140 g",APG,direct,,421
+9/1/2026,08:57:47,B1,10,center,mid-bag,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,27.8,2.8,0.14,83.3,,"","2153.5 28.5 140 g",APG,direct,,420
+9/1/2026,08:58:34,B1,10,center,mid-bag,adjacent,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,30.6,3.17,0.209,84.0,,"","2223.8 28.9 209 g",APG,direct,,421
+9/1/2026,08:58:58,B1,10,front,reference,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,34.8,4.1,0.407,83.8,,"","2368.7 28.8 407 g",APG,direct,,421
+9/1/2026,08:59:03,B1,10,front,mid-bag,,"VOP Kush/Lip Smackers",T,5.7,sweep,up,2,Bio365,standard,29.8,2.72,0.166,83.7,,"","2202.4 28.7 166 g",APG,direct,,420
+9/1/2026,08:59:31,B1,11,front,reference,,"Lip Smackers",,5.7,sweep,up,2,Bio365,standard,29.4,8.97,0.524,83.7,,"","2190.7 28.7 524 g",APG,direct,,421
+9/1/2026,08:59:37,B1,11,front,mid-bag,,"Lip Smackers",,5.7,sweep,up,2,Bio365,standard,29.4,8.5,0.499,83.5,,"","2191.9 28.6 499 g",APG,direct,,421
+9/1/2026,08:59:51,B1,11,center,reference,,"Lip Smackers",,5.7,sweep,up,2,Bio365,standard,25.2,5.13,0.196,83.5,,"","2101.0 28.6 196 g",APG,direct,,420
+9/1/2026,08:59:55,B1,11,center,mid-bag,,"Lip Smackers",,5.7,sweep,up,2,Bio365,standard,26.8,3.07,0.139,83.5,,"","2132.6 28.6 139 g",APG,direct,,421
+9/1/2026,09:00:12,B1,11,header,reference,,"Lip Smackers",,5.8,sweep,up,2,Bio365,standard,24,7.89,0.262,83.7,,"","2078.7 28.7 262 g",APG,direct,,421
+9/1/2026,09:00:17,B1,11,header,mid-bag,,"Lip Smackers",,5.8,sweep,up,2,Bio365,standard,23,7.47,0.219,83.7,,"","2061.4 28.7 219 g",APG,direct,,421
