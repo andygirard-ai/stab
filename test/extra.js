@@ -1,5 +1,5 @@
 const {JSDOM,VirtualConsole}=require('jsdom'); const fs=require('fs'), path=require('path');
-const file='../index.html';
+const file=process.argv[2]||path.join(__dirname,'..','index.html');
 let html=fs.readFileSync(file,'utf8').replace(/<script src="([^"?]+)[^"]*"><\/script>/g,(m,f)=>'<script>\n'+fs.readFileSync(path.join(path.dirname(file),f),'utf8')+'\n</'+'script>');
 function boot(storage){
   const errors=[]; const vc=new VirtualConsole(); vc.on('jsdomError',e=>errors.push(String(e.message||e)));
