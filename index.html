@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v23</title>
+<title>Stab v24</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -48,6 +48,10 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .rm.on{background:linear-gradient(180deg,#83B3FB 0%,#5B92EC 100%);border-color:#5B92EC;border-top-color:#A7CBFD;color:#07121F;
   box-shadow:0 5px 14px rgba(96,165,250,.35), inset 0 1px 0 rgba(255,255,255,.4)}
 .rm.on .sub{color:#07121F;opacity:.7}
+/* test fixture, not a production room — dashed amber so it never reads as one */
+.rm.test{background:linear-gradient(180deg,#241F14 0%,#1A160E 100%);
+  border:1px dashed var(--warn);border-top-color:var(--warn);color:var(--warn);opacity:.85}
+.rm.test .sub{color:var(--warn);opacity:.75;text-transform:uppercase}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .two.four{grid-template-columns:1fr 1fr}
 .side,.dir,.mode,.cap{background:linear-gradient(180deg,#1A2027 0%,#141A20 100%);border:1px solid var(--line);border-top-color:var(--line2);border-radius:10px;
@@ -310,7 +314,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v23</b></div>
+  <div class="brand">Substrate sweep · <b>v24</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -443,7 +447,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v23</div>
+  <div class="v">stab v24</div>
   <div id="stats"></div>
   <div class="wbh">Workbook paste block</div>
   <textarea id="wb" readonly></textarea>
@@ -494,8 +498,8 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=23"></script>
-<script src="pure.js?v=23"></script>
-<script src="app.js?v=23"></script>
+<script src="rooms.js?v=24"></script>
+<script src="pure.js?v=24"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

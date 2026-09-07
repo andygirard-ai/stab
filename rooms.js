@@ -24,7 +24,15 @@ var ROOMS={
  B5:{t:11,bag:1.25,media:'Bio365'}, B6:{t:11,bag:2,media:'Bio365'},
  C1:{t:11,bag:2,media:'Bio365'}, C2:{t:11,bag:2,media:'Bio365'},
  C3:{t:11,bag:1.25,media:'Bio365'}, C4:{t:11,bag:1.25,media:'Bio365'},
- C5:{t:11,bag:1.25,media:'Bio365'}, C6:{t:11,bag:2,media:'Bio365'}
+ C5:{t:11,bag:1.25,media:'Bio365'}, C6:{t:11,bag:2,media:'Bio365'},
+
+ /* Not a production room. A bench fixture for testing the probe and the
+    app against a known bag. kind:'test' keeps it out of the coverage
+    count, the not-seen list and the EOD swept list, and it is deliberately
+    absent from SCHED, DOF, SCHED_ML, FEEDEC and RMAP — every lookup that
+    reads those must tolerate a room that is missing, and read as unknown
+    rather than invent a zero. */
+ BENCH:{t:4,bag:2,media:'peat mix',kind:'test'}
 };
 
 /* strain by table + flags: U underlights, T saucer */

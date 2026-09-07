@@ -26,7 +26,10 @@ function vis(id){ return !$(id).classList.contains('hide'); }
   const log=[];
   const ok=(c,m)=>{ log.push((c?'PASS ':'FAIL ')+m); if(!c) errors.push('assert: '+m); };
   await sleep(50);
-  ok(d.querySelectorAll('#rooms .rm').length===19,'19 room buttons');
+  // 19 production rooms; test fixtures carry .test and are counted apart
+  const rmAll=d.querySelectorAll('#rooms .rm').length;
+  const rmTest=d.querySelectorAll('#rooms .rm.test').length;
+  ok(rmAll-rmTest===19,'19 production room buttons ('+rmAll+' total, '+rmTest+' fixture)');
   // pick C3, demo on, start
   d.querySelector('#rooms .rm[data-room="C3"]').click();
   ok(w.S.room==='C3','room picked');

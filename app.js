@@ -1,6 +1,27 @@
 
 'use strict';
 /* =====================================================================
+   STAB v24 — 9/7/2026  (BENCH test fixture room)
+   Written from the diff after test/test.sh ran green, bench.js included.
+   - rooms.js gains BENCH: 4 tables, 2 gal, peat mix, kind:'test'. It is
+     deliberately absent from SCHED, DOF, SCHED_ML, FEEDEC and RMAP — the
+     point is that every lookup over those tolerates a missing room.
+     dofNow and hoursSinceShot already returned '' and null; floorFor falls
+     back to the 2-gal floor and the dilution rule skips on feed>0 being
+     false for undefined. Nothing needed a fake zero.
+   - DOF now prints as an em dash instead of a blank when unknown, in the
+     workbook head and the sweep header.
+   - kind was already an established marker (the not-seen list, the triage
+     guard and the flush plan all filtered on it) with no room setting it.
+     Extended to the weekly coverage line, whose room total is now counted
+     rather than hardcoded to 19, and to the EOD swept list.
+   - Room grid: fixtures are pulled out of the wings — BENCH starts with B
+     and would have landed in B WING — into a NOT A ROOM row, dashed amber,
+     sub-label 'BENCH · test', no coverage bar.
+   - test/bench.js covers the boot, a 4-stab sweep with no NaN or undefined
+     in the workbook or CSV, and the three exclusions. smoke.js now counts
+     production rooms and fixtures separately instead of asserting 19.
+
    STAB v23 — 9/6/2026  (Bluefy screen dim + background state)
    Written from the diff after test/test.sh ran green, bluefy.js included.
    - Bluefy-only APIs, both feature-detected so Safari and jsdom no-op:
@@ -376,6 +397,7 @@ function histTs(h){
   /* weekly line */
   var wkRooms={}, wkN=0;
   hist.forEach(function(h){
+    if(ROOMS[h.room] && ROOMS[h.room].kind) return;   /* bench work is not coverage */
     var t=histTs(h);
     if(t && now-t<7*86400000){
       if(!h.mode || h.mode==='sweep') wkRooms[h.room]=1;
@@ -383,25 +405,40 @@ function histTs(h){
     }
   });
   var wr=Object.keys(wkRooms).length;
-  $('weekly').textContent=wr?('this week '+wr+'/19 rooms · '+wkN+' stabs'):'no sweeps logged this week';
+  var nRooms=Object.keys(ROOMS).filter(function(k){return !ROOMS[k].kind;}).length;
+  $('weekly').textContent=wr?('this week '+wr+'/'+nRooms+' rooms · '+wkN+' stabs'):'no sweeps logged this week';
 
-  /* rooms grid */
+  /* rooms grid. A test fixture (ROOMS[k].kind) belongs to no wing and gets
+     its own labelled row with the kind spelled out in the sub-label, so it
+     cannot be grabbed by accident partway through a shift. */
   var wings=['A','B','C'], box=$('rooms');
-  wings.forEach(function(w){
+  function roomBtn(k){
+    var cfg=ROOMS[k];
+    var b=document.createElement('button');
+    b.className='rm'+(cfg.kind?' test':''); b.dataset.room=k;
+    var days=latest[k]?Math.floor((now-latest[k])/86400000):null;
+    var age=(days===null)?'—':(days===0?'today':days+'d');
+    var cls=(days===null)?'':(days<=3?'g':(days<=7?'a':'r'));
+    /* no coverage bar on a fixture — it is not on anybody's rotation */
+    var sub=cfg.kind?(k+' · '+cfg.kind):(cfg.bag+' gal · '+age);
+    b.innerHTML=k+'<span class="sub">'+sub+'</span>'+
+      '<span class="cov '+(cfg.kind?'':cls)+'"></span>';
+    return b;
+  }
+  function roomSection(label,keys){
+    if(!keys.length) return;
     var lab=document.createElement('div'); lab.className='wl';
-    lab.textContent=w+' WING';
-    box.appendChild(lab);
+    lab.textContent=label; box.appendChild(lab);
     var d=document.createElement('div'); d.className='wing';
-    Object.keys(ROOMS).filter(function(k){return k[0]===w;}).forEach(function(k){
-      var b=document.createElement('button'); b.className='rm'; b.dataset.room=k;
-      var days=latest[k]?Math.floor((now-latest[k])/86400000):null;
-      var age=(days===null)?'—':(days===0?'today':days+'d');
-      var cls=(days===null)?'':(days<=3?'g':(days<=7?'a':'r'));
-      b.innerHTML=k+'<span class="sub">'+ROOMS[k].bag+' gal · '+age+'</span><span class="cov '+cls+'"></span>';
-      d.appendChild(b);
-    });
+    keys.forEach(function(k){ d.appendChild(roomBtn(k)); });
     box.appendChild(d);
+  }
+  wings.forEach(function(w){
+    roomSection(w+' WING', Object.keys(ROOMS).filter(function(k){
+      return k[0]===w && !ROOMS[k].kind; }));
   });
+  roomSection('NOT A ROOM', Object.keys(ROOMS).filter(function(k){
+    return !!ROOMS[k].kind; }));
   box.addEventListener('click',function(e){
     var b=e.target.closest('.rm'); if(!b) return;
     [].forEach.call(box.querySelectorAll('.rm'),function(x){x.classList.remove('on');});
@@ -589,8 +626,8 @@ function histTs(h){
 
 /* ---------------- start ---------------- */
 function hdrInfo(){
-  var hs=hoursSinceShot(S.room);
-  $('hside').textContent=(DEMO?'DEMO · ':'')+(S.mode==='spot'?'SPOT · ':'')+'DOF '+dofNow(S.room)+
+  var hs=hoursSinceShot(S.room), dof=dofNow(S.room);
+  $('hside').textContent=(DEMO?'DEMO · ':'')+(S.mode==='spot'?'SPOT · ':'')+'DOF '+(dof===''?'—':dof)+
     (hs===null?'':' · '+hs.toFixed(1)+'h');
 }
 $('startbtn').onclick=function(){
@@ -1628,7 +1665,9 @@ $('more').onclick=function(){
 function buildEOD(){
   var d=new Date(), ds=d.toLocaleDateString('en-US');
   var h=getHist().filter(function(x){ var t=new Date(x.ts||0); t.setHours(0,0,0,0);
-    var dd=new Date(); dd.setHours(0,0,0,0); return t.getTime()===dd.getTime(); });
+    var dd=new Date(); dd.setHours(0,0,0,0);
+    if(ROOMS[x.room] && ROOMS[x.room].kind) return false;   /* fixture, not a room */
+    return t.getTime()===dd.getTime(); });
   var ev=evToday();
   var out=['FERTIGATION — '+ds+'  ·  '+(S.op||'')];
   out.push('');

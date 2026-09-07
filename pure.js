@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v23';
+var VER='v24';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -412,7 +412,8 @@ function buildWorkbook(){
   var curMed=rv.length?med(rv):null;
   var delta=(prevMed!=null && curMed!=null)
     ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
-  var head=S.room+' · DOF '+dofNow(S.room)+' · '+bag+' gal'+
+  var dof=dofNow(S.room);
+  var head=S.room+' · DOF '+(dof===''?'—':dof)+' · '+bag+' gal'+
     (vol?' · '+vol+' mL':'')+
     (hrs?' · '+hrs+'h':'')+
     ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
