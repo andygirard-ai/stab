@@ -1,0 +1,5 @@
+node_modules/
+test/node_modules/
+app_under_test.js
+test/lib.js
+.DS_Store
