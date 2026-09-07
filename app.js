@@ -1,6 +1,25 @@
 
 'use strict';
 /* =====================================================================
+   STAB v23 — 9/6/2026  (Bluefy screen dim + background state)
+   Written from the diff after test/test.sh ran green, bluefy.js included.
+   - Bluefy-only APIs, both feature-detected so Safari and jsdom no-op:
+     navigator.bluetooth.setScreenDimEnabled(bool) and the
+     'backgroundstatechanged' event. See the BF block by the wake lock.
+   - The screen is held bright from keepAwake() and given back from
+     releaseAwake(), so both sweep entry points and END are covered by the
+     two calls already there. discard, 'more' and the log sheet's
+     close-and-reload call releaseAwake() before location.reload(), and a
+     pagehide handler is the net for every other way out — an abandoned
+     sweep must not leave the phone awake.
+   - backgroundstatechanged saves the session on the way out instead of
+     waiting for the next reading, and on the way back the step line says
+     how long we were gone and whether the GATT link survived.
+     Bluefy does not document the event payload, so bfInBackground() reads
+     the plausible carriers and falls back to document.visibilityState.
+   - test/bluefy.js stubs navigator.bluetooth and drives all of the above,
+     including a build that has the event but no setScreenDimEnabled.
+
    STAB v22 — 9/4/2026  (refactor, no new features)
    Written from the diff after test/test.sh + extra.js ran green.
    - Split into index.html / rooms.js / pure.js / app.js. Script order is
@@ -228,6 +247,7 @@ function wlAdvise(){
   }
 }
 function keepAwake(){
+  bfDim(false);
   wlAcquire().then(function(ok){
     if(ok) return;
     if(WL.vid){ WL.vid.play().catch(function(){}); return; }
@@ -245,7 +265,61 @@ function keepAwake(){
 function releaseAwake(){
   if(WL.lock){ try{ WL.lock.release(); }catch(e){} WL.lock=null; }
   if(WL.vid){ try{ WL.vid.pause(); }catch(e){} }
+  bfDim(true);
 }
+
+/* ---------------- Bluefy: screen dim + background state ----------------
+   Bluefy exposes two things Safari does not: navigator.bluetooth
+   .setScreenDimEnabled(bool), and a 'backgroundstatechanged' event on
+   navigator.bluetooth. Everything here is feature-detected — in Safari and
+   in jsdom navigator.bluetooth is either absent or lacks these, and every
+   function below turns into a no-op returning false. */
+var BF={listening:false, bgAt:0, wasConn:false};
+function bfCan(m){
+  try{ return !!(navigator.bluetooth && typeof navigator.bluetooth[m]==='function'); }
+  catch(e){ return false; }
+}
+/* dim(true) = let the phone dim normally. dim(false) = hold it bright. */
+function bfDim(on){
+  if(!bfCan('setScreenDimEnabled')) return false;
+  try{ navigator.bluetooth.setScreenDimEnabled(!!on); return true; }
+  catch(e){ return false; }
+}
+/* Bluefy does not document the event payload, so read the obvious carriers
+   and fall back to the document's own visibility, which is always right. */
+function bfInBackground(e){
+  if(e && typeof e.background==='boolean') return e.background;
+  if(e && typeof e.isBackground==='boolean') return e.isBackground;
+  if(e && typeof e.state==='string') return e.state==='background';
+  try{ if(navigator.bluetooth && typeof navigator.bluetooth.backgroundState==='string')
+         return navigator.bluetooth.backgroundState==='background'; }catch(e2){}
+  return document.visibilityState!=='visible';
+}
+function onBackgroundState(e){
+  var sweeping=S.roomStarted && !S.finished;
+  if(bfInBackground(e)){
+    /* Don't wait for the next reading — iOS can kill us while backgrounded. */
+    BF.bgAt=Date.now(); BF.wasConn=isConn();
+    if(sweeping) saveSession();
+    return;
+  }
+  if(!sweeping) return;
+  var secs=BF.bgAt?Math.round((Date.now()-BF.bgAt)/1000):0;
+  var away=secs<60?(secs+'s'):(Math.round(secs/60)+'m');
+  bfDim(false);                       /* backgrounding drops the hold */
+  if(!BF.wasConn) step('back after '+away+' — probe was not connected');
+  else if(isConn()) step('back after '+away+' — probe still connected');
+  else step('back after '+away+' — probe dropped while backgrounded, reconnecting');
+}
+function bfListen(){
+  if(BF.listening) return false;
+  try{
+    if(!navigator.bluetooth || typeof navigator.bluetooth.addEventListener!=='function') return false;
+    navigator.bluetooth.addEventListener('backgroundstatechanged',onBackgroundState);
+    BF.listening=true; return true;
+  }catch(e){ return false; }
+}
+bfListen();
 
 /* ---------------- history / coverage helpers ---------------- */
 function getHist(){
@@ -1538,11 +1612,13 @@ $('discard').onclick=function(){
     if(h.length && h[0].room===S.room){ h.shift(); lsSet('stab_hist',JSON.stringify(h)); }
   }catch(e){}
   clearSession();
+  releaseAwake();
   location.reload();
 };
 $('more').onclick=function(){
   if(S.rows.length && !S.copied && !S.shared &&
      !confirm('Start a new room? Share or copy the CSV first if you have not.')) return;
+  releaseAwake();
   location.reload();
 };
 
@@ -1859,6 +1935,7 @@ $('eodbtn').onclick=function(){
   $('logclose').onclick=function(){
     S.logOpen=false; $('logsheet').classList.add('hide');
     $('logtabs').style.display=''; $('logsave').textContent='Save';
+    releaseAwake();
     location.reload();
   };
   $('logsheet').classList.remove('hide');
@@ -1881,12 +1958,16 @@ setInterval(function(){
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState!=='visible') return;
   if(S.roomStarted && !S.finished){
-    wlAcquire();
+    wlAcquire(); bfDim(false);
     if(!isConn() && S.dev && !S.connecting && !(S.cal&&CAL.released)){
       connect();
     }
   }
 });
+
+/* Closing the tab or navigating away is an exit too — never leave Bluefy
+   holding the screen bright for a sweep that is over. */
+window.addEventListener('pagehide',function(){ bfDim(true); });
 
 /* ---- room data staleness ---- */
 (function(){

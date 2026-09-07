@@ -12,4 +12,5 @@ echo "== fixtures";     node run_rooms.js "$F" | grep -E "^########|^CHECK|^T[0-
 echo "== demo sweep";   node smoke.js "$F"
 echo "== crash/resume"; node recover.js "$F"
 echo "== legacy/demo/S9"; node extra.js "$F"
+echo "== bluefy";      node bluefy.js "$F"
 echo "ALL GREEN"
