@@ -66,8 +66,11 @@ function vis(id){ return !$(id).classList.contains('hide'); }
   $('exit').click();
   ok(w.S.finished && vis('done'),'finished → done screen');
   ok($('csv').value.split('\n').length===n0+1,'CSV rows = '+n0);
-  ok($('wb').value.indexOf('CHECK')>0,'workbook block built');
-  log.push('--- workbook head: '+$('wb').value.split('\n')[0]);
+  // v25 split the one block into two: row notes and room notes
+  ok($('wbroom').value.indexOf('CHECK')>0,'room notes block built');
+  ok($('wbrow').value.split('\n').length>1,'row notes block built');
+  log.push('--- room notes head: '+$('wbroom').value.split('\n')[1]);
+  log.push('--- row notes head:  '+$('wbrow').value.split('\n')[1]);
   log.push('--- csv header: '+$('csv').value.split('\n')[0]);
   console.log(log.join('\n'));
   if(errors.length){ console.log('\nERRORS:\n'+errors.join('\n')); process.exitCode=1; } else console.log('\nNO RUNTIME ERRORS');

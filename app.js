@@ -1,6 +1,47 @@
 
 'use strict';
 /* =====================================================================
+   STAB v25 — 9/7/2026  (two paste blocks · peg chips · access · skips)
+   Written from the diff after test/test.sh ran green, notes.js included.
+   - The workbook block is two copies now, not one split by thumb on the
+     phone: buildRowNotes() is the Row Notes column alone, T-prefixed one
+     line per table; buildRoomNotes() is summary, paragraph and CHECK. Both
+     open with the sweep timestamp. buildWorkbook() still returns the
+     combined document and is what history stores, alongside both halves.
+   - Peg chips reworked: bud group (bleaching, foxtailing, herm) split out
+     of damage; wilted, drooping, fading and necrosis retired. Values kept
+     in old sessions are not dropped — openPegs shows any selected value
+     that is no longer a chip under 'from an earlier sweep', so it stays
+     visible and removable instead of persisting invisibly forever.
+   - Voice readout deleted outright: say(), S.speech, PREF.voice, the
+     toggle and its CSS. The dictate button is gone too; the keyboard mic
+     key still dictates into the same box. The fault log's own 'drooping'
+     and 'wilted' chips are a different list and are untouched.
+   - Room access block: a sheet on the setup bar beside log and EOD.
+     Tapping Start commits it; the sweep runs normally. It surfaces in the
+     room-notes paragraph only.
+   - Skip now asks why, then how far: a reason almost always applies to the
+     whole table, so it offers 'skip the rest of T7 · 5 stops' as one tap.
+     The reason is recorded against the table and printed as 'T7  — spray REI'.
+   - THE CAREFUL PART. Access reasons never reach the CHECK rules. A
+     skipped table is dropped from the rule set entirely, so it cannot fire
+     a rule, cannot be an outlier, and cannot sit in another table's
+     leave-one-out median. But the collapse threshold still divides by
+     every table we tried to read (measured + skipped), because dividing by
+     the measured subset is what turns five ordinary table faults in a
+     half-skipped room into a room-level verdict about a room nobody saw.
+     The >=4 guard still counts measured tables: a claim about the room
+     needs a room's worth of real readings behind it.
+     The summary counts are the other way round: they count every stab that
+     happened, including readings taken on a table before it was skipped. A
+     skip reason describes access, not data quality — it says the aisle shut,
+     not that the bag was misread — so a real reading still belongs in the
+     headline. Dropping them also degraded badly as a partial table filled
+     up: a table skipped on its last stop would have lost five good readings
+     out of the below-floor count. The head still marks the skip, and the
+     paragraph names which tables were skipped and that stabs taken there
+     still count.
+
    STAB v24 — 9/7/2026  (BENCH test fixture room)
    Written from the diff after test/test.sh ran green, bench.js included.
    - rooms.js gains BENCH: 4 tables, 2 gal, peat mix, kind:'test'. It is
@@ -131,17 +172,18 @@ function syncDemo(){
 
 
 /* ===================== DOM / APP ===================== */
-var WB_TEXT='';
+var WB_TEXT='', ROW_TEXT='', ROOM_TEXT='';
 var $=function(id){ return document.getElementById(id); };
 function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
-var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true, speech:false,
+var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
   dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   paused:false, pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
+  skipped:{}, access:null,
   flaggedTable:false, reconnB:false, pausedBeforeCal:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
@@ -151,7 +193,7 @@ var WAIT=[];
 var PREV={};
 try{ PREV=JSON.parse(localStorage.getItem('stab_prev')||'{}'); }catch(e){ PREV={}; }
 if(!PREV._v) PREV._v=1;   /* schema marker; '_'-prefixed keys are not positions */
-var PREF={side:'standard',dir:null,mode:'sweep',cap:'auto',voice:false,lastDir:null};
+var PREF={side:'standard',dir:null,mode:'sweep',cap:'auto',lastDir:null};
 try{ var _p=JSON.parse(localStorage.getItem('stab_setup')||'null'); if(_p) PREF=Object.assign(PREF,_p); }catch(e){}
 try{ var _o=localStorage.getItem('stab_op'); if(_o) S.op=_o; }catch(e){}
 
@@ -169,7 +211,7 @@ function saveHist(h){
   h=h.slice(0,60);
   function W(items){ return JSON.stringify({v:1,items:items}); }
   if(lsSet('stab_hist',W(h))) return true;
-  var slim=h.map(function(x,i){ if(i<20) return x; var y={}; Object.keys(x).forEach(function(k){ if(k!=='csv'&&k!=='wb') y[k]=x[k]; }); return y; });
+  var slim=h.map(function(x,i){ if(i<20) return x; var y={}; Object.keys(x).forEach(function(k){ if(k!=='csv'&&k!=='wb'&&k!=='wbrow'&&k!=='wbroom') y[k]=x[k]; }); return y; });
   if(lsSet('stab_hist',W(slim))){ toast('storage tight — old CSV text dropped from history'); return true; }
   if(lsSet('stab_hist',W(slim.slice(0,20)))){ toast('storage tight — history cut to 20'); return true; }
   return false;
@@ -180,7 +222,8 @@ function saveSession(){
     s:{room:S.room,side:S.side,dir:S.dir,mode:S.mode,op:S.op,i:S.i,
        notes:S.notes,free:S.free||{},route:S.route,startedAt:S.startedAt,
        feedEC:S.feedEC,feedPH:S.feedPH,triage:S.triage||[],
-       skips:S.skips||0,unstable:S.unstable||0},
+       skips:S.skips||0,unstable:S.unstable||0,
+       skipped:S.skipped||{},access:S.access||null},
     rows:S.rows}));
   /* v21 kept rows in a second key; one write, one read, one thing to clear */
 }
@@ -189,7 +232,7 @@ function clearSession(){
 }
 function savePrefs(){
   lsSet('stab_setup',JSON.stringify({side:S.side,dir:S.dir,mode:S.mode,
-    cap:S.auto?'auto':'manual',voice:S.speech,lastDir:PREF.lastDir}));
+    cap:S.auto?'auto':'manual',lastDir:PREF.lastDir}));
   lsSet('stab_op',S.op);
 }
 
@@ -218,12 +261,6 @@ function beep(name){
     o.start(t); o.stop(t+dur+0.03);
     t+=dur+0.07;
   }
-}
-function say(txt){
-  if(!S.speech || !window.speechSynthesis) return;
-  try{ speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(txt); u.rate=1.15;
-    speechSynthesis.speak(u); }catch(e){}
 }
 
 /* ---------------- wake lock ---------------- */
@@ -444,6 +481,7 @@ function histTs(h){
     [].forEach.call(box.querySelectorAll('.rm'),function(x){x.classList.remove('on');});
     b.classList.add('on'); S.room=b.dataset.room;
     S.triage=[];
+    S.access=null; syncAccessBtn();   /* access is per room */
     $('startbtn').textContent='Start '+S.room;
     $('startbar').classList.add('up');
     syncModeUI();
@@ -457,7 +495,6 @@ function histTs(h){
   S.mode=PREF.mode||'sweep';
   if(PREF.showHist===undefined) PREF.showHist=true;
   S.auto=(PREF.cap!=='manual');
-  S.speech=!!PREF.voice;
   function mark(cls,val,attr){
     [].forEach.call(document.querySelectorAll('.'+cls),function(x){
       x.classList.toggle('on',x.dataset[attr]===val);
@@ -465,8 +502,6 @@ function histTs(h){
   }
   mark('side',S.side,'side'); mark('dir',S.dir,'dir');
   mark('mode',S.mode,'mode'); syncModeUI(); mark('cap',S.auto?'auto':'manual','cap');
-  $('voice').textContent='voice readout · '+(S.speech?'on':'off');
-  $('voice').classList.toggle('on',S.speech);
 
   $('setup').addEventListener('click',function(e){
     var b=e.target.closest('.side,.dir,.mode,.cap'); if(!b) return;
@@ -564,12 +599,6 @@ function histTs(h){
     $('resume').classList.add('hide');
     toast('clean slate — calibration kept');
   };
-  $('voice').onclick=function(){
-    S.speech=!S.speech;
-    $('voice').textContent='voice readout · '+(S.speech?'on':'off');
-    $('voice').classList.toggle('on',S.speech);
-    savePrefs();
-  };
 })();
 
 /* ---------------- recovery banner ---------------- */
@@ -598,6 +627,7 @@ function histTs(h){
       S.notes=sess.notes||{}; S.free=sess.free||{}; S.route=sess.route||[]; S.i=sess.i||0;
       S.startedAt=sess.startedAt||Date.now();
       S.triage=sess.triage||[]; S.skips=sess.skips||0; S.unstable=sess.unstable||0;
+      S.skipped=sess.skipped||{}; S.access=sess.access||null;
       /* feed EC/pH: from the session if it has them, else the saved room config */
       var rc=roomCfg()[S.room]||{};
       S.feedEC=(sess.feedEC!=null)?sess.feedEC:(rc.ec!=null?rc.ec:null);
@@ -637,6 +667,7 @@ $('startbtn').onclick=function(){
   S.route=buildRoute(S.room,S.dir,S.mode); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
   S.skips=0; S.unstable=0; S.redo=[];
+  S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
   ['hdr','route','main','pad'].forEach(function(id){$(id).classList.remove('hide');});
@@ -1182,9 +1213,6 @@ function doCommit(r, meta){
   }
   else if(row.vwc<f+6) beep('warn');
   else beep('ok');
-  var nxt=S.route[S.i+1];
-  say(Math.round(r.vwc)+(r.ec!=null?', '+r.ec.toFixed(1):'')+
-    (nxt?(', next '+(nxt.spot?'spot':('table '+nxt.t+' '+nxt.pos+' '+(nxt.depth==='reference'?'ref':'mid')))):''));
   step('logged '+(stop.spot?'spot':'T'+stop.t+' '+stop.pos+' '+(stop.depth==='reference'?'ref':'mid'))+
     ' '+r.vwc.toFixed(1)+'%');
   advance(stop);
@@ -1236,10 +1264,7 @@ $('extra').onclick=function(){
   saveSession(); render(); flash();
   toast('adjacent plant · '+(last.spot?'spot':'T'+last.t+' '+last.pos));
 };
-$('skip').onclick=function(){
-  S.redo=[]; S.skips++; S.i++;
-  saveSession(); render(); flash(); toast('skipped');
-};
+$('skip').onclick=openSkip;
 $('undo').onclick=function(){
   if(!S.rows.length){ toast('nothing to undo'); return; }
   var r=S.rows.pop();
@@ -1305,6 +1330,13 @@ function openPegs(tbl){
     });
     h+='</div></div>';
   });
+  var known={}; PEGS.forEach(function(p){ p[1].forEach(function(w){ known[w]=1; }); });
+  var legacy=Object.keys(PEGSEL).filter(function(w){ return !known[w]; });
+  if(legacy.length){
+    h+='<div class="pg"><div class="h">from an earlier sweep</div><div class="c">';
+    legacy.forEach(function(w){ h+='<button class="chip on" data-w="'+w+'">'+w+'</button>'; });
+    h+='</div></div>';
+  }
   $('pegs').innerHTML=h;
   $('pegfree').value=(S.free&&S.free[tbl])||'';
   [].forEach.call(document.querySelectorAll('#pegs .chip'),function(b){
@@ -1314,7 +1346,6 @@ function openPegs(tbl){
       if(PEGSEL[k]) delete PEGSEL[k]; else PEGSEL[k]=1;
     };
   });
-  $('pegdictate').onclick=function(){ var ta=$('pegfree'); ta.focus(); try{ ta.setSelectionRange(ta.value.length,ta.value.length); }catch(e){} };
   $('pegdone').onclick=function(){
     var w=Object.keys(PEGSEL);
     if(w.length) S.notes[tbl]=w.join(' · ');
@@ -1568,13 +1599,14 @@ function finish(){
   CSV_NAME=S.room+'_'+fnameDate()+'.csv';
   $('csv').value=CSV_TEXT;
   WB_TEXT=buildWorkbook();
-  $('wb').value=WB_TEXT;
+  ROW_TEXT=buildRowNotes(); ROOM_TEXT=buildRoomNotes();
+  $('wbrow').value=ROW_TEXT; $('wbroom').value=ROOM_TEXT;
   try{
     if(DEMO) throw 0;
     var h2=getHist();
     h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
       n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)),
-      dur:dur, clean:clean, csv:CSV_TEXT, wb:WB_TEXT,
+      dur:dur, clean:clean, csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
       dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
       notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
     saveHist(h2);
@@ -1601,7 +1633,8 @@ function showHist(){
     b.onclick=function(){
       var hh=getHist(), it=hh[+b.dataset.i]; if(!it) return;
       $('csv').value=it.csv;
-      if(it.wb) $('wb').value=it.wb;
+      $('wbrow').value=it.wbrow||'';
+      $('wbroom').value=it.wbroom||it.wb||'';
       var ns=[]; var nn=it.notes||{}, ff=it.free||{};
       Object.keys(nn).forEach(function(k){ ns.push('T'+k+' '+nn[k]+(ff[k]?'. '+ff[k]:'')); });
       Object.keys(ff).forEach(function(k){ if(!nn[k]) ns.push('T'+k+' '+ff[k]); });
@@ -1609,7 +1642,7 @@ function showHist(){
         ? '<div class="hl">'+it.room+' notes · '+(it.when||'')+'</div>'+
           ns.map(function(x){return '<div class="hn">'+x+'</div>';}).join('')
         : '<div class="hl">'+it.room+' · no table notes</div>';
-      var t=$('wb').value?$('wb'):$('csv');
+      var t=$('wbroom').value?$('wbroom'):$('csv');
       t.select();
       if(navigator.clipboard) navigator.clipboard.writeText(t.value).catch(function(){});
       toast('loaded '+it.room);
@@ -1632,16 +1665,18 @@ $('copy').onclick=function(){
     .then(function(){toast('CSV copied');},function(){});
   else toast(ok?'CSV copied':'select the text and copy');
 };
-$('copywb').onclick=function(){
-  var t=$('wb');
+function copyBox(id,label){
+  var t=$(id);
   t.select(); t.setSelectionRange(0,999999);
   var ok=false;
   try{ ok=document.execCommand('copy'); }catch(e){}
   S.copied=true;
   if(navigator.clipboard) navigator.clipboard.writeText(t.value)
-    .then(function(){toast('workbook block copied');},function(){});
-  else toast(ok?'workbook block copied':'select the text and copy');
-};
+    .then(function(){toast(label+' copied');},function(){});
+  else toast(ok?(label+' copied'):'select the text and copy');
+}
+$('copyrow').onclick=function(){ copyBox('wbrow','row notes'); };
+$('copyroom').onclick=function(){ copyBox('wbroom','room notes'); };
 $('discard').onclick=function(){
   if(!confirm('Discard this sweep? '+S.rows.length+' readings will be deleted and no history kept.')) return;
   try{
@@ -1955,6 +1990,107 @@ $('logsave').onclick=function(){
   toast('logged');
   drawLog();
 };
+
+/* ---------------- room access block ----------------
+   A whole room blocked: spray re-entry, a trim crew in the aisles. Set on
+   setup, committed by tapping Start, and reported in the room-notes
+   paragraph. It does not stop the sweep — a few rows can usually still be
+   reached — and it never reaches the CHECK rules. One table you cannot get
+   to is a per-table skip, not this. */
+function syncAccessBtn(){
+  var b=$('accbtn'); if(!b) return;
+  var on=!!(S.access && S.access.reason);
+  b.classList.toggle('set',on);
+  b.textContent=on?'access ·':'access';
+}
+function drawAccess(){
+  var cur=(S.access&&S.access.reason)||'';
+  $('accbody').innerHTML='<div class="pg"><div class="c">'+ACCESS.map(function(w){
+    return '<button class="chip'+(w===cur?' on':'')+'" data-w="'+w+'">'+w+'</button>';
+  }).join('')+'</div></div>';
+  $('accnote').value=(S.access&&S.access.note)||'';
+  [].forEach.call(document.querySelectorAll('#accbody .chip'),function(b){
+    b.onclick=function(){
+      var w=b.dataset.w;
+      var same=(S.access&&S.access.reason===w);
+      S.access=same?null:{reason:w,note:($('accnote').value||'').trim()};
+      drawAccess(); syncAccessBtn();
+      toast(same?'access cleared':('room access · '+w));
+    };
+  });
+}
+function openAccess(){
+  if(!S.room){ toast('pick a room first'); return; }
+  $('acctop').textContent='Room access · '+S.room;
+  drawAccess();
+  $('accsheet').classList.remove('hide');
+}
+$('accbtn').onclick=openAccess;
+$('accclose').onclick=function(){
+  if(S.access) S.access.note=($('accnote').value||'').trim();
+  syncAccessBtn();
+  $('accsheet').classList.add('hide');
+};
+$('accclear').onclick=function(){
+  S.access=null; drawAccess(); syncAccessBtn(); toast('access cleared');
+};
+
+/* ---------------- per-table skip reason ----------------
+   Why one table went unmeasured. Recorded against the table, printed in the
+   row notes as "T7  — spray REI", and deliberately kept out of every CHECK
+   rule: a table behind a re-entry interval is not a table fault. */
+/* Stops for one table are contiguous in every route buildRoute produces,
+   so "the rest of this table" is the run starting at S.i. */
+function restOfTable(){
+  var stop=S.route[S.i];
+  if(!stop || stop.t==null) return 0;
+  var n=0;
+  while(S.i+n<S.route.length && S.route[S.i+n].t===stop.t) n++;
+  return n;
+}
+function doSkip(reason,whole){
+  var stop=S.route[S.i];
+  var n=1;
+  if(reason && stop && stop.t!=null){
+    S.skipped=S.skipped||{};
+    S.skipped[String(stop.t)]=reason;
+    if(whole) n=restOfTable();
+  }
+  S.redo=[]; S.skips+=n; S.i+=n;
+  saveSession(); render(); flash();
+  toast(reason?((whole&&n>1?('T'+stop.t+' skipped, '+n+' stops'):'skipped')+' — '+reason):'skipped');
+}
+/* A reason almost always applies to the whole table — a closed aisle does
+   not reopen for the next stop — so offer that first and make it one tap. */
+function drawSkipScope(reason){
+  var stop=S.route[S.i], n=restOfTable();
+  if(n<=1){ $('skipsheet').classList.add('hide'); doSkip(reason,false); return; }
+  $('skipbody').innerHTML='<div class="pg"><div class="h">'+reason+'</div>'+
+    '<button class="fp" id="skipall">skip the rest of T'+stop.t+' · '+n+' stops</button>'+
+    '<button class="fp" id="skipone">just this stop</button>'+
+    '<button class="fp" id="skipback">← a different reason</button></div>';
+  $('skipall').onclick=function(){ $('skipsheet').classList.add('hide'); doSkip(reason,true); };
+  $('skipone').onclick=function(){ $('skipsheet').classList.add('hide'); doSkip(reason,false); };
+  $('skipback').onclick=function(){ drawSkipReasons(); };
+}
+function drawSkipReasons(){
+  $('skipbody').innerHTML='<div class="pg"><div class="c">'+SKIPWHY.map(function(w){
+    return '<button class="chip" data-w="'+w+'">'+w+'</button>';
+  }).join('')+'</div></div>';
+  [].forEach.call(document.querySelectorAll('#skipbody .chip'),function(b){
+    b.onclick=function(){ drawSkipScope(b.dataset.w); };
+  });
+}
+function openSkip(){
+  var stop=S.route[S.i];
+  /* a spot stop belongs to no table, so there is nothing to attribute it to */
+  if(!stop || stop.t==null){ doSkip(''); return; }
+  $('skiptop').textContent='Skip table '+stop.t;
+  drawSkipReasons();
+  $('skipsheet').classList.remove('hide');
+}
+$('skipcancel').onclick=function(){ $('skipsheet').classList.add('hide'); };
+
 $('logbtn').onclick=function(){ openLog('shot'); };
 $('logbtn2').onclick=function(){ openLog('shot'); };
 $('eodbtn').onclick=function(){

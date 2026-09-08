@@ -3,20 +3,25 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v24';
+var VER='v25';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
 }
 var FLOOR={2:22, 1.25:30};
 var PEGS=[
- ['posture',['praying','neutral','rolled','drooping','flagging']],
- ['color',['good','fading','light','yellowing','interveinal','purpling']],
- ['damage',['tip burn','margin','necrosis','bleach','wind burn','foxtail']],
+ ['posture',['praying','neutral','rolled shoulders','flagging']],
+ ['color',['good','light','yellowing','purpling','interveinal']],
+ ['damage',['tip burn','margin','windburn']],
  ['pests',['mites','thrips']],
- ['herm',['herm']],
- ['blocked',['crew','spray REI','maintenance']]
+ ['bud',['bleaching','foxtailing','herm']],
+ ['blocked',['dripper','emitter','line','crew']]
 ];
+/* Reasons a whole room is blocked. Room-wide crew goes here; the single
+   unreachable table is the 'crew' chip in blocked above. */
+var ACCESS=['spray REI','crew working','other'];
+/* Why one table went unmeasured. Never fed to the CHECK rules. */
+var SKIPWHY=['spray REI','crew','can\'t reach','other'];
 /* Feed EC by room, used by the CHECK rules to flag dilution as a fraction
    of what the room should be receiving rather than an absolute floor. */
 function flushMins(rm){ return MTASK.flush[rm.charAt(0)]||21; }
@@ -308,12 +313,40 @@ function tableMedians(tabs){
   });
   return m;
 }
+/* ---- access blocks and per-table skips ----
+   A table skipped for a re-entry interval or a blocked aisle is *unmeasured*,
+   not bad. It must not fire a rule, must not sit in another table's
+   leave-one-out median, and must not shrink the denominator the collapse
+   test divides by — otherwise skipping four tables of eleven turns four
+   ordinary table faults into a room-level verdict about a room that was
+   never seen. */
+function tableSkipped(t){ return !!(S.skipped && S.skipped[String(t)]); }
+function skipReason(t){ return (S.skipped && S.skipped[String(t)]) || ''; }
+function skippedList(){ return Object.keys(S.skipped||{}); }
+/* A skip reason describes access, not data quality: it says the aisle was
+   shut, not that the bag was misread. So a reading taken before the table
+   was skipped is real and counts in every summary number. Only the CHECK
+   rules drop skipped tables, because those reason about tables rather than
+   readings and half a table is not evidence about a table. This also keeps
+   the numbers stable as a partial table fills up — a table skipped on its
+   last stop would otherwise drop five good readings out of the headline. */
+function sweepStamp(){
+  if(S.rows.length && S.rows[0].time) return S.rows[0].time.slice(0,5);
+  var d=new Date(S.startedAt||Date.now());
+  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
 function checkLines(){
-  var out=[], tabs=byTable();
+  var out=[];
   /* spot and flush routes have no table structure; every rule below assumes one */
   if(S.mode==='spot'||S.mode==='flush') return [];
+  var all=byTable(), tabs={};
+  Object.keys(all).forEach(function(t){ if(!tableSkipped(t)) tabs[t]=all[t]; });
+  /* every table we tried to read: measured + skipped. A skipped table with no
+     readings never reaches byTable, so count the skip list, not the rows. */
+  var nSkip=skippedList().length;
   var f=floorFor(S.room), feed=(S.feedEC!=null?S.feedEC:FEEDEC[S.room]);
   var tmeds=tableMedians(tabs), nTab=Object.keys(tmeds).length;
+  var nSeen=nTab+nSkip;
   var strainTabs={};
   Object.keys(tabs).forEach(function(t){
     var st=(tabs[t][0].strain||'').trim();
@@ -375,54 +408,39 @@ function checkLines(){
     }
   });
   /* A rule that fires on more than half the tables is describing the room,
-     not a table. Collapse it so the genuine outliers stay visible. */
-  var nT=nTab, byKind={}, keep=[];
+     not a table. Collapse it so the genuine outliers stay visible.
+     The threshold divides by every table we tried to read (nSeen), never by
+     the measured subset — half of what is left after skipping is not half a
+     room. The guard still counts measured tables: a verdict about the room
+     needs a room's worth of actual readings behind it. */
+  var byKind={}, keep=[];
   out.forEach(function(o){
     if(typeof o==='string'){ keep.push(o); return; }
     (byKind[o.k]=byKind[o.k]||[]).push(o);
   });
   Object.keys(byKind).forEach(function(k){
     var g=byKind[k];
-    /* collapse needs a room's worth of tables — in triage or a sweep cut short,
-       "1 of 1 tables below floor — this is the room" is the wrong conclusion */
-    if(nT>=4 && g.length > nT/2){
+    if(nTab>=4 && g.length > nSeen/2){
+      var scope=g.length+' of '+nTab+(nSkip?' measured ('+nSkip+' skipped)':'');
       keep.unshift(k==='floor'
-        ? 'ROOM  '+g.length+' of '+nT+' tables below floor — this is the room, not the tables'
-        : 'ROOM  '+g.length+' of '+nT+' tables at near-zero EC — feed is not reaching this room');
+        ? 'ROOM  '+scope+' tables below floor — this is the room, not the tables'
+        : 'ROOM  '+scope+' tables at near-zero EC — feed is not reaching this room');
     } else g.forEach(function(o){ keep.push(o.s); });
   });
   return keep;
 }
-function buildWorkbook(){
-  if(!S.rows.length) return '';
-  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag, f=floorFor(S.room);
-  var tabs=byTable();
-  var ref=S.rows.filter(function(r){return r.depth==='reference';});
-  var rv=ref.map(function(r){return r.vwc;});
-  var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
-  var lows=S.rows.filter(function(r){return r.flag;}).length;
-  var tm=S.rows[0].time.slice(0,5), hrs=S.rows[0].hrs;
-  var vol=(SCHED_ML&&SCHED_ML[S.room])||null;
-
-  var prevMed=null;
-  try{
-    var ph=getHist().filter(function(x){return x.room===S.room && x.med!=null && (!x.mode || x.mode==='sweep');});
-    if(ph.length) prevMed=ph[0].med;
-  }catch(e){}
-  var curMed=rv.length?med(rv):null;
-  var delta=(prevMed!=null && curMed!=null)
-    ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
-  var dof=dofNow(S.room);
-  var head=S.room+' · DOF '+(dof===''?'—':dof)+' · '+bag+' gal'+
-    (vol?' · '+vol+' mL':'')+
-    (hrs?' · '+hrs+'h':'')+
-    ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
-    ' · '+lows+'/'+S.rows.length+' below floor'+
-    (ecs.length?' · EC '+med(ecs).toFixed(1):'');
-
+/* One line per table, in table order, T-prefixed. A skipped table keeps its
+   line and states why, so the pasted column stays aligned with the workbook's
+   own table rows instead of everything below it moving up one. */
+function rowNoteLines(){
+  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag;
+  var tabs=byTable(), keys={};
+  Object.keys(tabs).forEach(function(t){ keys[t]=1; });
+  skippedList().forEach(function(t){ keys[t]=1; });
   var lines=[];
-  Object.keys(tabs).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
-    var rr=tabs[t];
+  Object.keys(keys).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    if(tableSkipped(t)){ lines.push('T'+t+'  — '+skipReason(t)); return; }
+    var rr=tabs[t]||[];
     var rf=rr.filter(function(r){return r.depth==='reference';});
     var md=rr.filter(function(r){return r.depth==='mid-bag';});
     if(!rf.length) return;
@@ -433,7 +451,7 @@ function buildWorkbook(){
       if(r.plant) p+=' '+r.plant;
       return p;
     });
-    var line=tm+' '+desc+' '+parts.join(' · ');
+    var line='T'+t+'  '+desc+' '+parts.join(' · ');
     if(md.length) line+=' — mid '+md.map(function(r){return r.vwc.toFixed(0);}).join(' · ');
     var st=(rf[0].strain||'').trim(); if(st) line+=' '+st;
     var fl=rf[0].flags||'';
@@ -442,19 +460,91 @@ function buildWorkbook(){
     var nt=rowNote(t); if(nt) line+='. '+nt;
     lines.push(line);
   });
-
-  var para=tm+' '+(S.rows[0].depth&&S.rows.some(function(r){return r.depth==='mid-bag';})
+  return lines;
+}
+/* Copy 1: the Row Notes column on its own. No summary, no CHECK, no header. */
+function buildRowNotes(){
+  var lines=rowNoteLines();
+  if(!lines.length) return '';
+  return sweepStamp()+'\n'+lines.join('\n');
+}
+function roomHead(){
+  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag;
+  var ref=S.rows.filter(function(r){return r.depth==='reference';});
+  var rv=ref.map(function(r){return r.vwc;});
+  var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
+  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var hrs=S.rows.length?S.rows[0].hrs:'';
+  var vol=(SCHED_ML&&SCHED_ML[S.room])||null;
+  var nSkip=skippedList().length;
+  var prevMed=null;
+  try{
+    var ph=getHist().filter(function(x){return x.room===S.room && x.med!=null && (!x.mode || x.mode==='sweep');});
+    if(ph.length) prevMed=ph[0].med;
+  }catch(e){}
+  var curMed=rv.length?med(rv):null;
+  var delta=(prevMed!=null && curMed!=null)
+    ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
+  var dof=dofNow(S.room);
+  return S.room+' · DOF '+(dof===''?'—':dof)+' · '+bag+' gal'+
+    (vol?' · '+vol+' mL':'')+
+    (hrs?' · '+hrs+'h':'')+
+    ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
+    ' · '+lows+'/'+S.rows.length+' below floor'+
+    (ecs.length?' · EC '+med(ecs).toFixed(1):'')+
+    (nSkip?' · '+nSkip+' table'+(nSkip>1?'s':'')+' skipped':'');
+}
+function roomPara(){
+  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag, f=floorFor(S.room);
+  var ref=S.rows.filter(function(r){return r.depth==='reference';});
+  var rv=ref.map(function(r){return r.vwc;});
+  var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
+  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var tm=sweepStamp(), hrs=S.rows.length?S.rows[0].hrs:'';
+  var prevMed=null;
+  try{
+    var ph=getHist().filter(function(x){return x.room===S.room && x.med!=null && (!x.mode || x.mode==='sweep');});
+    if(ph.length) prevMed=ph[0].med;
+  }catch(e){}
+  var curMed=rv.length?med(rv):null;
+  var delta=(prevMed!=null && curMed!=null)
+    ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
+  var para=tm+' '+(S.rows.length && S.rows.some(function(r){return r.depth==='mid-bag';})
       ?'reference + mid':'reference')+' sweep, '+S.side+' side, '+S.dir+
     ' direction, '+S.rows.length+' stabs'+(hrs?', '+hrs+' hrs since shot':'')+'. Room '+
     (rv.length?Math.min.apply(null,rv).toFixed(0)+'-'+Math.max.apply(null,rv).toFixed(0):'--')+
     ', median '+(curMed==null?'--':curMed.toFixed(1))+delta+', '+lows+' of '+S.rows.length+
     ' below the '+f+' floor.'+(ecs.length?' EC median '+med(ecs).toFixed(1)+
-    ', range '+Math.min.apply(null,ecs).toFixed(2)+'-'+Math.max.apply(null,ecs).toFixed(2)+'.':'')+
-    (S.feedEC?' Feed '+S.feedEC+(S.feedPH?'/'+S.feedPH:'')+'.':'')+' Operator '+S.op+'.';
-
+    ', range '+Math.min.apply(null,ecs).toFixed(2)+'-'+Math.max.apply(null,ecs).toFixed(2)+'.':'');
+  /* room-level access block, set on the setup screen before Start */
+  if(S.access && S.access.reason){
+    para+=' Room access: '+S.access.reason+
+      (S.access.note?' — '+S.access.note:'')+'.';
+  }
+  var sk=skippedList().sort(function(a,b){return (+a)-(+b);});
+  if(sk.length){
+    var partial=sk.some(function(t){ return S.rows.some(function(r){ return String(r.table)===String(t); }); });
+    para+=' Skipped '+sk.map(function(t){return 'T'+t+' ('+skipReason(t)+')';}).join(', ')+
+      ' — outside the CHECK rules'+(partial?'; stabs taken there still count above':'')+'.';
+  }
+  para+=(S.feedEC?' Feed '+S.feedEC+(S.feedPH?'/'+S.feedPH:'')+'.':'')+' Operator '+S.op+'.';
+  return para;
+}
+/* Copy 2: the Notes column — summary line, paragraph, CHECK. */
+function buildRoomNotes(){
+  if(!S.rows.length && !skippedList().length) return '';
   var chk=checkLines();
-  return head+'\n\nROW NOTES  (paste down the Row Notes column, one per table)\n'+lines.join('\n')+
-    '\n\nNOTES  (Notes column, spans rows)\n'+para+
+  return sweepStamp()+'\n'+roomHead()+'\n\n'+roomPara()+
+    '\n\nCHECK\n'+(chk.length?chk.join('\n'):'nothing flagged');
+}
+/* Combined block, kept for the session history so an old sweep still reads
+   as one document. The two copy buttons use the halves above. */
+function buildWorkbook(){
+  if(!S.rows.length) return '';
+  var chk=checkLines();
+  return roomHead()+'\n\nROW NOTES  (paste down the Row Notes column, one per table)\n'+
+    rowNoteLines().join('\n')+
+    '\n\nNOTES  (Notes column, spans rows)\n'+roomPara()+
     '\n\nCHECK\n'+(chk.length?chk.join('\n'):'nothing flagged');
 }
 /* ===================== END PURE ===================== */

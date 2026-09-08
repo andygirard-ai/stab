@@ -6,10 +6,10 @@ const D=path.dirname(file);
 const roomsSrc=fs.readFileSync(path.join(D,'rooms.js'),'utf8');
 const pureSrc =fs.readFileSync(path.join(D,'pure.js'),'utf8');
 // stub the app-side globals the pure half reaches for at call time
-const pre=`var S={room:null,rows:[],notes:{},free:{},feedEC:null,feedPH:null,side:'standard',dir:'up',op:'APG',mode:'sweep',triage:[]};
+const pre=`var S={room:null,rows:[],notes:{},free:{},feedEC:null,feedPH:null,side:'standard',dir:'up',op:'APG',mode:'sweep',triage:[],skipped:{},access:null,startedAt:0};
 var DEMO=false; var HIST=[]; function getHist(){return HIST;}`;
 const code=pre+'\n'+roomsSrc+'\n'+pureSrc+
-'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,FEEDEC,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes};';
+'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,FEEDEC,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes,PEGS,ACCESS,SKIPWHY,tableSkipped,skipReason,skippedList,sweepStamp,rowNoteLines,buildRowNotes,buildRoomNotes,roomHead,roomPara};';
 fs.writeFileSync(path.join(__dirname,'lib.js'),code);
 module.exports=require('./lib.js');
 // CSV loader -> S.rows shape used by doCommit

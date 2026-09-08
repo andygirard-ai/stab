@@ -58,7 +58,7 @@ async function inject(w,vwc,ec){ // push frames until a row commits
   ok(last.feedEC===first.feedEC && last.feedPH===first.feedPH,'post-resume row carries same feed EC/pH as pre-crash rows ('+last.feedEC+'/'+last.feedPH+' vs '+first.feedEC+'/'+first.feedPH+')');
   $2('exit').click();
   ok(w.S.finished,'finished');
-  const wb=$2('wb').value; out.push('    workbook notes line: '+(wb.split('\n').find(l=>/left header/.test(l))||'(free text MISSING from workbook)'));
+  const wb=$2('wbrow').value; out.push('    workbook notes line: '+(wb.split('\n').find(l=>/left header/.test(l))||'(free text MISSING from workbook)'));
   const csvl=$2('csv').value.split('\n'); out.push('    implausible col on 70% row: '+(csvl.find(l=>/,70\.?\d*,/.test(l)||/,70,/.test(l))||'').split(',').slice(-3).join('|'));
   const _h=JSON.parse(w.localStorage.getItem('stab_hist')); const hist=Array.isArray(_h)?_h:_h.items;
   ok(_h.v===1 && hist.length===1 && hist[0].room==='B2','history saved (v1 wrapper)');

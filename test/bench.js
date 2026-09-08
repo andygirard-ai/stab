@@ -58,10 +58,11 @@ function boot(storage){
     }
     ok(w.S.rows.length===4,'4 stabs logged on BENCH: '+w.S.rows.length);
     d.getElementById('exit').click(); await sleep(50);
-    const wb=d.getElementById('wb').value, csv=d.getElementById('csv').value;
+    const wb=d.getElementById('wbroom').value+'\n'+d.getElementById('wbrow').value;
+    const csv=d.getElementById('csv').value;
     ok(wb.length>0,'workbook block built for BENCH');
     ok(!BAD.test(wb),'workbook block has no NaN/undefined/null'+(BAD.test(wb)?': '+wb:''));
-    ok(/DOF —/.test(wb.split('\n')[0]),'workbook head reads "DOF —": '+wb.split('\n')[0]);
+    ok(/DOF —/.test(wb.split('\n')[1]),'workbook head reads "DOF —": '+wb.split('\n')[1]);
     ok(!BAD.test(csv.split('\n').slice(1).join('\n')),'CSV rows have no NaN/undefined');
     ok(errors.length===0,'no runtime errors on a BENCH sweep: '+errors.join('|'));
     w.close(); }
