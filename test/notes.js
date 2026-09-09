@@ -10,7 +10,8 @@ const html=fs.readFileSync(file,'utf8').replace(/<script src="([^"?]+)[^"]*"><\/
 
 const out=[]; const ok=(c,m)=>out.push((c?'PASS ':'FAIL ')+m);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const STAMP=/^\d{2}:\d{2}$/;
+const STAMP=/^\d{1,2}:\d{2} (AM|PM)$/;
+const STAMP_G=/^\d{1,2}:\d{2} (AM|PM)/;
 
 function boot(storage){
   const errors=[], vc=new VirtualConsole();
@@ -48,15 +49,17 @@ async function demoStab(w,d){
     for(let i=0;i<6;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const row=d.getElementById('wbrow').value, room=d.getElementById('wbroom').value;
-    ok(STAMP.test(row.split('\n')[0]),'row notes lead with the sweep timestamp: "'+row.split('\n')[0]+'"');
-    ok(STAMP.test(room.split('\n')[0]),'room notes lead with the sweep timestamp: "'+room.split('\n')[0]+'"');
-    ok(row.split('\n')[0]===room.split('\n')[0],'both pastes carry the same stamp');
+    ok(STAMP_G.test(row.split('\n')[0]),'row notes lead with an inline sweep timestamp: "'+row.split('\n')[0]+'"');
+    ok(STAMP.test(room.split('\n')[0]),'room notes lead with the sweep timestamp on its own line: "'+room.split('\n')[0]+'"');
+    ok(/^T\d+  /.test(row.split('\n')[0].replace(STAMP_G,'').trim()),
+       'stamp sits before the first word of the first row, not on its own line: "'+row.split('\n')[0]+'"');
+    ok(row.split('\n')[0].match(STAMP_G)[0]===room.split('\n')[0],'row and room stamps carry the same time text');
     ok(!/CHECK/.test(row),'row notes carry no CHECK section');
     ok(!/below floor/.test(row),'row notes carry no summary line');
     ok(!/ROW NOTES|NOTES  \(/.test(row+room),'neither paste carries a column header');
     ok(/CHECK/.test(room),'room notes carry the CHECK section');
     ok(/median/.test(room.split('\n')[1]),'room notes line 2 is the summary: "'+room.split('\n')[1]+'"');
-    ok(row.split('\n').slice(1).every(l=>/^T\d+  /.test(l)),'every row-note line is T-prefixed');
+    ok(row.split('\n').slice(1).every(l=>/^T\d+  /.test(l)),'every row-note line after the first is T-prefixed');
     ok(errors.length===0,'no runtime errors (pastes): '+errors.join('|'));
     w.close(); }
 
@@ -86,7 +89,7 @@ async function demoStab(w,d){
     for(let i=0;i<4;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const row=d.getElementById('wbrow').value;
-    const line=row.split('\n').find(l=>new RegExp('^T'+tbl+'  ').test(l));
+    const line=row.split('\n').find(l=>new RegExp('(^|'+STAMP_G.source+' )T'+tbl+'  ').test(l));
     ok(!!line && /— spray REI/.test(line),'skipped table shows its reason in row notes: "'+line+'"');
     ok(/Skipped T'+tbl+'|Skipped T/.test(d.getElementById('wbroom').value),'room notes name the skipped table');
     ok(errors.length===0,'no runtime errors (skip): '+errors.join('|'));

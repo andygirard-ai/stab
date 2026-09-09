@@ -183,7 +183,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   paused:false, pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
-  skipped:{}, access:null,
+  skipped:{}, access:null, alarmQueue:[], huntFails:0,
   flaggedTable:false, reconnB:false, pausedBeforeCal:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
@@ -246,7 +246,11 @@ function audio(){
 var TONES={ok:[[880,80]], warn:[[660,80],[660,80]], floor:[[440,90],[440,90],[440,90]],
   out:[[660,70],[330,150]], tick:[[1320,35]], tableDone:[[523,70],[659,70],[784,120]],
   sweepDone:[[523,80],[659,80],[784,80],[1047,180]], cal:[[988,70],[1319,80]],
-  battLow:[[494,120],[392,120],[330,220]], drop:[[330,170],[262,220]]};
+  battLow:[[494,120],[392,120],[330,220]], drop:[[330,170],[262,220]],
+  /* zero-EC alarm (1.4): lower and longer than 'out' so it does not read as
+     just another outlier beep — rooms are loud, so this costs nothing to add
+     even though the operator is told not to rely on it. */
+  alarm:[[220,220],[196,220],[220,220],[196,320]]};
 function beep(name){
   var a=audio(); if(!a) return;
   var t=a.currentTime+0.01, seq=TONES[name]||[];
@@ -666,7 +670,7 @@ $('startbtn').onclick=function(){
   applyRoomCfg();
   S.route=buildRoute(S.room,S.dir,S.mode); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
-  S.skips=0; S.unstable=0; S.redo=[];
+  S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
@@ -734,7 +738,119 @@ function render(){
   $('ctx').innerHTML=p
     ? '<span class="was">last here '+p.d+'</span> &nbsp; '+p.v+'% &nbsp; '+(p.e==null?'—':p.e)+' dS/m &nbsp; <span id="cdelta"></span>'
     : '<span class="was">no prior reading here</span>';
-  drawRoute(); paint();
+  drawRoute(); drawRecent(); paint();
+}
+/* ---------------- target picker (1.2 sequence recovery) ----------------
+   The current-target label is the control: tap it to say "actually I'm
+   here", long-press a recent entry to say "that one was actually here".
+   pickableRoute() is false for spot/flush — those have no table structure
+   to pick from (matches checkLines()'s own guard). */
+function pickableRoute(){ return S.route.length && S.mode!=='spot' && S.mode!=='flush'; }
+function routeIndexNear(t,pos,depth,near){
+  var best=-1;
+  for(var i=0;i<S.route.length;i++){
+    var s=S.route[i];
+    if(s.t===t && s.pos===pos && s.depth===depth && (best<0 || Math.abs(i-near)<Math.abs(best-near))) best=i;
+  }
+  return best;
+}
+var TP={forRow:null};
+function openTarget(rowIdx){
+  if(S.finished || !pickableRoute()){ toast('no table sequence to pick from'); return; }
+  TP.forRow=(rowIdx==null?null:rowIdx);
+  var cfg=ROOMS[S.room]||{t:11};
+  var h='';
+  for(var t=1;t<=cfg.t;t++) h+='<button class="tgt" data-t="'+t+'">'+t+'</button>';
+  $('targettabs').innerHTML=h;
+  $('targetpos').innerHTML='';
+  [].forEach.call(document.querySelectorAll('#targettabs .tgt'),function(b){
+    b.onclick=function(){
+      [].forEach.call(document.querySelectorAll('#targettabs .tgt'),function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      renderTargetPos(+b.dataset.t);
+    };
+  });
+  $('targetsheet').classList.remove('hide');
+}
+function renderTargetPos(t){
+  var opts=[], seen={};
+  S.route.forEach(function(s){
+    if(s.t!==t) return;
+    var k=s.pos+'|'+s.depth; if(seen[k]) return; seen[k]=1;
+    opts.push({pos:s.pos,depth:s.depth});
+  });
+  $('targetpos').innerHTML=opts.map(function(o){
+    return '<button class="tgt" data-pos="'+o.pos+'" data-depth="'+o.depth+'">'+o.pos+
+      (o.depth==='mid-bag'?' <span class="d">MID</span>':'')+'</button>';
+  }).join('');
+  [].forEach.call(document.querySelectorAll('#targetpos .tgt'),function(b){
+    b.onclick=function(){ pickTarget(t,b.dataset.pos,b.dataset.depth); };
+  });
+}
+/* Relabels one row to a different route stop, keeping the measured values.
+   PREV is re-keyed so the position-history delta follows the corrected
+   label rather than the stale one. */
+function relabelRow(r,stop){
+  r.table=stop.t; r.position=stop.pos; r.depth=stop.depth;
+  r.strain=((RMAP[S.room]||{})[String(stop.t)]||['',''])[0];
+  r.flags=((RMAP[S.room]||{})[String(stop.t)]||['',''])[1];
+  r.plant=(stop.extra?'adjacent':'');
+  var newKey=r.room+'|'+stop.t+'|'+stop.pos+'|'+stop.depth;
+  PREV[newKey]={d:r.date,v:r.vwc,e:r.ec,ts:Date.now()};
+  if(!DEMO) lsSet('stab_prev',JSON.stringify(PREV));
+}
+/* The last n readings are, one for one, shifted back by n route slots from
+   whatever slot they are each currently labelled with — not simply
+   relabelled to newIndex..newIndex+n-1, which would just reproduce the
+   labels they already have. n is the sequence distance the operator gave
+   us (S.i minus the corrected target), so this handles an off-by-one and
+   an off-by-three with the same arithmetic. */
+function shiftBack(n){
+  var len=S.rows.length, count=Math.min(n,len);
+  for(var k=0;k<count;k++){
+    var rowPos=len-count+k, oldRouteIdx=S.i-count+k, newRouteIdx=oldRouteIdx-n;
+    if(newRouteIdx<0 || !S.route[newRouteIdx]) continue;
+    relabelRow(S.rows[rowPos],S.route[newRouteIdx]);
+  }
+}
+function pickTarget(t,pos,depth){
+  $('targetsheet').classList.add('hide');
+  var near=(TP.forRow==null)?S.i:TP.forRow;
+  var idx=routeIndexNear(t,pos,depth,near);
+  if(idx<0){ toast('not on this route'); return; }
+  if(TP.forRow!=null){
+    var rowIdx=TP.forRow; TP.forRow=null;
+    if(S.rows[rowIdx]) relabelRow(S.rows[rowIdx],S.route[idx]);
+    saveSession(); render(); flash();
+    return;
+  }
+  if(idx===S.i) return;
+  if(idx>S.i){ S.i=idx; saveSession(); render(); flash(); return; }
+  var n=S.i-idx;
+  if(confirm('Shift the last '+n+' reading'+(n>1?'s':'')+' back one slot?')) shiftBack(n);
+  S.i=idx; saveSession(); render(); flash();
+}
+function drawRecent(){
+  var el=$('recent'); if(!el) return;
+  if(!pickableRoute() || !S.rows.length){ el.innerHTML=''; return; }
+  var n=Math.min(4,S.rows.length), h='';
+  for(var i=S.rows.length-1;i>=S.rows.length-n;i--){
+    var r=S.rows[i];
+    h+='<button class="rc" data-i="'+i+'">T'+r.table+' '+r.position+' '+
+      (r.depth==='reference'?'ref':'mid')+' '+r.vwc.toFixed(0)+'%</button>';
+  }
+  el.innerHTML=h;
+  [].forEach.call(el.querySelectorAll('.rc'),function(b){
+    var lt=null, fired=false;
+    b.addEventListener('pointerdown',function(){
+      fired=false; clearTimeout(lt);
+      lt=setTimeout(function(){ fired=true; openTarget(+b.dataset.i); },500);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(function(ev){
+      b.addEventListener(ev,function(){ clearTimeout(lt); });
+    });
+    b.addEventListener('click',function(){ if(fired){ fired=false; return; } toast('long-press to reassign'); });
+  });
 }
 function ecClass(ec){
   if(ec==null) return 'enone';
@@ -778,29 +894,35 @@ function battPaint(){
 }
 function isConn(){ if(DEMO) return true;
   return !!(S.dev && S.dev.gatt && S.dev.gatt.connected && S.chr); }
+/* v26 1.3: two colour states plus alarm. 'ready' (amber, pulsing) is the
+   action colour — probe clear, stab now. 'hold' (grey, solid) is quiet —
+   logged, no rush. Green is retired: it read as "go" at the wrong moments. */
 function setBig(){
   var b=$('log'); if(!S.roomStarted) return;
   b.disabled=false;
-  b.classList.remove('busy','hold','dim');
+  b.classList.remove('busy','hold','dim','ready');
   if(S.connecting){ b.textContent='CONNECTING…'; b.classList.add('dim'); return; }
   if(!isConn()){ b.textContent=S.everConn?'RECONNECT':'CONNECT'; return; }
   if(S.verifying){ b.textContent='CHECKING PROBE…'; b.classList.add('busy'); return; }
   if(!S.trigger){ b.textContent='RETRY PROBE'; return; }
   if(!S.auto){
     if(S.awaiting){ b.textContent='READING…'; b.classList.add('busy'); }
-    else b.textContent='TAKE READING';
+    else{ b.textContent='TAKE READING'; b.classList.add('ready'); }
     return;
   }
   if(DEMO){
     if(A.state==='settling'){ b.textContent='READING…'; b.classList.add('busy'); }
     else if(A.state==='hold'){ b.textContent='LOGGED · TAP TO PULL'; b.classList.add('hold'); }
-    else b.textContent='TAP TO STAB';
+    else{ b.textContent='TAP TO STAB'; b.classList.add('ready'); }
     return;
   }
   if(S.paused){ b.textContent='PAUSED — TAP TO ARM'; b.classList.add('dim'); return; }
-  if(A.state==='settling'){ b.textContent='READING…'; b.classList.add('busy'); }
+  if(A.state==='settling'){
+    b.textContent=A.prompted?'NO STABLE READING · TAP TO COMMIT':'READING… TAP TO COMMIT';
+    b.classList.add('busy');
+  }
   else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('hold'); }
-  else b.textContent='ARMED · STAB TO LOG';
+  else{ b.textContent='ARMED · STAB TO LOG'; b.classList.add('ready'); }
 }
 function step(m){ var d=$('diag'); if(d) d.textContent=m; }
 function flash(){
@@ -814,6 +936,26 @@ function toast(msg){
   t.textContent=msg; t.classList.add('show');
   clearTimeout(tmr); tmr=setTimeout(function(){t.classList.remove('show');},2400);
 }
+/* ---------------- alarm (1.3/1.4): red, held until acknowledged ----------------
+   A toast auto-dismisses in 2.4s, too fast for something the field showed
+   goes unnoticed. Alarms queue instead: each stays up until tapped, and the
+   next one (if any) takes its place. */
+function showAlarm(msg){
+  S.alarmQueue=S.alarmQueue||[];
+  S.alarmQueue.push(msg);
+  renderAlarm();
+}
+function renderAlarm(){
+  var el=$('alarm'); if(!el) return;
+  if(!S.alarmQueue || !S.alarmQueue.length){ el.classList.add('hide'); return; }
+  var t=$('alarmtxt'); if(t) t.textContent=S.alarmQueue[0];
+  el.classList.remove('hide');
+}
+var alarmOk=$('alarmok');
+if(alarmOk) alarmOk.onclick=function(){
+  if(S.alarmQueue) S.alarmQueue.shift();
+  renderAlarm();
+};
 
 /* ---------------- bluetooth ---------------- */
 function dbgUnparsedPush(tag,txt){
@@ -967,7 +1109,7 @@ function verifyTrigger(){
     return tryOnce();
   }).then(function(r){
     if(r){
-      S.verifying=false;
+      S.verifying=false; S.huntFails=0;
       step('probe ok — '+TRIGGER.n);
       ready();
       return;
@@ -976,8 +1118,15 @@ function verifyTrigger(){
     step('default trigger not confirmed — hunting');
     return huntFallback().then(function(){
       S.verifying=false;
-      if(S.trigger) ready();
-      else{ setBig(); step('no trigger found — tap RETRY PROBE'); }
+      if(S.trigger){ S.huntFails=0; ready(); return; }
+      /* 1.8: two failed hunts in a row is almost always the connector, not
+         the probe — breaks the retry loop before the operator burns more
+         time on it. */
+      S.huntFails=(S.huntFails||0)+1;
+      if(S.huntFails>=2){
+        setBig(); step('remove the connector, wipe it, and reinsert');
+        toast('remove the connector, wipe it, and reinsert');
+      }else{ setBig(); step('no trigger found — tap RETRY PROBE'); }
     });
   });
 }
@@ -1038,6 +1187,14 @@ function bigTap(){
   if(S.verifying) return;
   if(!S.trigger){ verifyTrigger(); return; }
   if(S.auto){
+    /* v26 1.1: a tap mid-settle is a manual commit of the current frame,
+       never a pause — a dry, noisy bag that never clears the settle gate
+       used to get silently paused by this same tap, losing the reading. */
+    if(A.state==='settling' && A.buf.length){
+      var last=A.buf[A.buf.length-1];
+      A.state='hold'; doCommit(last,{manual:true}); setBig();
+      return;
+    }
     S.paused=!S.paused;
     if(!S.paused){ A.state='air'; A.buf=[]; }
     setBig();
@@ -1074,8 +1231,17 @@ function attempt(){
    15–20% VWC a 2-count wobble moved it 0.3–0.9 dS/m against a 0.15 gate, which
    pushed those stabs to the 10 s timeout. Bulk EC is what the sensor measures;
    the VWC gate already covers the permittivity side. */
+/* v26: manual commit (1.1). Below 20% VWC the signal is noisier (dry,
+   low-conductivity bags) and the settle gate above was rejecting valid
+   frames outright — a dry bag could read on screen and never auto-log.
+   Below LOW_V the tolerance band widens and the minimum settle window
+   halves, so a genuinely dry-but-stable bag clears the gate sooner. This
+   does not touch the gate at normal moisture, only the low end. SETTLE_PROMPT
+   surfaces a manual-commit prompt at 8s if the gate still hasn't cleared,
+   rather than leaving the operator guessing; MAX_SETTLE stays as the final
+   backstop so a missed prompt still resolves instead of hanging forever. */
 var POLL=800, AIR=5, INS=13, JUMP=6, STAB_V=0.5, STAB_B=0.03, STAB_B_REL=0.04,
-    MIN_SETTLE=800, MAX_SETTLE=10000;
+    MIN_SETTLE=800, MAX_SETTLE=10000, SETTLE_PROMPT=8000, LOW_V=20;
 setInterval(function(){
   if(!S.roomStarted||S.finished||!S.auto||S.paused||S.cal||S.pegsOpen||S.logOpen) return;
   if(DEMO) return;
@@ -1098,7 +1264,7 @@ function autoFeed(r){
   }
   if(A.state==='air'){
     if(r.vwc>=INS || (A.lastAir!=null && r.vwc-A.lastAir>=JUMP)){
-      A.state='settling'; A.buf=[r]; A.t0=Date.now(); A.samples=1; setBig();
+      A.state='settling'; A.buf=[r]; A.t0=Date.now(); A.samples=1; A.prompted=false; setBig();
     }
     return;
   }
@@ -1106,12 +1272,20 @@ function autoFeed(r){
   A.buf.push(r); if(A.buf.length>4) A.buf.shift();
   A.samples=(A.samples||1)+1;
   var n=A.buf.length;
+  var low=r.vwc<LOW_V;
+  var vTol=low?STAB_V*2:STAB_V;
+  var bTol=low?STAB_B*2:STAB_B, bRelTol=low?STAB_B_REL*2:STAB_B_REL;
+  var minSettle=low?MIN_SETTLE/2:MIN_SETTLE;
   if(n>=2){
     var a=A.buf[n-2], b=r;
-    var ecOk=Math.abs(a.bulk-b.bulk)<=Math.max(STAB_B, STAB_B_REL*b.bulk);
-    if(Math.abs(a.vwc-b.vwc)<=STAB_V && ecOk && Date.now()-A.t0>=MIN_SETTLE){
+    var ecOk=Math.abs(a.bulk-b.bulk)<=Math.max(bTol, bRelTol*b.bulk);
+    if(Math.abs(a.vwc-b.vwc)<=vTol && ecOk && Date.now()-A.t0>=minSettle){
       A.state='hold'; doCommit(b,{}); setBig(); return;
     }
+  }
+  if(!A.prompted && Date.now()-A.t0>=SETTLE_PROMPT){
+    A.prompted=true;
+    beep('warn'); toast('no stable reading — tap to commit now'); setBig();
   }
   if(Date.now()-A.t0>MAX_SETTLE){
     var byV=A.buf.slice().sort(function(p,q){return p.vwc-q.vwc;});
@@ -1195,6 +1369,12 @@ function doCommit(r, meta){
     unstable:!!meta.unstable,
     implaus:((ROOMS[S.room].bag===2 && r.vwc>62) || r.vwc<6),
     batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
+    manualCommit:!!meta.manual,
+    /* 1.4: a live per-stab alarm, distinct from the CHECK "no feed" rule —
+       this fires on ONE reading, not two, because it means "delivery
+       fault", not "drying bag" (a drying bag's EC rises, it does not sit
+       at zero). */
+    zeroEc:(r.bulk!=null && r.bulk<0.02 && r.vwc<20),
     _pc:pc||null, _out:!!outlier
   };
   S.rows.push(row);
@@ -1203,6 +1383,10 @@ function doCommit(r, meta){
   S.redo=[];
   if(row.flag && S.mode==='sweep' && !stop.spot) S.flaggedTable=true;
   /* feedback */
+  if(row.zeroEc){
+    beep('alarm');
+    showAlarm('zero EC — T'+stop.t+' '+stop.pos+' '+(stop.depth==='reference'?'ref':'mid')+' — delivery fault, not a dry reading');
+  }
   if(row.implaus){ beep('out'); toast('implausible '+row.vwc+'% — bad seat? undo and re-stab'); }
   else if(row.flag){ beep('floor'); toast('below floor · '+row.vwc+'%'); }
   else if(meta.unstable){ beep('out'); toast('unstable — logged median'); }
@@ -1253,12 +1437,19 @@ $('extra').onclick=function(){
   if(S.awaiting) return;
   var j=S.i-1;
   if(j<0){ toast('take a reading first'); return; }
-  var last=S.route[j];
-  while(j>=0 && S.route[j].t===last.t && S.route[j].pos===last.pos && !S.route[j].extra) j--;
-  j++;
+  var last=S.route[j], t=last.t, pos=last.pos;
+  /* 1.7: find the ORIGINAL (non-extra) ref/mid block for this table and
+     position, skipping back over any earlier +plant duplicates first. A
+     second "+plant" tap at the same spot used to land on its own previous
+     extra entry, find nothing behind it, and silently lose the pairing on
+     the next plant. Walking past the duplicates first means every tap
+     repeats the same original pair rather than an accumulating stack. */
+  var end=j; while(end>=0 && S.route[end].t===t && S.route[end].pos===pos && S.route[end].extra) end--;
+  var start=end; while(start>=0 && S.route[start].t===t && S.route[start].pos===pos && !S.route[start].extra) start--;
+  start++;
+  if(start>end){ toast('nothing to repeat'); return; }
   var grp=[];
-  for(var k=j;k<S.i;k++) grp.push({t:S.route[k].t,pos:S.route[k].pos,depth:S.route[k].depth,extra:true,spot:S.route[k].spot});
-  if(!grp.length){ toast('nothing to repeat'); return; }
+  for(var k=start;k<=end;k++) grp.push({t:S.route[k].t,pos:S.route[k].pos,depth:S.route[k].depth,extra:true,spot:S.route[k].spot});
   Array.prototype.splice.apply(S.route,[S.i,0].concat(grp));
   S.redo=[]; A.state='air'; A.buf=[];
   saveSession(); render(); flash();
@@ -1300,6 +1491,8 @@ $('note').onclick=function(){
   if(t==null||t==='?'){ toast('notes are per table'); return; }
   openPegs(t);
 };
+$('pos').onclick=function(){ openTarget(null); };
+$('targetcancel').onclick=function(){ $('targetsheet').classList.add('hide'); TP.forRow=null; };
 $('exit').onclick=function(){
   if(S.rows.length && !confirm('End sweep with '+S.rows.length+' readings?')) return;
   finish();
@@ -1552,6 +1745,7 @@ function finish(){
   ['hdr','route','main','pad'].forEach(function(id){$(id).classList.add('hide');});
   $('pegsheet').classList.add('hide'); $('calsheet').classList.add('hide');
   $('logsheet').classList.add('hide'); S.pegsOpen=false; S.logOpen=false;
+  $('targetsheet').classList.add('hide'); TP.forRow=null;
   $('done').classList.remove('hide');
   var v=S.rows.filter(function(r){return r.depth==='reference';})
               .map(function(r){return r.vwc;}).sort(function(a,b){return a-b;});
@@ -1577,6 +1771,9 @@ function finish(){
   html+='<br>';
   if(v.length) html+='range '+v[0].toFixed(1)+' – '+v[v.length-1].toFixed(1)+'%<br>';
   html+='below floor '+lows+' · skips '+S.skips+' · misses '+DBG.timeouts+'<br>';
+  var dead=S.rows.filter(function(r){return r.zeroEc;});
+  if(dead.length) html+='<span class="low">'+dead.length+' dead bag'+(dead.length>1?'s':'')+' flagged — '+
+    dead.map(function(r){return 'T'+r.table+' '+r.position;}).join(', ')+'</span><br>';
   html+='time '+fmtDur(dur);
   if(S.mode==='sweep'){
     if(clean){
@@ -1588,12 +1785,13 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag\n';
   var body=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
-      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':'')].join(',');
+      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
+      (r.manualCommit?'YES':''),(r.zeroEc?'YES':'')].join(',');
   }).join('\n');
   CSV_TEXT=head+body;
   CSV_NAME=S.room+'_'+fnameDate()+'.csv';

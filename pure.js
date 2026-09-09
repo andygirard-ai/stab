@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v25';
+var VER='v26';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -330,10 +330,18 @@ function skippedList(){ return Object.keys(S.skipped||{}); }
    readings and half a table is not evidence about a table. This also keeps
    the numbers stable as a partial table fills up — a table skipped on its
    last stop would otherwise drop five good readings out of the headline. */
+/* 12-hour throughout — the workbook is 12-hour, the app used to emit 24h. */
+function fmt12(h,m){
+  var ap=h>=12?'PM':'AM', h12=h%12; if(h12===0) h12=12;
+  return h12+':'+m+' '+ap;
+}
 function sweepStamp(){
-  if(S.rows.length && S.rows[0].time) return S.rows[0].time.slice(0,5);
+  if(S.rows.length && S.rows[0].time){
+    var p=S.rows[0].time.split(':');
+    return fmt12(+p[0],p[1]);
+  }
   var d=new Date(S.startedAt||Date.now());
-  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+  return fmt12(d.getHours(),('0'+d.getMinutes()).slice(-2));
 }
 function checkLines(){
   var out=[];
@@ -462,11 +470,15 @@ function rowNoteLines(){
   });
   return lines;
 }
-/* Copy 1: the Row Notes column on its own. No summary, no CHECK, no header. */
+/* Copy 1: the Row Notes column on its own. No summary, no CHECK, no header.
+   The stamp sits inline before the first row's first word — on its own line
+   it pushes every following row down one when pasted into the column. */
 function buildRowNotes(){
   var lines=rowNoteLines();
   if(!lines.length) return '';
-  return sweepStamp()+'\n'+lines.join('\n');
+  lines=lines.slice();
+  lines[0]=sweepStamp()+' '+lines[0];
+  return lines.join('\n');
 }
 function roomHead(){
   var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag;
