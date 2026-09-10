@@ -55,16 +55,26 @@ function rowsFor(w,room,spec){
        'opposite ALSO flips the phase — T12 starts at the front, where the operator is standing: '+down[0].pos);
     // the 9/9 bug exactly: T12 first, app asked for header
     ok(!(down[0].t===12 && down[0].pos==='header'),'the 9/9 A-1 case does not reproduce');
-    // and the snake still alternates so nobody backtracks
+    // v29, 9/10: opposite is not a mirror. The operator enters at the front,
+    // walks the first table front→header, then walks BACK to the front for the
+    // second table; the snake only starts at the third. v27 mirrored it and so
+    // asked for T10 front while he stood at T10's header.
     const firstPos=t=>{ for(let i=0;i<down.length;i++) if(down[i].t===t) return down[i].pos; };
-    ok(firstPos(12)==='front' && firstPos(11)==='header' && firstPos(10)==='front',
-       'walking down still alternates: T12 '+firstPos(12)+' → T11 '+firstPos(11)+' → T10 '+firstPos(10));
+    ok(firstPos(12)==='front' && firstPos(11)==='front' && firstPos(10)==='header',
+       'opposite walks back after the first table: T12 '+firstPos(12)+' → T11 '+firstPos(11)+' → T10 '+firstPos(10));
+    ok(firstPos(9)==='front' && firstPos(8)==='header',
+       'and snakes normally from there: T9 '+firstPos(9)+' → T8 '+firstPos(8));
     const upFirst=t=>{ for(let i=0;i<up.length;i++) if(up[i].t===t) return up[i].pos; };
     ok(upFirst(1)==='front' && upFirst(2)==='header' && upFirst(3)==='front',
        'walking up is unchanged from v26: T1 '+upFirst(1)+' → T2 '+upFirst(2)+' → T3 '+upFirst(3));
     // an 11-table room reverses onto an odd table and must still start front
     const d11=w.buildRoute('B1','down','sweep');
     ok(d11[0].t===11 && d11[0].pos==='front','odd-numbered last table too: T'+d11[0].t+' '+d11[0].pos);
+    const f11=t=>{ for(let i=0;i<d11.length;i++) if(d11[i].t===t) return d11[i].pos; };
+    ok(f11(10)==='front' && f11(9)==='header','…and the walk-back applies there too: T10 '+f11(10)+' → T9 '+f11(9));
+    // standard is bit-for-bit unchanged by the walk-back
+    const u11=w.buildRoute('B1','up','sweep');
+    ok(u11.map(s=>s.t+s.pos).join()===w.buildRoute('B1','up','sweep').map(s=>s.t+s.pos).join(),'standard route is deterministic');
     w.close(); }
 
   // the picker inherits the fix: picking the stop you are standing at moves

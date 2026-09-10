@@ -23,6 +23,7 @@ interrupted by a reload. This is the list to execute against.
 |---|---|---|
 | v28 | traffic light on the big button — green stab, red wait | 9/10 #1 |
 | v28 | a wet probe clears `hold`, so mid-bag stabs stop being dropped | 9/10 #2 |
+| v29 | opposite walks back after the first table — snake phase corrected | 9/10 #3 |
 
 **Known cost of waiting:** v27 still drops a mid-bag reading when the move
 from reference to mid-bag is fast enough that the probe never reads under
@@ -87,3 +88,33 @@ both sides in test/adda.js.
 
 **Worth confirming in the field**: whether any rows went missing before the
 fix. A room that would not finish will have fewer CSV rows than stabs taken.
+
+### 3. Opposite direction is not a mirror — it has a walk-back → v29
+
+**Observed.** "When you're doing the sweep opposite and starting at the last
+table, you're gonna be starting at the front of the table like you had. And
+then once you complete that, you're gonna have to walk back, and you'll be
+back at the front of the row. Now I'm on table ten, and I'd be at the header
+and it says I'm at the front."
+
+**What it was.** v27 fixed the phase for the *first* table of an opposite
+walk and left the rest as a mirror of the standard walk. Reality has an extra
+step in it: the operator enters at the front either way, walks the first
+table front→header, and then has to walk *back* to the front to reach the
+second table. So opposite runs front, front, header, front, header… — the
+ordinary snake with one step inserted after the first table. Mirroring it
+put every table from the second onward a position out, which is why A-1 asked
+for T10 front while he was standing at T10's header.
+
+The confirmed sequence, 12-table room, opposite:
+
+    T12 front · T11 front · T10 header · T9 front · T8 header · …
+
+**Shipped.** `walkPhase(walkIndex, dir)` inserts the extra step for `down`
+and leaves `up` bit-for-bit unchanged. Assumed to hold in every room, because
+it is a fact about where the door is rather than how many tables there are —
+if a room turns out to differ, the target picker is the escape hatch.
+
+**Not fixed, by decision.** T11's readings went in with front and header
+swapped. The operator's call: front and header on the same table are within
+noise for his purposes, so a retroactive swap is not worth building.
