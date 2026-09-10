@@ -10,6 +10,29 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 
 ---
 
+## Ship manifest
+
+Fixes are batched rather than pushed one at a time, so a sweep is never
+interrupted by a reload. This is the list to execute against.
+
+**Live on main: v27.** What the phone is running right now.
+
+**Queued on `claude/new-session-ri155r`, tested, not live:**
+
+| | change | entry |
+|---|---|---|
+| v28 | traffic light on the big button — green stab, red wait | 9/10 #1 |
+| v28 | a wet probe clears `hold`, so mid-bag stabs stop being dropped | 9/10 #2 |
+
+**Known cost of waiting:** v27 still drops a mid-bag reading when the move
+from reference to mid-bag is fast enough that the probe never reads under
+3.5% in between. Until v28 ships, a beat's pause before the second stab
+avoids it, and a room that will not finish is the tell that it happened.
+
+**Not yet actioned** — nothing outstanding.
+
+---
+
 ## 9/10/2026 — first morning on v27
 
 ### 1. The colour scheme reads as ambiguous mid-walk → v28
