@@ -60,10 +60,13 @@ function schedLine(room){
   var p=c[0].split(':');
   return c[2]+' shot'+(c[2]>1?'s':'')+' from '+fmt12(+p[0],p[1])+', every '+(c[1]/60)+'h';
 }
+/* Days since flower start. Counted off a date rather than carried as a number
+   against a reference day, so it cannot go stale between move-ins. */
 function dofNow(rm, nowDate){
-  var d=DOF[rm]; if(d===undefined) return '';
+  var s=FLOWER_START[rm]; if(!s) return '';
+  var p=s.split('-'), start=new Date(+p[0],+p[1]-1,+p[2]).getTime();
   var n=nowDate?new Date(nowDate):new Date();
-  return d + Math.round((n.setHours(0,0,0,0)-DOF_REF.getTime())/86400000);
+  return Math.round((n.setHours(0,0,0,0)-start)/86400000);
 }
 
 /* ---- probe protocol ---- */

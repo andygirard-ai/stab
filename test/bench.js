@@ -28,8 +28,8 @@ function boot(storage){
     ok(!!w.ROOMS.BENCH,'app boots with BENCH in ROOMS');
     ok(w.ROOMS.BENCH.t===4 && w.ROOMS.BENCH.bag===2 && /peat/i.test(w.ROOMS.BENCH.media),
        'BENCH is 4 tables, 2-gal, '+w.ROOMS.BENCH.media);
-    ok(!w.SCHED.BENCH && !w.DOF.BENCH && !w.SCHED_ML.BENCH && !w.RMAP.BENCH &&
-       w.FEEDEC.BENCH===undefined,'BENCH absent from SCHED/DOF/SCHED_ML/RMAP/FEEDEC as intended');
+    ok(!w.SCHED.BENCH && !w.FLOWER_START.BENCH && !w.SCHED_ML.BENCH && !w.RMAP.BENCH &&
+       w.FEEDEC.BENCH===undefined,'BENCH absent from SCHED/FLOWER_START/SCHED_ML/RMAP/FEEDEC as intended');
     ok(errors.length===0,'no runtime errors at boot: '+errors.join('|'));
 
     // the four lookups, called directly

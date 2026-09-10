@@ -39,7 +39,7 @@ var ROOMS={
  /* Not a production room. A bench fixture for testing the probe and the
     app against a known bag. kind:'test' keeps it out of the coverage
     count, the not-seen list and the EOD swept list, and it is deliberately
-    absent from SCHED, DOF, SCHED_ML, FEEDEC and RMAP — every lookup that
+    absent from SCHED, FLOWER_START, SCHED_ML, FEEDEC and RMAP — every lookup that
     reads those must tolerate a room that is missing, and read as unknown
     rather than invent a zero. */
  BENCH:{t:4,bag:2,media:'peat mix',kind:'test'}
@@ -77,13 +77,29 @@ var SCHED={A1:['01:15',120,2],A2:['13:15',120,2],A3:['01:15',120,5],A4:['13:15',
  B3:['01:15',120,5],B4:['01:15',120,3],B5:['01:15',120,2],B6:['01:15',120,2],C1:['13:15',120,2],
  C2:['13:15',120,2],C3:['13:15',120,5],C4:['13:15',120,4],C5:['13:15',120,3],C6:['13:15',120,2]};
 
-/* feed EC target by room; 0 = on water */
-var FEEDEC={A1:2.5,A2:2.5,A3:0,A4:0,A5:2.6,A6:2.6,A7:2.6,
-            B1:2.5,B2:2.5,B3:0,B4:2.5,B5:2.5,B6:2.5,
-            C1:2.5,C2:2.5,C3:0,C4:2.5,C5:2.5,C6:2.5};
-var DOF_REF=new Date(2026,7,28);
-var DOF={A1:10,A2:9,A3:60,A4:57,A5:45,A6:38,A7:53,B1:17,B2:1,B3:64,B4:38,B5:29,B6:24,
-         C1:16,C2:3,C3:63,C4:36,C5:29,C6:25};
+/* Feed EC target by room; 0 = on water.
+   Corrected 9/10/2026: A7 is the only room on water (harvest Monday). A3, A4,
+   B3 and C3 all read 0 here and are on feed — a 0 switches the dilution and
+   no-feed CHECK rules off entirely, so those rooms were being swept with two
+   rules silently disabled. The four values marked ASSUMED are the wing
+   default, not a confirmed target: correct them at the next sweep, or on the
+   setup screen, which overrides this per room. */
+var FEEDEC={A1:2.5,A2:2.5,A3:2.6/*ASSUMED*/,A4:2.6/*ASSUMED*/,A5:2.6,A6:2.6,A7:0,
+            B1:2.5,B2:2.5,B3:2.5/*ASSUMED*/,B4:2.5,B5:2.5,B6:2.5,
+            C1:2.5,C2:2.5,C3:2.5/*ASSUMED*/,C4:2.5,C5:2.5,C6:2.5};
+/* Flower start date per room. DOF computes from this forever, so this is a
+   move-in edit, not a weekly one — the old DOF-plus-reference-date pair drifted
+   the moment a room was replanted and nobody re-typed it, which is how B3 read
+   77 on 9/10 when it was 7. Every date here is the old table converted exactly,
+   except B3 and C3, which the operator corrected on 9/10.
+   Source of truth is the Growlink blueprint's day-of-cycle (activeRun.
+   currentDayNo). Note it runs about a day ahead: the blueprint counts from its
+   on-time and is set early in the cycle so one blueprint catches both the
+   11 AM and the 11 PM room. */
+var FLOWER_START={A1:'2026-08-18',A2:'2026-08-19',A3:'2026-06-29',A4:'2026-07-02',
+ A5:'2026-07-14',A6:'2026-07-21',A7:'2026-07-06',
+ B1:'2026-08-11',B2:'2026-08-27',B3:'2026-09-03',B4:'2026-07-21',B5:'2026-07-30',B6:'2026-08-04',
+ C1:'2026-08-12',C2:'2026-08-25',C3:'2026-09-02',C4:'2026-07-23',C5:'2026-07-30',C6:'2026-08-03'};
 
 /* Manual task durations as configured in Growlink 9/2/2026.
    Room flush = "all water". Rescue = "all feed" or an individual table. */
@@ -100,3 +116,10 @@ var DRIPPERS={
  A2:{1:4,2:4,3:2,4:2,5:2,6:2,7:2,8:2,9:2,10:2,11:2,12:2},
  C3:{1:2,2:2,3:2,4:3,5:3,6:3,7:3,8:3,9:3,10:3,11:3}
 };
+/* mL per minute per EMITTER, by wing. B/C is a half-gallon-per-hour emitter:
+   0.5 x 3785.41 mL/gal / 60 = 31.54. Three of them is 94.6 mL/min/plant,
+   which is where the 95 figure comes from — so 95 describes a 3-emitter
+   plant, and a 2-emitter table at the same runtime gets two thirds of it.
+   Nothing derives volume from this yet; it is here so that when something
+   does, it multiplies by the emitters a table actually has. */
+var DRIP_FLOW={A:17.5, B:31.54, C:31.54};
