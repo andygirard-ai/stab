@@ -220,13 +220,13 @@ function enterSettling(w,vwc,rawBulk){
   // ================= 1.3 colour states on the big button ===================
   { const {w,d,errors}=boot(); await sleep(50);
     start(w,d,'B2'); w.S.trigger=w.TRIGGER; w.setBig(); await sleep(20);
-    ok(d.getElementById('log').classList.contains('ready'),'armed/clear state carries .ready (amber, pulsing)');
-    ok(!d.getElementById('log').classList.contains('hold'),'…not .hold');
+    ok(d.getElementById('log').classList.contains('ready'),'armed/clear state carries .ready (v28: green, pulsing)');
+    ok(!d.getElementById('log').classList.contains('wait'),'…not .wait');
     enterSettling(w,35.0,900); await sleep(15);
     d.getElementById('log').click(); await sleep(15);        // manual commit → hold
     ok(w.A.state==='hold','state machine reports hold after a commit');
-    ok(d.getElementById('log').classList.contains('hold'),'logged state carries .hold (grey, solid)');
-    ok(!d.getElementById('log').classList.contains('ready'),'…not .ready — no green/amber "go" cue while holding');
+    ok(d.getElementById('log').classList.contains('wait'),'logged state carries .wait (v28: red — do not stab yet)');
+    ok(!d.getElementById('log').classList.contains('ready'),'…not .ready — no go cue until the probe clears');
     ok(errors.length===0,'no runtime errors (1.3): '+errors.join('|'));
     w.close(); }
 

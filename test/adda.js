@@ -123,6 +123,45 @@ function rowsFor(w,room,spec){
     ok(w.A.state==='air','2.2% in a bare hand still reads as air: '+w.A.state);
     ok(errors.length===0,'no runtime errors (1.3): '+errors.join('|')); }
 
+  // ============ v28: a wet probe pulled between ref and mid-bag ============
+  // 9/10 field: a room reached its last table still asking for stabs already
+  // taken. Cause: 'hold' only cleared under AIR (3.5%), and a probe pulled
+  // from a wet bag is wet — at an 800ms poll a quick reference-to-mid move
+  // can produce no frame that low, so the mid-bag stab lands during 'hold'
+  // and is dropped, and the cursor never advances.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,45.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);       // reference logged
+    ok(w.S.rows.length===1 && w.A.state==='hold','reference logged, holding');
+    const cursorAfterRef=w.S.i;
+    // pull the probe out — still wet, reads 9%, nowhere near AIR
+    w.rxBytes(w.frameBytes('0\t'+w.countsForVwc(9.0,false).toFixed(1)+' 22.0 400\rg8'));
+    await sleep(20);
+    ok(w.A.state==='air','a wet probe at 9% still counts as out of the bag: '+w.A.state);
+    // straight into the mid-bag stab
+    w.rxBytes(w.frameBytes('0\t'+w.countsForVwc(40.0,false).toFixed(1)+' 22.0 850\rg8'));
+    await sleep(20);
+    ok(w.A.state==='settling','…so the mid-bag stab is picked up rather than dropped');
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===2,'both stabs logged: '+w.S.rows.length);
+    ok(w.S.i===cursorAfterRef+1,'and the cursor advanced once per stab, so the room can finish');
+    ok(errors.length===0,'no runtime errors (wet pull): '+errors.join('|')); }
+
+  // the same drop must NOT re-arm us while the probe is still in the bag —
+  // a paired mid-bag reading runs about five points under its reference
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,45.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    for(let k=0;k<3;k++){                                   // 40% is a plausible mid-bag of the same bag
+      w.rxBytes(w.frameBytes('0\t'+w.countsForVwc(40.0,false).toFixed(1)+' 22.0 880\rg8'));
+      await sleep(15);
+    }
+    ok(w.A.state==='hold','a five-point drop is not the probe leaving the bag: '+w.A.state);
+    ok(w.S.rows.length===1,'…so nothing double-logs: '+w.S.rows.length);
+    ok(errors.length===0,'no runtime errors (no false re-arm): '+errors.join('|')); }
+
   // ============ §1.4 undo clears the alarm banner ============
   { const {w,d,errors}=boot(null); await sleep(50);
     start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);

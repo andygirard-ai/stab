@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v27</title>
+<title>Stab v28</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -196,13 +196,15 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   font-size:26px;font-weight:700;letter-spacing:.05em;transition:background .15s}
 #log:active{transform:scale(.985)}
 #log[disabled]{background:var(--surface2);color:var(--dimmer)}
+/* v28 traffic light, from the field: amber-ready and grey-logged read as
+   ambiguous mid-walk. The button answers one question — may I put the probe
+   in a bag? GREEN pulsing yes, it is clear and armed. RED no, it is either
+   reading or logged and still in the bag. Stabbing on red is what loses a
+   mid-bag reading. Amber is left to the pre-flight states, which are
+   neither: connecting, and checking the probe. */
 #log.busy{background:var(--warn);color:#3A2600}
-/* v26 1.3: two states plus alarm. 'ready' (amber, pulsing) is the action
-   colour — probe clear, stab now. 'hold' (grey, solid) is quiet — logged,
-   no rush. Blue and green are retired from this button: blue read as
-   informational and got ignored, green fired at the wrong moments. */
-#log.ready{background:var(--warn);color:#3A2600;animation:logpulse 1.1s ease-in-out infinite}
-#log.hold{background:var(--dim);color:#12181E;animation:none}
+#log.ready{background:var(--ok);color:#052D14;animation:logpulse 1.1s ease-in-out infinite}
+#log.wait{background:var(--low);color:#3A0A0A;animation:none}
 #log.dim{background:var(--surface2);color:var(--dim);animation:none}
 @keyframes logpulse{0%,100%{opacity:1}50%{opacity:.62}}
 .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:22px}
@@ -371,7 +373,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v27</b></div>
+  <div class="brand">Substrate sweep · <b>v28</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -505,7 +507,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v27</div>
+  <div class="v">stab v28</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -597,8 +599,8 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=27"></script>
-<script src="pure.js?v=27"></script>
-<script src="app.js?v=27"></script>
+<script src="rooms.js?v=28"></script>
+<script src="pure.js?v=28"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

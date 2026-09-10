@@ -904,34 +904,37 @@ function battPaint(){
 }
 function isConn(){ if(DEMO) return true;
   return !!(S.dev && S.dev.gatt && S.dev.gatt.connected && S.chr); }
-/* v26 1.3: two colour states plus alarm. 'ready' (amber, pulsing) is the
-   action colour — probe clear, stab now. 'hold' (grey, solid) is quiet —
-   logged, no rush. Green is retired: it read as "go" at the wrong moments. */
+/* v28: a traffic light, which is what the field asked for after amber-and-grey
+   read as ambiguous mid-walk. One question only — may I put the probe in a
+   bag? GREEN (pulsing) yes, the probe is clear and armed. RED no, either it
+   is still reading or it is logged and has not left the bag yet. Stabbing on
+   red is exactly what loses a mid-bag reading, so red covers 'hold' as well
+   as 'settling'; the label says which of the two it is. */
 function setBig(){
   var b=$('log'); if(!S.roomStarted) return;
   b.disabled=false;
-  b.classList.remove('busy','hold','dim','ready');
+  b.classList.remove('busy','wait','dim','ready');
   if(S.connecting){ b.textContent='CONNECTING…'; b.classList.add('dim'); return; }
   if(!isConn()){ b.textContent=S.everConn?'RECONNECT':'CONNECT'; return; }
   if(S.verifying){ b.textContent='CHECKING PROBE…'; b.classList.add('busy'); return; }
   if(!S.trigger){ b.textContent='RETRY PROBE'; return; }
   if(!S.auto){
-    if(S.awaiting){ b.textContent='READING…'; b.classList.add('busy'); }
+    if(S.awaiting){ b.textContent='READING…'; b.classList.add('wait'); }
     else{ b.textContent='TAKE READING'; b.classList.add('ready'); }
     return;
   }
   if(DEMO){
-    if(A.state==='settling'){ b.textContent='READING…'; b.classList.add('busy'); }
-    else if(A.state==='hold'){ b.textContent='LOGGED · TAP TO PULL'; b.classList.add('hold'); }
+    if(A.state==='settling'){ b.textContent='READING… HOLD STILL'; b.classList.add('wait'); }
+    else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('wait'); }
     else{ b.textContent='TAP TO STAB'; b.classList.add('ready'); }
     return;
   }
   if(A.state==='settling'){
-    b.textContent=A.prompted?'NO STABLE READING · TAP TO COMMIT':'READING… TAP TO COMMIT';
-    b.classList.add('busy');
+    b.textContent=A.prompted?'NO STABLE READING · TAP TO COMMIT':'READING… HOLD STILL';
+    b.classList.add('wait');
   }
-  else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('hold'); }
-  else{ b.textContent='ARMED · STAB TO LOG'; b.classList.add('ready'); }
+  else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('wait'); }
+  else{ b.textContent='STAB NOW'; b.classList.add('ready'); }
 }
 function step(m){ var d=$('diag'); if(d) d.textContent=m; }
 function flash(){
@@ -1261,7 +1264,7 @@ function attempt(){
    gate now sits just over the sensor floor; with the manual commit always
    available (A1.2) an unusual bag can be forced through regardless. */
 var POLL=800, AIR=3.5, INS=6, JUMP=2.5, STAB_V=0.5, STAB_B=0.03, STAB_B_REL=0.04,
-    MIN_SETTLE=800, MAX_SETTLE=10000, SETTLE_PROMPT=8000, LOW_V=20;
+    MIN_SETTLE=800, MAX_SETTLE=10000, SETTLE_PROMPT=8000, LOW_V=20, HOLD_DROP=15;
 setInterval(function(){
   if(!S.roomStarted||S.finished||!S.auto||S.cal||S.pegsOpen||S.logOpen) return;
   if(DEMO) return;
@@ -1274,7 +1277,18 @@ setInterval(function(){
 function autoFeed(r){
   if(!S.route[S.i]) return;
   if(A.state==='hold'){
-    if(r.vwc<AIR){ A.state='air'; A.buf=[]; A.lastAir=r.vwc; beep('tick'); setBig(); }
+    /* v28: hold used to clear only on a frame under AIR. A probe pulled from
+       a wet bag is itself wet and reads well above AIR for a second or two —
+       at an 800 ms poll a quick reference-to-mid-bag move can produce no
+       qualifying frame at all, so the mid-bag stab arrives while we are still
+       holding and is dropped on the floor. The cursor never advances, and the
+       room reaches its last stop still asking for stabs the operator has
+       already taken. A decisive drop from the value just logged clears it
+       too: a paired mid-bag stab of the same bag runs about five points under
+       its reference, so HOLD_DROP well past that cannot be mistaken for one. */
+    if(r.vwc<AIR || (A.holdV!=null && r.vwc < A.holdV-HOLD_DROP)){
+      A.state='air'; A.buf=[]; A.lastAir=r.vwc; beep('tick'); setBig();
+    }
     return;
   }
   if(r.vwc<AIR){
@@ -1398,6 +1412,7 @@ function doCommit(r, meta){
     _pc:pc||null, _out:!!outlier
   };
   S.rows.push(row);
+  A.holdV=r.vwc;   /* what 'hold' watches for the probe leaving */
   PREV[key]={d:row.date,v:row.vwc,e:row.ec,ts:Date.now()};
   if(!DEMO) lsSet('stab_prev',JSON.stringify(PREV));
   S.redo=[];
@@ -1491,7 +1506,7 @@ $('undo').onclick=function(){
   lsSet('stab_prev',JSON.stringify(PREV));
   S.last={vwc:r.vwc,ec:r.ec,tmp:r.tmp,bulk:r.bulk,raw:r.raw,direct:true,counts:0};
   S.lastAt=Date.now();
-  A.state='hold'; A.buf=[];
+  A.state='hold'; A.buf=[]; A.holdV=r.vwc;
   saveSession(); render(); flash();
   step('undone T'+r.table+' '+r.position+' — pull probe, re-stab');
   toast('undone — re-stab');
