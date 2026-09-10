@@ -58,20 +58,29 @@ function boot(storage){
     }
     ok(w.S.rows.length===4,'4 stabs logged on BENCH: '+w.S.rows.length);
     d.getElementById('exit').click(); await sleep(50);
-    const wb=d.getElementById('wbroom').value+'\n'+d.getElementById('wbrow').value;
+    // v27 A§3: the head no longer goes into the pasted room notes, so the
+    // no-NaN check runs against buildWorkbook(), which is what history keeps.
+    const wb=w.buildWorkbook();
+    const paste=d.getElementById('wbroom').value+'\n'+d.getElementById('wbrow').value;
     const csv=d.getElementById('csv').value;
     ok(wb.length>0,'workbook block built for BENCH');
     ok(!BAD.test(wb),'workbook block has no NaN/undefined/null'+(BAD.test(wb)?': '+wb:''));
-    ok(/DOF —/.test(wb.split('\n')[1]),'workbook head reads "DOF —": '+wb.split('\n')[1]);
+    ok(!BAD.test(paste),'neither paste box has NaN/undefined/null'+(BAD.test(paste)?': '+paste:''));
+    ok(/DOF —/.test(wb.split('\n')[0]),'workbook head reads "DOF —": '+wb.split('\n')[0]);
     ok(!BAD.test(csv.split('\n').slice(1).join('\n')),'CSV rows have no NaN/undefined');
     ok(errors.length===0,'no runtime errors on a BENCH sweep: '+errors.join('|'));
     w.close(); }
 
   // ---- 3. BENCH stays out of coverage, not-seen and the EOD swept list ----
   { const day=86400000, now=Date.now();
-    // BENCH swept today; one real room swept today; the rest untouched for weeks
-    const hist=[{room:'BENCH',ts:now-3600e3,when:new Date(now-3600e3).toLocaleString('en-US'),n:8,mode:'sweep',med:41.0},
-                {room:'C2',   ts:now-7200e3,when:new Date(now-7200e3).toLocaleString('en-US'),n:66,mode:'sweep',med:38.0}];
+    // BENCH swept today; one real room swept today; the rest untouched for weeks.
+    // Clamp "an hour ago" into today — run just after midnight it fell on
+    // yesterday and the swept-today count read 0, which looked like a bug in
+    // the roll-up and was a bug in this fixture.
+    const t0=new Date(); t0.setHours(0,0,0,0);
+    const todayTs=Math.max(now-3600e3, t0.getTime()+60e3);
+    const hist=[{room:'BENCH',ts:todayTs,when:new Date(todayTs).toLocaleString('en-US'),n:8,mode:'sweep',med:41.0},
+                {room:'C2',   ts:todayTs,when:new Date(todayTs).toLocaleString('en-US'),n:66,mode:'sweep',med:38.0}];
     const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
     const wk=d.getElementById('weekly').textContent;
     ok(/1\/19 rooms/.test(wk),'weekly coverage counts 1 of 19 real rooms, BENCH excluded: "'+wk+'"');

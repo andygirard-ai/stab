@@ -181,10 +181,10 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
-  paused:false, pegsOpen:false, cal:false, finished:false, roomStarted:false,
+  pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
   skipped:{}, access:null, alarmQueue:[], huntFails:0,
-  flaggedTable:false, reconnB:false, pausedBeforeCal:false};
+  flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
 var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[]};
@@ -459,10 +459,14 @@ function histTs(h){
     b.className='rm'+(cfg.kind?' test':''); b.dataset.room=k;
     var days=latest[k]?Math.floor((now-latest[k])/86400000):null;
     var age=(days===null)?'—':(days===0?'today':days+'d');
-    var cls=(days===null)?'':(days<=3?'g':(days<=7?'a':'r'));
+    /* A §5: swept-today and swept-three-days-ago both read green, so a room
+       already done this morning looked the same as one due. Today gets its
+       own badge — a mark reads faster than a shade while walking. */
+    var cls=(days===null)?'':(days===0?'t':(days<=3?'g':(days<=7?'a':'r')));
     /* no coverage bar on a fixture — it is not on anybody's rotation */
     var sub=cfg.kind?(k+' · '+cfg.kind):(cfg.bag+' gal · '+age);
-    b.innerHTML=k+'<span class="sub">'+sub+'</span>'+
+    b.innerHTML=k+(days===0&&!cfg.kind?'<span class="tb">today</span>':'')+
+      '<span class="sub">'+sub+'</span>'+
       '<span class="cov '+(cfg.kind?'':cls)+'"></span>';
     return b;
   }
@@ -490,12 +494,18 @@ function histTs(h){
     $('startbar').classList.add('up');
     syncModeUI();
     showRoomHistory();
+    showBrief();
     showRoomCfg();
   });
 
   /* side / dir / mode / capture */
   S.side=PREF.side||'standard';
-  S.dir=PREF.lastDir?(PREF.lastDir==='up'?'down':'up'):(PREF.dir||'up');
+  /* A §5: T1 first, always. v25 auto-alternated off the last sweep's
+     direction to cancel directional bias, which meant the app opened on
+     "last table first" most mornings — a default the operator has to undo
+     rather than one he asked for. The toggle still alternates on request
+     and Dir is still in the CSV, so the bias question stays testable. */
+  S.dir=PREF.dir||'up';
   S.mode=PREF.mode||'sweep';
   if(PREF.showHist===undefined) PREF.showHist=true;
   S.auto=(PREF.cap!=='manual');
@@ -916,7 +926,6 @@ function setBig(){
     else{ b.textContent='TAP TO STAB'; b.classList.add('ready'); }
     return;
   }
-  if(S.paused){ b.textContent='PAUSED — TAP TO ARM'; b.classList.add('dim'); return; }
   if(A.state==='settling'){
     b.textContent=A.prompted?'NO STABLE READING · TAP TO COMMIT':'READING… TAP TO COMMIT';
     b.classList.add('busy');
@@ -990,7 +999,7 @@ emitReading=function(pr){
     doCommit(r,{});
     return;
   }
-  if(S.auto && !S.paused && !S.pegsOpen && !S.logOpen && !S.finished && !S.verifying && S.trigger) autoFeed(r);
+  if(S.auto && !S.pegsOpen && !S.logOpen && !S.finished && !S.verifying && S.trigger) autoFeed(r);
 };
 function onPacket(e){
   DBG.pkts++;
@@ -1187,17 +1196,21 @@ function bigTap(){
   if(S.verifying) return;
   if(!S.trigger){ verifyTrigger(); return; }
   if(S.auto){
-    /* v26 1.1: a tap mid-settle is a manual commit of the current frame,
-       never a pause — a dry, noisy bag that never clears the settle gate
-       used to get silently paused by this same tap, losing the reading. */
+    /* v27 A1.2: pause is gone. Once the probe is in a bag it will always
+       produce a reading, so there is no moment where suspending the live
+       read helps — and the tap that used to pause was the operator's
+       instinct to log. Any tap with a live frame in hand commits it,
+       flagged manual; a tap with nothing to commit says so and does
+       nothing else. */
+    /* the buffer survives the commit until the probe clears to air, so the
+       state guard is what stops a second tap logging the same stab twice */
     if(A.state==='settling' && A.buf.length){
       var last=A.buf[A.buf.length-1];
       A.state='hold'; doCommit(last,{manual:true}); setBig();
       return;
     }
-    S.paused=!S.paused;
-    if(!S.paused){ A.state='air'; A.buf=[]; }
-    setBig();
+    if(A.state==='hold'){ toast('already logged — pull the probe'); return; }
+    toast('stab a bag to log');
     return;
   }
   if(S.awaiting) return;
@@ -1240,10 +1253,17 @@ function attempt(){
    surfaces a manual-commit prompt at 8s if the gate still hasn't cleared,
    rather than leaving the operator guessing; MAX_SETTLE stays as the final
    backstop so a missed prompt still resolves instead of hanging forever. */
-var POLL=800, AIR=5, INS=13, JUMP=6, STAB_V=0.5, STAB_B=0.03, STAB_B_REL=0.04,
+/* v27 A1.3: the insertion gate sat far above the sensor floor. A-7 T12 read
+   6–8% on screen and never logged: AIR 5 said "not air", but INS 13 was
+   never reached and the jump from a ~2% in-hand baseline was under JUMP 6,
+   so the frame sat in 'air' forever. The probe reads 2.0–2.3% held in a
+   bare hand, so anything meaningfully above that is a bag, not air. The
+   gate now sits just over the sensor floor; with the manual commit always
+   available (A1.2) an unusual bag can be forced through regardless. */
+var POLL=800, AIR=3.5, INS=6, JUMP=2.5, STAB_V=0.5, STAB_B=0.03, STAB_B_REL=0.04,
     MIN_SETTLE=800, MAX_SETTLE=10000, SETTLE_PROMPT=8000, LOW_V=20;
 setInterval(function(){
-  if(!S.roomStarted||S.finished||!S.auto||S.paused||S.cal||S.pegsOpen||S.logOpen) return;
+  if(!S.roomStarted||S.finished||!S.auto||S.cal||S.pegsOpen||S.logOpen) return;
   if(DEMO) return;
   if(S.awaiting||S.verifying||S.connecting||!S.trigger||!isConn()) return;
   if(document.visibilityState!=='visible') return;
@@ -1463,6 +1483,9 @@ $('undo').onclick=function(){
   var extraStop=null;
   if(S.route[S.i] && S.route[S.i].extra){ extraStop=S.route.splice(S.i,1)[0]; }
   S.redo.push({row:r, extraStop:extraStop});
+  /* A1.4: undoing the reading that raised an alarm takes the alarm with it —
+     leaving the banner up made the operator dismiss it a second time. */
+  if(S.alarmQueue && S.alarmQueue.length){ S.alarmQueue=[]; renderAlarm(); }
   var key=r.room+'|'+r.table+'|'+r.position+'|'+r.depth;
   if(r._pc) PREV[key]=r._pc; else delete PREV[key];
   lsSet('stab_prev',JSON.stringify(PREV));
@@ -1567,7 +1590,7 @@ function pairStats(media){
 }
 function openCal(){
   if(!S.roomStarted) return;
-  S.cal=true; S.pausedBeforeCal=S.paused;
+  S.cal=true;
   CAL={stage:'live', frozen:null, released:false, live:S.last};
   $('calsheet').classList.remove('hide');
   beep('cal');
@@ -1576,7 +1599,6 @@ function openCal(){
 function closeCal(){
   S.cal=false;
   $('calsheet').classList.add('hide');
-  S.paused=S.pausedBeforeCal;
   if(A.state==='settling'){ A.buf=[]; A.t0=Date.now(); }
   A.state='air'; A.buf=[];
   setBig();
@@ -1740,17 +1762,20 @@ function bulbMsg(e){
 function finish(){
   if(S.finished) return;
   S.finished=true;
-  S.awaiting=false; clearTimeout(S.rt); S.paused=true;
+  S.awaiting=false; clearTimeout(S.rt);
   releaseAwake();
   ['hdr','route','main','pad'].forEach(function(id){$(id).classList.add('hide');});
   $('pegsheet').classList.add('hide'); $('calsheet').classList.add('hide');
   $('logsheet').classList.add('hide'); S.pegsOpen=false; S.logOpen=false;
   $('targetsheet').classList.add('hide'); TP.forRow=null;
   $('done').classList.remove('hide');
-  var v=S.rows.filter(function(r){return r.depth==='reference';})
-              .map(function(r){return r.vwc;}).sort(function(a,b){return a-b;});
+  /* A §2.1: medians and below-floor counts are over MEASURED tables only,
+     and the coverage line below says how many that was. */
+  var msd=measuredRows();
+  var v=msd.filter(function(r){return r.depth==='reference';})
+           .map(function(r){return r.vwc;}).sort(function(a,b){return a-b;});
   var m=v.length?med(v):null;
-  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var lows=msd.filter(function(r){return r.flag;}).length;
   var dur=S.startedAt?Date.now()-S.startedAt:0;
   var clean=(DBG.timeouts===0 && S.skips===0 && S.unstable===0);
   /* previous same-room sweep for delta + PR */
@@ -1770,7 +1795,8 @@ function finish(){
   }
   html+='<br>';
   if(v.length) html+='range '+v[0].toFixed(1)+' – '+v[v.length-1].toFixed(1)+'%<br>';
-  html+='below floor '+lows+' · skips '+S.skips+' · misses '+DBG.timeouts+'<br>';
+  html+='below floor '+lows+' of '+msd.length+' · misses '+DBG.timeouts+'<br>';
+  html+='<span'+(coverage().skipped?' class="low"':'')+'>'+coverageLine()+'</span><br>';
   var dead=S.rows.filter(function(r){return r.zeroEc;});
   if(dead.length) html+='<span class="low">'+dead.length+' dead bag'+(dead.length>1?'s':'')+' flagged — '+
     dead.map(function(r){return 'T'+r.table+' '+r.position;}).join(', ')+'</span><br>';
@@ -1785,25 +1811,53 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag\n';
-  var body=S.rows.map(function(r){
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped\n';
+  var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
-      (r.manualCommit?'YES':''),(r.zeroEc?'YES':'')].join(',');
-  }).join('\n');
+      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table))].join(',');
+  });
+  /* A §2.1: a table that was never measured leaves no row, so the skip was
+     invisible in the export — B-1 shipped 18 rows for three tables with no
+     record that eight were skipped or why. One record row per skipped table,
+     measurements empty, carries it. */
+  var nCols=head.trim().split(',').length;
+  var skD=new Date().toLocaleDateString('en-US');
+  var skT=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  skippedList().sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    if(S.rows.some(function(r){ return String(r.table)===String(t); })) return;
+    var cells=[]; while(cells.length<nCols) cells.push('');
+    cells[0]=skD; cells[1]=skT; cells[2]=S.room; cells[3]=t;
+    cells[10]=S.mode; cells[11]=S.dir;
+    cells[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; cells[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
+    cells[14]=S.side; cells[24]=S.op||'';
+    cells[nCols-1]=csvq(skipReason(t));
+    lines.push(cells.join(','));
+  });
+  var body=lines.join('\n');
   CSV_TEXT=head+body;
   CSV_NAME=S.room+'_'+fnameDate()+'.csv';
   $('csv').value=CSV_TEXT;
   WB_TEXT=buildWorkbook();
   ROW_TEXT=buildRowNotes(); ROOM_TEXT=buildRoomNotes();
   $('wbrow').value=ROW_TEXT; $('wbroom').value=ROOM_TEXT;
+  /* A §3: the CHECK rules still run — they are read here and land in the
+     CSV, they just never go into the shared notes column. */
+  var ck=checkLines();
+  $('checks').innerHTML=ck.length
+    ? ck.map(function(l){ return '<div class="ck">'+l.replace(/</g,'&lt;')+'</div>'; }).join('')
+    : 'nothing flagged';
+  var none=ROOM_TEXT==='';
+  $('wbroomnone').classList.toggle('hide',!none);
+  $('wbroom').classList.toggle('hide',none);
+  $('copyroom').parentNode.classList.toggle('hide',none);
   try{
     if(DEMO) throw 0;
     var h2=getHist();
     h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
-      n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)),
+      n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)), low:lows,
       dur:dur, clean:clean, csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
       dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
       notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
@@ -2012,19 +2066,46 @@ function showRoomHistory(){
   var el=$('roomhist'); if(!el) return;
   if(!S.room || !PREF.showHist){ el.innerHTML=''; return; }
   var h=getHist().filter(function(x){return x.room===S.room && x.med!=null;}).slice(0,4);
-  var line=h.length
+  el.innerHTML=h.length
     ? h.map(function(x){
         var d=(x.when||'').split(',')[0];
         return d+' <span class="k">'+x.med.toFixed(1)+'</span>';
       }).join('  ·  ')
     : 'no history';
+}
+/* A §5: the pre-walk brief and the post-sweep review are the same picture.
+   Tapping a room tile gives it before the walk instead of only at the end —
+   last sweep, where the schedule is, and anything still open. */
+function showBrief(){
+  var el=$('brief'); if(!el) return;
+  if(!S.room || !ROOMS[S.room]){ el.classList.add('hide'); el.innerHTML=''; return; }
+  var esc=function(x){ return String(x).replace(/</g,'&lt;'); };
+  var cfg=ROOMS[S.room], rows=[];
+  var h=getHist().filter(function(x){
+    return x.room===S.room && x.med!=null && (!x.mode||x.mode==='sweep'); });
+  var last=h[0];
+  rows.push(['last', last
+    ? (last.when||'')+' · median '+last.med.toFixed(1)+
+      (last.low!=null?' · '+last.low+' below floor':'')
+    : 'no sweep recorded']);
+  var dof=dofNow(S.room);
+  rows.push(['room', (dof===''?'DOF —':'DOF '+dof)+' · '+cfg.bag+' gal · '+cfg.t+' tables'+
+    (FEEDEC[S.room]!=null?' · feed '+(FEEDEC[S.room]||'water'):'')]);
+  var sc=schedLine(S.room);
+  if(sc){
+    var hs=hoursSinceShot(S.room), nx=hoursToNextShot(S.room);
+    rows.push(['shots', sc]);
+    rows.push(['now', (hs==null?'—':hs.toFixed(1)+'h since last shot')+
+      (nx==null?'':' · next in '+nx.toFixed(1)+'h')]);
+  }
   var open=getEv().filter(function(e){
     return e.room===S.room && (e.kind==='fault'||e.kind==='bulb') && e.status==='open'; });
-  var faults=open.length
-    ? '<div class="out">open · '+open.map(function(e){
-        return e.kind==='fault'?faultMsg(e):bulbMsg(e); }).join(' · ')+'</div>'
-    : '';
-  el.innerHTML=line+faults;
+  if(open.length) rows.push(['open', open.map(function(e){
+    return e.kind==='fault'?faultMsg(e):bulbMsg(e); }).join(' · ')]);
+  el.innerHTML=rows.map(function(r){
+    return '<div class="br"><span class="bk">'+r[0]+'</span>'+esc(r[1])+'</div>';
+  }).join('');
+  el.classList.remove('hide');
 }
 
 function syncModeUI(){
@@ -2258,25 +2339,17 @@ function doSkip(reason,whole){
   saveSession(); render(); flash();
   toast(reason?((whole&&n>1?('T'+stop.t+' skipped, '+n+' stops'):'skipped')+' — '+reason):'skipped');
 }
-/* A reason almost always applies to the whole table — a closed aisle does
-   not reopen for the next stop — so offer that first and make it one tap. */
-function drawSkipScope(reason){
-  var stop=S.route[S.i], n=restOfTable();
-  if(n<=1){ $('skipsheet').classList.add('hide'); doSkip(reason,false); return; }
-  $('skipbody').innerHTML='<div class="pg"><div class="h">'+reason+'</div>'+
-    '<button class="fp" id="skipall">skip the rest of T'+stop.t+' · '+n+' stops</button>'+
-    '<button class="fp" id="skipone">just this stop</button>'+
-    '<button class="fp" id="skipback">← a different reason</button></div>';
-  $('skipall').onclick=function(){ $('skipsheet').classList.add('hide'); doSkip(reason,true); };
-  $('skipone').onclick=function(){ $('skipsheet').classList.add('hide'); doSkip(reason,false); };
-  $('skipback').onclick=function(){ drawSkipReasons(); };
-}
+/* A §2.1: one tap. A reason applies to the whole table — a closed aisle
+   does not reopen for the next stop — so tagging it skips the rest of the
+   table and lands the cursor on the next one. v25 asked "whole table or
+   just this stop?" as a second tap, and the operator was then repositioning
+   the cursor by hand anyway. */
 function drawSkipReasons(){
   $('skipbody').innerHTML='<div class="pg"><div class="c">'+SKIPWHY.map(function(w){
     return '<button class="chip" data-w="'+w+'">'+w+'</button>';
   }).join('')+'</div></div>';
   [].forEach.call(document.querySelectorAll('#skipbody .chip'),function(b){
-    b.onclick=function(){ drawSkipScope(b.dataset.w); };
+    b.onclick=function(){ $('skipsheet').classList.add('hide'); doSkip(b.dataset.w,true); };
   });
 }
 function openSkip(){

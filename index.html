@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v26</title>
+<title>Stab v27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -45,6 +45,12 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
   letter-spacing:0;margin-top:2px;font-weight:400}
 .rm .cov{position:absolute;left:0;right:0;bottom:0;height:4px;background:transparent}
 .rm .cov.g{background:var(--ok)} .rm .cov.a{background:var(--warn)} .rm .cov.r{background:var(--low)}
+/* A §5: swept today is its own state, not the wide green band */
+.rm .cov.t{background:var(--live)}
+.rm .tb{position:absolute;top:5px;right:5px;background:var(--live);color:#07121F;
+  font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.06em;
+  padding:2px 5px;border-radius:6px}
+.rm.on .tb{background:#07121F;color:#A7CBFD}
 .rm.on{background:linear-gradient(180deg,#83B3FB 0%,#5B92EC 100%);border-color:#5B92EC;border-top-color:#A7CBFD;color:#07121F;
   box-shadow:0 5px 14px rgba(96,165,250,.35), inset 0 1px 0 rgba(255,255,255,.4)}
 .rm.on .sub{color:#07121F;opacity:.7}
@@ -103,7 +109,6 @@ body.demo{padding-top:34px}
 #roomhist{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.7;
   margin:12px 0 4px;min-height:0}
 #roomhist .k{color:var(--ink);font-weight:600}
-#roomhist .out{color:var(--warn)}
 #tpick{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:6px}
 #tpick button{background:var(--surface);border:1px solid var(--line);border-radius:8px;
   padding:14px 0;font-size:17px;font-weight:600;color:var(--dim)}
@@ -316,6 +321,20 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 #logrecent .r{font-family:var(--mono);font-size:12px;color:var(--dim);padding:7px 0;
   border-top:1px solid var(--line);line-height:1.5}
 
+/* ---------- pre-walk room brief (A §5) ---------- */
+#brief{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;margin:12px 0 4px}
+#brief .br{font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink)}
+#brief .bk{display:inline-block;min-width:44px;color:var(--dimmer);letter-spacing:.1em;
+  text-transform:uppercase;font-size:9px}
+
+/* ---------- checks on the done screen (A §3) ---------- */
+#checks{font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--dim);
+  background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+  margin-bottom:13px;white-space:pre-wrap}
+#checks .ck{color:var(--warn)}
+#wbroomnone{font-family:var(--mono);font-size:12px;color:var(--dimmer);margin-bottom:13px}
+
 /* ---------- target picker + recent strip (1.2) ---------- */
 #pos{cursor:pointer}
 #recent{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -352,7 +371,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v26</b></div>
+  <div class="brand">Substrate sweep · <b>v27</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -366,15 +385,16 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   </div>
   <div class="lbl" style="margin-top:0">Pick a room</div>
   <div id="rooms"></div>
-  <div class="lbl">Which side of the row</div>
+  <div id="brief" class="hide"></div>
+  <div class="lbl">Side of row</div>
   <div class="two">
-    <button class="side on" data-side="standard">T1 on your left<span class="sub">standard</span></button>
-    <button class="side" data-side="opposite">T1 on your right<span class="sub">opposite side</span></button>
+    <button class="side on" data-side="standard">standard</button>
+    <button class="side" data-side="opposite">opposite</button>
   </div>
   <div class="lbl">Where you start</div>
   <div class="two">
-    <button class="dir on" data-dir="up">T1 first<span class="sub">walk up the room</span></button>
-    <button class="dir" data-dir="down">T11 first<span class="sub">walk down, alternate days</span></button>
+    <button class="dir on" data-dir="up">T1 first</button>
+    <button class="dir" data-dir="down">last table first</button>
   </div>
   <div id="roomcfg" class="hide">
     <div class="lbl">Room setup</div>
@@ -485,12 +505,15 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v26</div>
+  <div class="v">stab v27</div>
   <div id="stats"></div>
+  <div class="wbh">Checks · read here, never pasted</div>
+  <div id="checks"></div>
   <div class="wbh">Row notes · one line per table</div>
   <textarea id="wbrow" readonly></textarea>
   <div class="act2"><button id="copyrow">Copy row notes</button></div>
-  <div class="wbh">Room notes · summary, paragraph, CHECK</div>
+  <div class="wbh">Room notes · exceptions only</div>
+  <div id="wbroomnone" class="hide">nothing needs a note cell — the notes column is yours</div>
   <textarea id="wbroom" readonly></textarea>
   <div class="act2"><button id="copyroom">Copy room notes</button></div>
   <div class="wbh">Raw CSV</div>
@@ -546,9 +569,10 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <div id="skipsheet" class="hide">
   <div id="skiptop">Skip table</div>
-  <div id="skipsub">Why this table went unmeasured. It is recorded against the
-    table and kept out of the CHECK rules — a table you could not reach is not
-    a table fault.</div>
+  <div id="skipsub">Why this table went unmeasured. One tap skips the rest of
+    it and moves you to the next table. It is recorded against the table, kept
+    out of the CHECK rules and out of the room's counts, and written to the
+    CSV — a table you could not reach is not a table fault.</div>
   <div id="skipbody"></div>
   <div class="lgact">
     <button id="skipcancel">Cancel</button>
@@ -573,8 +597,8 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=26"></script>
-<script src="pure.js?v=26"></script>
-<script src="app.js?v=26"></script>
+<script src="rooms.js?v=27"></script>
+<script src="pure.js?v=27"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

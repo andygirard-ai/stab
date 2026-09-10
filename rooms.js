@@ -76,3 +76,14 @@ var DOF={A1:10,A2:9,A3:60,A4:57,A5:45,A6:38,A7:53,B1:17,B2:1,B3:64,B4:38,B5:29,B
    Room flush = "all water". Rescue = "all feed" or an individual table. */
 var MTASK={flush:{A:28,B:21,C:21}, rescue:12,
            note:'A2 splits: T1/T2 25 min, T3-T12 50 min — 4-drip vs 2-drip'};
+
+/* Drippers per table, found in the field 9/9/2026. Identical runtimes deliver
+   different volumes when the dripper count differs — A2 T1/T2 get twice what
+   T3-T12 do — so volume cannot be derived from runtime without this. Flow is
+   17.5 mL/dripper/min in A wing. Only the two rooms counted so far are here:
+   a room absent from this map has an unknown count, not an assumed one, and
+   nothing computes volume from it yet (Addendum A §4 / §6.6). */
+var DRIPPERS={
+ A2:{1:4,2:4,3:2,4:2,5:2,6:2,7:2,8:2,9:2,10:2,11:2,12:2},
+ C3:{1:2,2:2,3:2,4:3,5:3,6:3,7:3,8:3,9:3,10:3,11:3}
+};

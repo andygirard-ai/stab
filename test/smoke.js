@@ -66,10 +66,13 @@ function vis(id){ return !$(id).classList.contains('hide'); }
   $('exit').click();
   ok(w.S.finished && vis('done'),'finished → done screen');
   ok($('csv').value.split('\n').length===n0+1,'CSV rows = '+n0);
-  // v25 split the one block into two: row notes and room notes
-  ok($('wbroom').value.indexOf('CHECK')>0,'room notes block built');
+  // v27 A§3: room notes are exception-only. A healthy demo sweep has no
+  // exception, so the box is empty and the CHECK rules are read on screen.
+  ok($('wbroom').value==='','room notes empty on a clean sweep: "'+$('wbroom').value+'"');
+  ok(!vis('wbroom') && vis('wbroomnone'),'…and the box is replaced by the "notes column is yours" line');
+  ok(!/CHECK|nothing flagged/.test($('wbroom').value),'the words CHECK / nothing flagged are never pasted');
+  ok($('checks').textContent.length>0,'checks are shown on the done screen instead: "'+$('checks').textContent.slice(0,40)+'"');
   ok($('wbrow').value.split('\n').length>1,'row notes block built');
-  log.push('--- room notes head: '+$('wbroom').value.split('\n')[1]);
   log.push('--- row notes head:  '+$('wbrow').value.split('\n')[1]);
   log.push('--- csv header: '+$('csv').value.split('\n')[0]);
   console.log(log.join('\n'));

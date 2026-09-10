@@ -47,7 +47,7 @@ function enterSettling(w,vwc,rawBulk){
     d.getElementById('log').click();               // the exact tap the field bug mis-handled
     await sleep(20);
     ok(w.S.rows.length===before+1,'tap mid-settle logs a row instead of pausing');
-    ok(w.S.paused===false,'S.paused stays false — the old bug toggled this on the same tap');
+    ok(w.S.paused===undefined,'there is no pause state left to toggle (v27 A§1.2)');
     const r=w.S.rows[w.S.rows.length-1];
     ok(r.manualCommit===true,'the row carries manualCommit:true');
     ok(Math.abs(r.vwc-15.0)<0.3,'the committed value is the live sub-20% frame: '+r.vwc);
@@ -112,7 +112,8 @@ function enterSettling(w,vwc,rawBulk){
     const head=d.getElementById('csv').value.split('\n')[0];
     ok(/Manual commit/.test(head) && /Zero EC flag/.test(head),'CSV header carries both new columns: "'+head+'"');
     const row=d.getElementById('csv').value.split('\n')[1];
-    ok(row.split(',').slice(-2).join(',')==='YES,YES','manual + zero-EC row ends ...,YES,YES: "'+row.split(',').slice(-2).join(',')+'"');
+    // v27 appended a Skipped column, empty on an unskipped table
+    ok(row.split(',').slice(-3).join(',')==='YES,YES,""','manual + zero-EC row ends ...,YES,YES,"": "'+row.split(',').slice(-3).join(',')+'"');
     ok(errors.length===0,'no runtime errors (1.1/1.4): '+errors.join('|'));
     w.close(); }
 

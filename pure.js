@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v26';
+var VER='v27';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -21,7 +21,7 @@ var PEGS=[
    unreachable table is the 'crew' chip in blocked above. */
 var ACCESS=['spray REI','crew working','other'];
 /* Why one table went unmeasured. Never fed to the CHECK rules. */
-var SKIPWHY=['spray REI','crew','can\'t reach','other'];
+var SKIPWHY=['crew','dark','harvest','other'];
 /* Feed EC by room, used by the CHECK rules to flag dilution as a fraction
    of what the room should be receiving rather than an absolute floor. */
 function flushMins(rm){ return MTASK.flush[rm.charAt(0)]||21; }
@@ -38,6 +38,27 @@ function hoursSinceShot(room, nowDate){
     }
   }
   return best===null ? null : (now-best)/3600000;
+}
+/* The same walk as hoursSinceShot, forwards: when the room next gets water.
+   Used by the pre-walk brief (A §5) so the operator can see whether he is
+   about to read a room just before or just after a shot. */
+function hoursToNextShot(room, nowDate){
+  var c=SCHED[room]; if(!c) return null;
+  var now=nowDate||new Date(), p=c[0].split(':'), best=null;
+  for(var d=0; d<=1; d++){
+    var t0=new Date(now); t0.setDate(t0.getDate()+d);
+    t0.setHours(+p[0],+p[1],0,0);
+    for(var k=0;k<c[2];k++){
+      var t=new Date(t0.getTime()+k*c[1]*60000);
+      if(t>now && (best===null || t<best)) best=t;
+    }
+  }
+  return best===null ? null : (best-now)/3600000;
+}
+function schedLine(room){
+  var c=SCHED[room]; if(!c) return '';
+  var p=c[0].split(':');
+  return c[2]+' shot'+(c[2]>1?'s':'')+' from '+fmt12(+p[0],p[1])+', every '+(c[1]/60)+'h';
 }
 function dofNow(rm, nowDate){
   var d=DOF[rm]; if(d===undefined) return '';
@@ -202,14 +223,28 @@ function rxFlushStale(){
 }
 
 /* ---- route ---- */
+/* The snake's phase belongs to the WALK, not to the table number.
+   v26 and earlier keyed it on table parity — odd tables front→header, even
+   tables header→front — which is right walking up from T1 and wrong walking
+   the other way: reversing the order reversed the tables but left every
+   table starting at the same end it started at before, so on 9/9 the app
+   asked for header while the operator stood at the front of T12. The
+   operator always enters at the front end, so the first table of any walk
+   starts at 'front' and it alternates from there. Walking up from T1 this
+   is identical to the old mapping (walk index 0 is T1, odd walk indices are
+   even tables); walking down it is the flip that was missing. The target
+   picker reads the route, so it inherits this. */
+function serpentine(walkIndex){
+  return (walkIndex%2===0)?['front','center','header']:['header','center','front'];
+}
 function buildRoute(room, dir, mode){
   var cfg=ROOMS[room], r=[];
   if(mode==='triage'){
     var picks=(S.triage||[]).slice();
     if(!picks.length){ for(var z0=1;z0<=cfg.t;z0++) picks.push(z0); }
     if(dir==='down') picks.reverse();
-    picks.forEach(function(t){
-      var seq=(t%2===1)?['front','center','header']:['header','center','front'];
+    picks.forEach(function(t,pi){
+      var seq=serpentine(pi);
       seq.forEach(function(p){
         r.push({t:t,pos:p,depth:'reference'});
         if(cfg.bag===2) r.push({t:t,pos:p,depth:'mid-bag'});
@@ -228,7 +263,7 @@ function buildRoute(room, dir, mode){
   var order=[]; for(var z=1;z<=cfg.t;z++) order.push(z);
   if(dir==='down') order.reverse();
   for(var oi=0;oi<order.length;oi++){ var t=order[oi];
-    var seq=(t%2===1)?['front','center','header']:['header','center','front'];
+    var seq=serpentine(oi);
     for(var p=0;p<3;p++){
       r.push({t:t,pos:seq[p],depth:'reference'});
       if(cfg.bag===2) r.push({t:t,pos:seq[p],depth:'mid-bag'});
@@ -334,6 +369,28 @@ function skippedList(){ return Object.keys(S.skipped||{}); }
 function fmt12(h,m){
   var ap=h>=12?'PM':'AM', h12=h%12; if(h12===0) h12=12;
   return h12+':'+m+' '+ap;
+}
+/* Addendum A §2. A skipped table is unmeasured, so stabs taken on it before
+   the aisle shut must not sit in the room median or the below-floor count,
+   and every count states what it was computed over. v25 counted them on the
+   grounds that a real reading is a real reading; 9/9 showed the cost — B-1
+   swept three tables of eleven and its export read like a whole room. A
+   partial sweep now says so everywhere it reports a number. */
+function measuredRows(){
+  return S.rows.filter(function(r){ return !tableSkipped(r.table); });
+}
+function coverage(){
+  var cfg=ROOMS[S.room]||{t:0}, seen={};
+  measuredRows().forEach(function(r){ if(r.table!=null && r.table!=='?') seen[String(r.table)]=1; });
+  var sk=skippedList(), why=[];
+  sk.forEach(function(t){ var w=skipReason(t); if(w && why.indexOf(w)<0) why.push(w); });
+  return {swept:Object.keys(seen).length, total:cfg.t||0, skipped:sk.length, why:why};
+}
+function coverageLine(){
+  var c=coverage();
+  var s=c.swept+' of '+c.total+' tables swept';
+  if(c.skipped) s+=' · '+c.skipped+' skipped'+(c.why.length?' ('+c.why.join(', ')+')':'');
+  return s;
 }
 function sweepStamp(){
   if(S.rows.length && S.rows[0].time){
@@ -482,10 +539,11 @@ function buildRowNotes(){
 }
 function roomHead(){
   var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag;
-  var ref=S.rows.filter(function(r){return r.depth==='reference';});
+  var msd=measuredRows();
+  var ref=msd.filter(function(r){return r.depth==='reference';});
   var rv=ref.map(function(r){return r.vwc;});
   var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
-  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var lows=msd.filter(function(r){return r.flag;}).length;
   var hrs=S.rows.length?S.rows[0].hrs:'';
   var vol=(SCHED_ML&&SCHED_ML[S.room])||null;
   var nSkip=skippedList().length;
@@ -502,16 +560,17 @@ function roomHead(){
     (vol?' · '+vol+' mL':'')+
     (hrs?' · '+hrs+'h':'')+
     ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
-    ' · '+lows+'/'+S.rows.length+' below floor'+
+    ' · '+lows+'/'+msd.length+' below floor'+
     (ecs.length?' · EC '+med(ecs).toFixed(1):'')+
-    (nSkip?' · '+nSkip+' table'+(nSkip>1?'s':'')+' skipped':'');
+    ' · '+coverageLine();
 }
 function roomPara(){
   var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag, f=floorFor(S.room);
-  var ref=S.rows.filter(function(r){return r.depth==='reference';});
+  var msd=measuredRows();
+  var ref=msd.filter(function(r){return r.depth==='reference';});
   var rv=ref.map(function(r){return r.vwc;});
   var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
-  var lows=S.rows.filter(function(r){return r.flag;}).length;
+  var lows=msd.filter(function(r){return r.flag;}).length;
   var tm=sweepStamp(), hrs=S.rows.length?S.rows[0].hrs:'';
   var prevMed=null;
   try{
@@ -523,9 +582,10 @@ function roomPara(){
     ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
   var para=tm+' '+(S.rows.length && S.rows.some(function(r){return r.depth==='mid-bag';})
       ?'reference + mid':'reference')+' sweep, '+S.side+' side, '+S.dir+
-    ' direction, '+S.rows.length+' stabs'+(hrs?', '+hrs+' hrs since shot':'')+'. Room '+
+    ' direction, '+msd.length+' stabs'+(hrs?', '+hrs+' hrs since shot':'')+'. '+
+    coverageLine()+'. Room '+
     (rv.length?Math.min.apply(null,rv).toFixed(0)+'-'+Math.max.apply(null,rv).toFixed(0):'--')+
-    ', median '+(curMed==null?'--':curMed.toFixed(1))+delta+', '+lows+' of '+S.rows.length+
+    ', median '+(curMed==null?'--':curMed.toFixed(1))+delta+', '+lows+' of '+msd.length+
     ' below the '+f+' floor.'+(ecs.length?' EC median '+med(ecs).toFixed(1)+
     ', range '+Math.min.apply(null,ecs).toFixed(2)+'-'+Math.max.apply(null,ecs).toFixed(2)+'.':'');
   /* room-level access block, set on the setup screen before Start */
@@ -537,17 +597,56 @@ function roomPara(){
   if(sk.length){
     var partial=sk.some(function(t){ return S.rows.some(function(r){ return String(r.table)===String(t); }); });
     para+=' Skipped '+sk.map(function(t){return 'T'+t+' ('+skipReason(t)+')';}).join(', ')+
-      ' — outside the CHECK rules'+(partial?'; stabs taken there still count above':'')+'.';
+      ' — outside the CHECK rules and outside every count above'+
+      (partial?'; the stabs taken there are in the CSV':'')+'.';
   }
   para+=(S.feedEC?' Feed '+S.feedEC+(S.feedPH?'/'+S.feedPH:'')+'.':'')+' Operator '+S.op+'.';
   return para;
 }
-/* Copy 2: the Notes column — summary line, paragraph, CHECK. */
+/* Copy 2: the Notes column. Addendum A §3 — the app writes NOTHING here by
+   default. Every number it used to paste (DOF, bag, volume, hours since
+   shot, median, below-floor count) already exists in the workbook, computed
+   from the operator's own formulas, and there are only 11-12 note cells per
+   room shared with a second operator, used for flush times and saucer
+   pickups. A cell that says "CHECK / nothing flagged" costs a cell and says
+   nothing, so those words are never written.
+   What survives is an exception a person has to act on: a dead bag, or a
+   table that read nothing when its neighbours did. The analysis lives in
+   the CSV and on the done screen, which is where it belongs. */
+var ROOMNOTE_MAX=4;
+function roomNoteExceptions(){
+  var out=[];
+  var dead=S.rows.filter(function(r){ return r.zeroEc; });
+  if(dead.length){
+    out.push('dead bag'+(dead.length>1?'s':'')+' '+dead.map(function(r){
+      return 'T'+r.table+' '+r.position; }).join(', ')+' — zero EC, no feed reaching '+
+      (dead.length>1?'them':'it'));
+  }
+  /* a table that read nothing when its neighbours did: every one of its
+     reference stabs at near-zero EC, while some other measured table read
+     normally. One dry table among dry tables is the room, not the table —
+     that is a CSV question, not a note-cell one. */
+  var tabs=byTable(), starved=[], fed=0;
+  Object.keys(tabs).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    if(tableSkipped(t)) return;
+    var ref=tabs[t].filter(function(r){ return r.depth==='reference'; });
+    if(!ref.length) return;
+    var zero=ref.filter(function(r){ return r.bulk!=null && r.bulk<0.12 && r.vwc<20; }).length;
+    if(zero===ref.length && ref.length>=2) starved.push(t); else fed++;
+  });
+  if(fed>0 && starved.length){
+    out.push(starved.length>2
+      ? 'no feed reaching T'+starved.join(', T')+' — check the room valve'
+      : starved.map(function(t){ return 'T'+t+' read nothing while its neighbours fed — check the valve path'; }).join('\n'));
+  }
+  return out.join('\n').split('\n').filter(Boolean).slice(0,ROOMNOTE_MAX);
+}
 function buildRoomNotes(){
-  if(!S.rows.length && !skippedList().length) return '';
-  var chk=checkLines();
-  return sweepStamp()+'\n'+roomHead()+'\n\n'+roomPara()+
-    '\n\nCHECK\n'+(chk.length?chk.join('\n'):'nothing flagged');
+  var ex=roomNoteExceptions();
+  if(!ex.length) return '';
+  ex=ex.slice();
+  ex[0]=sweepStamp()+' '+ex[0];
+  return ex.join('\n');
 }
 /* Combined block, kept for the session history so an old sweep still reads
    as one document. The two copy buttons use the halves above. */

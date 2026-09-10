@@ -30,7 +30,11 @@ const legacy={ 'stab_session':JSON.stringify({v:21,room:'B2',side:'standard',dir
   ok(w.getEv().length===1,'v0 bare-array events still read');
   ok(w.PREV._v===1,'PREV carries _v marker');
   d.querySelector('#rooms .rm[data-room="C3"]').click();
-  ok(/open · C3 — leak/.test(d.getElementById('roomhist').textContent),'open fault shown on picker');
+  // v27 A§5: the open flag moved into the pre-walk brief, with the rest of
+  // the picture (last sweep, schedule, next shot) rather than beside the trend.
+  ok(/C3 — leak/.test(d.getElementById('brief').textContent),'open fault shown on picker: '+d.getElementById('brief').textContent.slice(0,80));
+  ok(/last/.test(d.getElementById('brief').textContent),'brief carries the last sweep');
+  ok(/shots/.test(d.getElementById('brief').textContent),'brief carries the schedule');
   d.getElementById('demo').click();
   ok(!d.getElementById('demoband').classList.contains('hide') && d.body.classList.contains('demo'),'band visible when demo on');
   d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click();

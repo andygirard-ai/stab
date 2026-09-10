@@ -50,16 +50,16 @@ async function demoStab(w,d){
     d.getElementById('exit').click(); await sleep(50);
     const row=d.getElementById('wbrow').value, room=d.getElementById('wbroom').value;
     ok(STAMP_G.test(row.split('\n')[0]),'row notes lead with an inline sweep timestamp: "'+row.split('\n')[0]+'"');
-    ok(STAMP.test(room.split('\n')[0]),'room notes lead with the sweep timestamp on its own line: "'+room.split('\n')[0]+'"');
     ok(/^T\d+  /.test(row.split('\n')[0].replace(STAMP_G,'').trim()),
        'stamp sits before the first word of the first row, not on its own line: "'+row.split('\n')[0]+'"');
-    ok(row.split('\n')[0].match(STAMP_G)[0]===room.split('\n')[0],'row and room stamps carry the same time text');
     ok(!/CHECK/.test(row),'row notes carry no CHECK section');
     ok(!/below floor/.test(row),'row notes carry no summary line');
     ok(!/ROW NOTES|NOTES  \(/.test(row+room),'neither paste carries a column header');
-    ok(/CHECK/.test(room),'room notes carry the CHECK section');
-    ok(/median/.test(room.split('\n')[1]),'room notes line 2 is the summary: "'+room.split('\n')[1]+'"');
     ok(row.split('\n').slice(1).every(l=>/^T\d+  /.test(l)),'every row-note line after the first is T-prefixed');
+    // v27 A§3: room notes are exception-only. A clean sweep writes nothing.
+    ok(room==='','a clean sweep writes nothing to the room-notes column: "'+room+'"');
+    ok(!/CHECK|nothing flagged/.test(room),'the words CHECK / nothing flagged never appear there');
+    ok(!/median|DOF|gal|below floor|mL/.test(room),'no statistics in the notes column');
     ok(errors.length===0,'no runtime errors (pastes): '+errors.join('|'));
     w.close(); }
 
@@ -74,24 +74,28 @@ async function demoStab(w,d){
     d.getElementById('skip').click(); await sleep(20);
     ok(!d.getElementById('skipsheet').classList.contains('hide'),'skip asks why before skipping');
     const chips=[].map.call(d.querySelectorAll('#skipbody .chip'),x=>x.dataset.w);
-    ok(chips.join('|')==="spray REI|crew|can't reach|other",'skip reasons offered: '+chips.join(' · '));
-    [].find.call(d.querySelectorAll('#skipbody .chip'),x=>x.dataset.w==='spray REI').click();
-    await sleep(20);
-    const allBtn=d.getElementById('skipall');
-    ok(!!allBtn,'after the reason it offers the whole table');
+    // v27 A§2.1: the four reasons that reach the CSV
+    ok(chips.join('|')==='crew|dark|harvest|other','skip reasons offered: '+chips.join(' · '));
     const iBefore=w.S.i, left=w.S.route.filter((x,k)=>k>=iBefore && x.t===tbl).length;
-    ok(left>1,'T'+tbl+' has '+left+' stops left, so the offer is worth making');
-    if(allBtn) allBtn.click(); await sleep(20);
-    ok(d.getElementById('skipsheet').classList.contains('hide'),'sheet closes on pick');
+    ok(left>1,'T'+tbl+' has '+left+' stops left, so auto-advance is worth testing');
+    [].find.call(d.querySelectorAll('#skipbody .chip'),x=>x.dataset.w==='crew').click();
+    await sleep(20);
+    // one tap: reason recorded, whole table skipped, cursor on the next table
+    ok(d.getElementById('skipsheet').classList.contains('hide'),'sheet closes on the reason tap — no second question');
     ok(w.S.i===iBefore+left,'one tap skipped all '+left+' remaining stops on T'+tbl);
-    ok(!!w.S.route[w.S.i] && w.S.route[w.S.i].t!==tbl,'the next stop is a different table: T'+((w.S.route[w.S.i]||{}).t));
-    ok(w.S.skipped[String(tbl)]==='spray REI','reason recorded against T'+tbl+': '+w.S.skipped[String(tbl)]);
+    ok(!!w.S.route[w.S.i] && w.S.route[w.S.i].t!==tbl,'auto-advanced to the next table: T'+((w.S.route[w.S.i]||{}).t));
+    ok(w.S.skipped[String(tbl)]==='crew','reason recorded against T'+tbl+': '+w.S.skipped[String(tbl)]);
     for(let i=0;i<4;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const row=d.getElementById('wbrow').value;
     const line=row.split('\n').find(l=>new RegExp('(^|'+STAMP_G.source+' )T'+tbl+'  ').test(l));
-    ok(!!line && /— spray REI/.test(line),'skipped table shows its reason in row notes: "'+line+'"');
-    ok(/Skipped T'+tbl+'|Skipped T/.test(d.getElementById('wbroom').value),'room notes name the skipped table');
+    ok(!!line && /— crew/.test(line),'skipped table shows its reason in row notes: "'+line+'"');
+    // and the skip reaches the CSV, which it never did before v27
+    const csv=d.getElementById('csv').value.split('\n');
+    ok(/,Skipped$/.test(csv[0]),'CSV carries a Skipped column');
+    const partial=csv.slice(1).filter(l=>l.split(',')[3]===String(tbl));
+    ok(partial.length>0 && partial.every(l=>/"crew"$/.test(l)),
+       'every row of the skipped table carries the reason: '+(partial[0]||'').slice(-40));
     ok(errors.length===0,'no runtime errors (skip): '+errors.join('|'));
     w.close(); }
 
@@ -130,23 +134,26 @@ async function demoStab(w,d){
     w.S.skipped={9:'spray REI',10:'spray REI',11:'spray REI'};
     const c=w.checkLines().find(l=>/^ROOM/.test(l));
     ok(!!c && /3 skipped/.test(c),'8 of 11 seen still collapses, scoped honestly: "'+c+'"');
-    // below-floor counts exclude skipped rows from BOTH sides of the fraction
-    // A partial table: real readings taken before the aisle shut. They are
-    // measurements, so they count in the headline — the skip reason is about
-    // access, not about whether the probe was telling the truth.
+    // v27 A§2.1 reverses v25 here: a skipped table is unmeasured, so stabs
+    // taken on it before the aisle shut leave the median and the below-floor
+    // count entirely, and every count states what it covered. A partial sweep
+    // reading like a complete one is how B-1 exported three tables of eleven
+    // on 9/9 with nothing saying so.
     w.S.rows=rowsFor(w,'B2',{1:40,2:40}).concat(rowsFor(w,'B2',{3:5}));
     w.S.skipped={3:"can't reach"};
     const head=w.roomHead();
-    ok(/3\/9 below floor/.test(head),'readings taken on a skipped table still count below floor: "'+head+'"');
-    ok(/1 table skipped/.test(head),'…and the head still says a table was skipped');
-    ok(w.checkLines().length===0,'…but they still fire no CHECK rule');
-    ok(w.S.rows.length===9,'the rows are in S.rows for the CSV');
+    ok(/0\/6 below floor/.test(head),'the skipped table leaves both sides of the fraction: "'+head+'"');
+    ok(/2 of 11 tables swept · 1 skipped \(can't reach\)/.test(head),'…and the head states the coverage');
+    ok(w.checkLines().length===0,'…and they still fire no CHECK rule');
+    ok(w.S.rows.length===9,'the rows are still in S.rows for the CSV');
+    ok(w.measuredRows().length===6,'measuredRows() is the 6 stabs on unskipped tables');
     const para=w.roomPara();
-    ok(/outside the CHECK rules; stabs taken there still count above/.test(para),
-       'the paragraph says exactly what was and was not excluded');
+    ok(/outside the CHECK rules and outside every count above/.test(para),
+       'the paragraph says exactly what was excluded');
+    ok(/the stabs taken there are in the CSV/.test(para),'…and where they did go');
     // a fully skipped table contributes nothing and says so plainly
     w.S.rows=rowsFor(w,'B2',{1:40,2:40});
-    w.S.skipped={3:'spray REI'};
+    w.S.skipped={3:'crew'};
     ok(/0\/6 below floor/.test(w.roomHead()),'a table with no readings adds nothing to the counts');
     ok(!/stabs taken there/.test(w.roomPara()),'…and the paragraph does not claim otherwise');
     ok(errors.length===0,'no runtime errors (collapse): '+errors.join('|'));
@@ -171,7 +178,11 @@ async function demoStab(w,d){
     for(let i=0;i<3;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const room=d.getElementById('wbroom').value;
-    ok(/Room access: crew working — trim crew in until 3/.test(room),'access appears in the room notes paragraph');
+    // v27 A§3: the paragraph is no longer pasted anywhere — access is kept in
+    // the stored workbook document, and neither paste box carries it.
+    ok(room==='','room notes stay empty even with an access block set: "'+room+'"');
+    ok(/Room access: crew working — trim crew in until 3/.test(w.buildWorkbook()),
+       'access is still recorded in the stored workbook document');
     ok(!/Room access/.test(d.getElementById('wbrow').value),'access does not leak into the row notes');
     ok(errors.length===0,'no runtime errors (access): '+errors.join('|'));
     w.close(); }
