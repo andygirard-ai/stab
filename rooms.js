@@ -7,10 +7,20 @@
    ===================================================================== */
 var ROOMDATA_ASOF='9/3/2026';
 
-/* mL per plant per day, as punched into Growlink */
+/* mL per plant per day, as punched into Growlink.
+   C3 corrected 9/10/2026 from the operator's own schedule table: 997.5 across
+   the room, with T7 and T8 raised to 1330 (14 min vs 10.5 at 95 mL/min/plant).
+   This is the room figure; the per-table exception is in SCHED_ML_TABLE below.
+   The other rooms here have not been re-checked against the portal since 9/3
+   and C3 was wrong by a third, so treat them as unverified. */
 var SCHED_ML={A1:996,A2:996,A3:1890,A4:2269,A5:1453,A6:1750,A7:1797,
  B1:1470,B2:997,B3:1480,B4:1292,B5:1798,B6:1688,
- C1:1713,C2:1245,C3:1480,C4:4322,C5:2152,C6:1688};
+ C1:1713,C2:1245,C3:997.5,C4:4322,C5:2152,C6:1688};
+
+/* Tables that differ from their room's figure. Only what has been confirmed
+   table by table goes here — a room absent from this map is uniform as far
+   as anyone has checked, which is not the same as known to be uniform. */
+var SCHED_ML_TABLE={ C3:{7:1330, 8:1330} };
 
 /* table count, bag size, media per room (bag can be overridden per room
    at sweep start; that override lives in stab_roomcfg, not here) */
