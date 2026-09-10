@@ -728,6 +728,23 @@ function rowNoteLines(){
     var fl=rf[0].flags||'';
     if(fl.indexOf('U')>=0) line+=', underlights';
     if(fl.indexOf('T')>=0) line+=', saucer';
+    /* Below floor, said out loud. The feel words describe how a bag feels
+       and do not track the floor: a 1.25-gallon bag at 27% reads "ok" and is
+       three points under. The numbers are in the line, but they only mean
+       something to a reader who is holding this room's floor in his head.
+       It matters most in a triage, where the room-note cells are deliberately
+       empty (B §7) so this line is the only thing that reaches the workbook,
+       and where every table on the walk was picked for being below floor. */
+    var fp=floorFor(S.room), low=rf.filter(function(r){ return r.vwc<fp; });
+    if(low.length){
+      /* Name the positions rather than count them. A count next to rounded
+         numbers reads as a contradiction — "1 of 3 below floor 30" beside a
+         reading printed as 30 that is really 29.6 — and in a triage the end
+         of the table that is dry is the thing he walked over to find out. */
+      var seen={}, where=[];
+      low.forEach(function(r){ if(!seen[r.position]){ seen[r.position]=1; where.push(r.position); } });
+      line+=', '+(low.length===rf.length?'all':where.join(' + '))+' below floor '+fp;
+    }
     var nt=rowNote(t); if(nt) line+='. '+nt;
     lines.push(line);
   });

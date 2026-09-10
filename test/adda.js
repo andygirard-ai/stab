@@ -341,6 +341,60 @@ function rowsFor(w,room,spec){
     w.close(); }
 
 
+  // ============ row notes say when a reading is below floor ============
+  // Field report, 9/10: "triage mode not showing row notes below floor".
+  // The lines were there; what was missing was the finding. The feel words
+  // describe how a bag feels and do not track the floor — the 1.25-gallon
+  // bands put "ok" at 26-30 while the floor is 30 — so a table picked for a
+  // triage precisely because it is under can be described as ok. In a triage
+  // the room-note cells are deliberately empty (B §7), which makes this line
+  // the only thing that reaches the workbook.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='C4'; w.S.mode='triage'; w.S.triage=[3,5]; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    const mk=(t,pos,vwc)=>({date:'9/10/2026',time:'09:42:00',room:'C4',table:t,position:pos,
+      depth:'reference',plant:'',strain:'Gello Gelato',flags:'',hrs:'2.0',mode:'triage',dir:'up',
+      bag:1.25,media:'Bio365',side:'standard',vwc:vwc,ec:5,bulk:0.5,tmp:25,
+      flag:vwc<w.floorFor('C4'),raw:'x',manualCommit:false,zeroEc:false});
+    ok(w.floorFor('C4')===30,'C4 is a 1.25-gallon room, floor 30: '+w.floorFor('C4'));
+    [['front',24],['center',26],['header',22]].forEach(a=>w.S.rows.push(mk(3,a[0],a[1])));
+    [['front',24],['center',33],['header',35]].forEach(a=>w.S.rows.push(mk(5,a[0],a[1])));
+    const lines=w.rowNoteLines();
+    ok(/^T3 /.test(lines[0]) && /^T5 /.test(lines[1]),'a triage still writes one row-note line per table');
+    ok(/ok/.test(lines[0]),'the feel word on T3 is still "ok" — that is what the bag feels like: '+lines[0]);
+    ok(/all below floor 30$/.test(lines[0]),'…and the line now says all three are under: '+lines[0]);
+    ok(/front below floor 30$/.test(lines[1]),
+       'a partial names the end of the table that is dry, which is what he walked over to find: '+lines[1]);
+    ok(w.buildRoomNotes()==='','the room-note cells stay empty in a triage (B §7)');
+    ok(w.buildRowNotes().indexOf('below floor 30')>0,'so the finding reaches the workbook through the row note or not at all');
+    w.close(); }
+
+  // a table entirely above floor says nothing, and the clause never fires on
+  // mid-bag — the floor is defined at reference depth
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B1'; w.S.mode='sweep'; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    const mk=(pos,depth,vwc)=>({date:'9/10/2026',time:'09:42:00',room:'B1',table:1,position:pos,
+      depth:depth,plant:'',strain:'',flags:'',hrs:'2.0',mode:'sweep',dir:'up',
+      bag:2,media:'Bio365',side:'standard',vwc:vwc,ec:4,bulk:0.5,tmp:25,
+      flag:vwc<w.floorFor('B1'),raw:'x',manualCommit:false,zeroEc:false});
+    [['front',30],['center',32],['header',31]].forEach(a=>w.S.rows.push(mk(a[0],'reference',a[1])));
+    [['front',12],['center',14],['header',13]].forEach(a=>w.S.rows.push(mk(a[0],'mid-bag',a[1])));
+    const l=w.rowNoteLines()[0];
+    ok(l.indexOf('below floor')<0,'every reference stab above floor, mid-bag well under, and the line stays quiet: '+l);
+    ok(/— mid 12/.test(l),'…while still carrying the mid readings');
+    w.close(); }
+
+  // one position stabbed twice (an adjacent plant) is named once, not twice
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B1'; w.S.mode='sweep'; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    const mk=(pos,vwc,extra)=>({date:'9/10/2026',time:'09:42:00',room:'B1',table:1,position:pos,
+      depth:'reference',plant:extra?'adjacent':'',strain:'',flags:'',hrs:'2.0',mode:'sweep',dir:'up',
+      bag:2,media:'Bio365',side:'standard',vwc:vwc,ec:4,bulk:0.5,tmp:25,
+      flag:vwc<w.floorFor('B1'),raw:'x',manualCommit:false,zeroEc:false});
+    [mk('front',18),mk('front',19,true),mk('center',30),mk('header',31)].forEach(r=>w.S.rows.push(r));
+    const l=w.rowNoteLines()[0];
+    ok(/front below floor 22$/.test(l),'two stabs at the same position name it once: '+l);
+    w.close(); }
+
   // ============ §4 schedule paste-in ============
   // The Growlink screen prints the VALUE before its LABEL, so the parser is
   // label-driven: accumulate, then interpret when a known label arrives.

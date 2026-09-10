@@ -28,6 +28,7 @@ while a couple of other things are worked out, so this batch ships together:
 | v31 | schedule paste-in, per table, with a verification screen | B §4 |
 | v31 | hours-since-shot from the imported schedule, per table | B §3 |
 | v31 | a shot that fires mid-sweep is flagged and marks its rows | B §4 |
+| v31 | row notes say which positions are below floor | floor, 9/10 |
 
 **Not yet actioned, in build order:**
 
@@ -224,3 +225,48 @@ it with a new CSV column.
 `T11+12` block shapes are derived from the one documented `B5 Table 1`
 sample, not from a screen. Three pastes would settle it: a full Simple Timer
 room, a Copilot room with P1/P2/Flush, and an A-wing room showing `T11+12`.
+
+### 8. Triage row notes did not say what the triage was about → v31
+
+**Observed.** "Triage mode not showing row notes below floor."
+
+**What it was.** Not the missing lines it sounds like — a triage does write a
+row-note line per table, verified end to end on the done screen. What was
+missing was the finding. The line reads
+
+    T5  dry ok/ok 24/4.20 · 26/4.00 · 22/4.90 Chemdawg x Rainbowbeltz
+
+in a 1.25-gallon room, where the floor is 30. All three readings are under
+it and the line says "ok" twice.
+
+The feel words describe how a bag feels and were never meant to track the
+floor. They happen to line up in a 2-gallon room — the bands break at 18 and
+22, and the floor is 22, so anything under it reads "dry" or "dry ok". The
+1.25-gallon bands are the same table shifted four points while the floor
+moves eight, so "ok" spans 26 to 30 and sits entirely below the floor. The
+numbers were in the line all along, but they only mean something to a reader
+holding that room's floor in his head.
+
+v30 sharpened it. Triage, spot and flush now write nothing to the room-note
+cells (B §7), so in a triage the row-note line is the only thing that reaches
+the workbook — and every table on that walk was picked for being below floor.
+
+**Shipped.** The line names the positions that are under:
+
+    T5  dry ok/ok 24/4.20 · 26/4.00 · 22/4.90 Chemdawg x Rainbowbeltz, all below floor 30
+    T9  splotchy dry ok/ok good 26/11.95 · 25/2.35 · 33/2.52 Cabernet, front + center below floor 30
+
+Positions rather than a count, for two reasons. A count next to rounded
+numbers reads as a contradiction — A5 T7 prints 30 · 35 · 39 and is one
+reading under, because the first is really 29.6. And which end of the table
+is dry is the thing he walked over to find out.
+
+Every mode, not just triage: a mode-specific row-note rule is the kind of
+thing that gets fixed once and then breaks somewhere else.
+
+**Not changed, and worth a decision.** The 1.25-gallon feel bands are still
+four points off the floor, so "ok" on a below-floor bag stays possible. That
+is a change to the shared vocabulary in BB_fert_data and to how every
+1.25-gallon room reads back through history, so it is his call, not a
+cleanup: either the bands move up four points, or the words keep describing
+feel and the new clause carries the floor.
