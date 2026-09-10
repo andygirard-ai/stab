@@ -225,8 +225,9 @@ function enterSettling(w,vwc,rawBulk){
     enterSettling(w,35.0,900); await sleep(15);
     d.getElementById('log').click(); await sleep(15);        // manual commit → hold
     ok(w.A.state==='hold','state machine reports hold after a commit');
-    ok(d.getElementById('log').classList.contains('wait'),'logged state carries .wait (v28: red — do not stab yet)');
-    ok(!d.getElementById('log').classList.contains('ready'),'…not .ready — no go cue until the probe clears');
+    ok(d.getElementById('log').classList.contains('pull'),'logged state carries .pull (v30 B§2: white — pull the probe out)');
+    ok(!d.getElementById('log').classList.contains('wait'),'…not .wait — red is reading, white is logged');
+    ok(!d.getElementById('log').classList.contains('ready'),'…and not .ready — no go cue until the probe clears');
     ok(errors.length===0,'no runtime errors (1.3): '+errors.join('|'));
     w.close(); }
 

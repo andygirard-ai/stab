@@ -44,43 +44,67 @@ function rowsFor(w,room,spec){
 }
 
 (async()=>{
-  // ============ §1.1 the serpentine phase belongs to the walk ============
+  // ====== Addendum B §1: aisle grouping, the four-row truth table ======
+  // Encoded verbatim from the spec. This bug has been "fixed" three times on
+  // three different axes — table parity (v26), walk index (v27), direction
+  // (v29) — each right in exactly the cases that happened to be walked that
+  // week. The table is the oracle; anything that disagrees with it is wrong
+  // however reasonable it sounds.
+  //
+  //   Standard, T1     (1,2) (3,4) (5,6) (7,8) (9,10) (11,12)
+  //   Standard, T11    (11,10) (9,8) (7,6) (5,4) (3,2) (1)
+  //   Opposite, T1     (1) (2,3) (4,5) (6,7) (8,9) (10,11)
+  //   Opposite, T11    (11) (10,9) (8,7) (6,5) (4,3) (2,1)
+  //
+  // First table of an aisle runs front→header, second header→front.
   { const {w,d,errors}=boot(null); await sleep(50);
     w.S.triage=[];
-    const up=w.buildRoute('A1','up','sweep');       // A1 is 12 tables, 2-gal
-    const down=w.buildRoute('A1','down','sweep');
-    ok(up[0].t===1 && up[0].pos==='front','standard still starts T1 front: T'+up[0].t+' '+up[0].pos);
-    ok(down[0].t===12,'opposite still reverses the table order: starts T'+down[0].t);
-    ok(down[0].pos==='front',
-       'opposite ALSO flips the phase — T12 starts at the front, where the operator is standing: '+down[0].pos);
-    // the 9/9 bug exactly: T12 first, app asked for header
-    ok(!(down[0].t===12 && down[0].pos==='header'),'the 9/9 A-1 case does not reproduce');
-    // v29, 9/10: opposite is not a mirror. The operator enters at the front,
-    // walks the first table front→header, then walks BACK to the front for the
-    // second table; the snake only starts at the third. v27 mirrored it and so
-    // asked for T10 front while he stood at T10's header.
-    const firstPos=t=>{ for(let i=0;i<down.length;i++) if(down[i].t===t) return down[i].pos; };
-    ok(firstPos(12)==='front' && firstPos(11)==='front' && firstPos(10)==='header',
-       'opposite walks back after the first table: T12 '+firstPos(12)+' → T11 '+firstPos(11)+' → T10 '+firstPos(10));
-    ok(firstPos(9)==='front' && firstPos(8)==='header',
-       'and snakes normally from there: T9 '+firstPos(9)+' → T8 '+firstPos(8));
-    const upFirst=t=>{ for(let i=0;i<up.length;i++) if(up[i].t===t) return up[i].pos; };
-    ok(upFirst(1)==='front' && upFirst(2)==='header' && upFirst(3)==='front',
-       'walking up is unchanged from v26: T1 '+upFirst(1)+' → T2 '+upFirst(2)+' → T3 '+upFirst(3));
-    // an 11-table room reverses onto an odd table and must still start front
-    const d11=w.buildRoute('B1','down','sweep');
-    ok(d11[0].t===11 && d11[0].pos==='front','odd-numbered last table too: T'+d11[0].t+' '+d11[0].pos);
-    const f11=t=>{ for(let i=0;i<d11.length;i++) if(d11[i].t===t) return d11[i].pos; };
-    ok(f11(10)==='front' && f11(9)==='header','…and the walk-back applies there too: T10 '+f11(10)+' → T9 '+f11(9));
-    // standard is bit-for-bit unchanged by the walk-back
-    const u11=w.buildRoute('B1','up','sweep');
-    ok(u11.map(s=>s.t+s.pos).join()===w.buildRoute('B1','up','sweep').map(s=>s.t+s.pos).join(),'standard route is deterministic');
+    const firsts=(room,dir,side)=>{
+      const seen={}, out=[];
+      w.buildRoute(room,dir,'sweep',side).forEach(s=>{
+        if(!seen[s.t]){ seen[s.t]=1; out.push([s.t,s.pos]); } });
+      return out;
+    };
+    // groups → the expected first-position per table, in walk order
+    const fromGroups=groups=>{
+      const o=[];
+      groups.forEach(g=>g.forEach((t,i)=>o.push([t, i===0?'front':'header'])));
+      return o;
+    };
+    const show=a=>a.slice(0,6).map(x=>'T'+x[0]+' '+x[1]).join(' | ');
+    const cases=[
+      ['standard, T1 first','B1','up','standard',   [[1,2],[3,4],[5,6],[7,8],[9,10],[11]]],
+      ['standard, T11 first','B1','down','standard',[[11,10],[9,8],[7,6],[5,4],[3,2],[1]]],
+      ['opposite, T1 first','B1','up','opposite',   [[1],[2,3],[4,5],[6,7],[8,9],[10,11]]],
+      ['opposite, T11 first','B1','down','opposite',[[11],[10,9],[8,7],[6,5],[4,3],[2,1]]],
+    ];
+    cases.forEach(([label,room,dir,side,groups])=>{
+      const got=firsts(room,dir,side), want=fromGroups(groups);
+      const same=got.length===want.length &&
+        got.every((g,i)=>g[0]===want[i][0] && g[1]===want[i][1]);
+      ok(same, label+': '+show(got)+(same?'':'   WANT '+show(want)));
+    });
+    // the 12-table A wing, same rule
+    const a1opp=firsts('A1','up','opposite');
+    ok(a1opp[0][1]==='front' && a1opp[1][1]==='front' && a1opp[2][1]==='header',
+       'A1 opposite from T1 — first table alone against the wall: '+show(a1opp));
+    const a1std=firsts('A1','up','standard');
+    ok(a1std[0][1]==='front' && a1std[1][1]==='header' && a1std[2][1]==='front',
+       'A1 standard from T1 — plain pairs, unchanged all week: '+show(a1std));
+    // the axis itself: side changes the phase, direction only reorders
+    const sameSideDifferentDir = firsts('B1','up','opposite').map(x=>x[1]).join()
+                              === firsts('B1','down','opposite').map(x=>x[1]).join();
+    ok(sameSideDifferentDir,'direction reorders the tables but does not change the phase pattern');
+    const differentSide = firsts('B1','up','standard').map(x=>x[1]).join()
+                       !== firsts('B1','up','opposite').map(x=>x[1]).join();
+    ok(differentSide,'…while side does change it — that is the axis');
     w.close(); }
 
   // the picker inherits the fix: picking the stop you are standing at moves
   // one slot, not six. This is the A-1 corruption from 9/9.
   { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'A1',2); w.S.dir='down'; w.S.route=w.buildRoute('A1','down','sweep'); w.S.i=0;
+    start(w,d,'A1',2); w.S.dir='down'; w.S.side='opposite';
+    w.S.route=w.buildRoute('A1','down','sweep','opposite'); w.S.i=0;
     // walk the first table and a half in 'down' order, as the operator did
     const seq=w.S.route.slice(0,7).map(s=>'T'+s.t+' '+s.pos+' '+s.depth);
     ok(/^T12 front reference/.test(seq[0]),'route opens where the operator stands: '+seq[0]);
@@ -209,6 +233,22 @@ function rowsFor(w,room,spec){
     w.S.rows.forEach(r=>{ r.bulk=0.01; });
     ok(w.buildRoomNotes()==='','all tables starved is a room question, not a note cell');
     ok(errors.length===0,'no runtime errors (§3): '+errors.join('|'));
+    w.close(); }
+
+  // ============ B §7: triage writes nothing to the note cells ============
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B6'; w.S.notes={}; w.S.free={}; w.S.skipped={};
+    w.S.rows=rowsFor(w,'B6',{1:12,2:12});
+    w.S.rows.forEach(r=>{ r.bulk=0.01; r.zeroEc=true; });   // as bad as it gets
+    w.S.mode='sweep';
+    ok(w.buildRoomNotes()!=='','a sweep with dead bags does write an exception line');
+    w.S.mode='triage';
+    ok(w.buildRoomNotes()==='','triage writes nothing at all: "'+w.buildRoomNotes()+'"');
+    w.S.mode='spot';
+    ok(w.buildRoomNotes()==='','spot too');
+    w.S.mode='flush';
+    ok(w.buildRoomNotes()==='','and flush');
+    ok(errors.length===0,'no runtime errors (B §7): '+errors.join('|'));
     w.close(); }
 
   // ============ §2 crew skip: coverage, counts, CSV ============

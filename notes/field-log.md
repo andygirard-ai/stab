@@ -15,13 +15,31 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v29**, shipped 9/10 mid-morning. Carries all three of that
-morning's fixes: the traffic light, the wet-probe `hold` clear, and the
-opposite-direction walk-back.
+**Live on main: v29.**
 
-**Queued, tested, not live:** nothing.
+**Queued on the branch, tested, not live:**
 
-**Not yet actioned** — nothing outstanding.
+| | change | source |
+|---|---|---|
+| v30 | aisle grouping — the phase belongs to SIDE, not direction | B §1 |
+| v30 | third probe colour: white = logged, pull probe | B §2 |
+| v30 | triage/spot/flush write nothing to the note cells | B §7 |
+
+**Not yet actioned, in build order:**
+
+- **B §3 hours-since-shot is wrong.** B3 logged 1.7h when it was 5.6h. The
+  computation is right; `SCHED.B3` is stale — it says five shots, the room
+  actually stopped after 05:15. Root cause is schedule data, fixed properly
+  by §4. No safe local fix without the real schedule.
+- **B §4 schedule paste-in.** The real fix for §3, and it removes a manual
+  step rather than adding one. Wants: whole-room paste, per-table tiers, the
+  A-wing `T11+12` shared-valve convention, a verification screen before
+  commit, then hours-since-shot computed from schedule + clock, and a flag
+  when a shot fires mid-sweep.
+- **B §5 / §6 room config.** Dripper count, strain map, flower start,
+  underlight flags — editable, part of move-in.
+- **B §8 operator field.** Mark a bag-feel-only sweep so a room without probe
+  data is distinguishable from one with it.
 
 ---
 
@@ -109,3 +127,49 @@ if a room turns out to differ, the target picker is the escape hatch.
 **Not fixed, by decision.** T11's readings went in with front and header
 swapped. The operator's call: front and header on the same table are within
 noise for his purposes, so a retroactive swap is not worth building.
+
+---
+
+## 9/10/2026 — afternoon, Addendum B
+
+### 4. Serpentine, third attempt: it is aisle grouping → v30
+
+**Observed.** Addendum B §1, with a four-row truth table and three sweeps
+behind it: A1 standard-from-T1 correct, B4 opposite-from-T1 wrong from T2
+onward, A5 opposite-from-T12 wrong from T11 onward. "Standard side has been
+fine all week. Every opposite-side sweep is off by one table."
+
+**What it was.** The rule is aisles, not phase. Two tables share an aisle,
+you enter at the front, so the first table of an aisle runs front→header and
+the second header→front — that never changes. What changes is *which tables
+share an aisle*, and that is a property of the SIDE: on the opposite side the
+first table sits alone against the wall and every pair after it shifts by one.
+
+This had been "fixed" three times on three different axes — table parity
+(v26), walk index (v27), direction (v29) — and each was right in exactly the
+cases that got walked that week. v29 was correct for standard-from-T1 and
+opposite-from-last, wrong for the other two, which is why B4 and A5 both
+failed today while A1 passed.
+
+**Shipped.** `aislePos(walkIndex, side)` computes the group, `walkPhase`
+assigns the position within it, and `buildRoute` now takes `side`. The four
+rows of the spec's table are encoded verbatim in test/adda.js, along with
+an assertion on the axis itself: direction reorders tables without changing
+the phase pattern, side changes it. A fourth wrong axis now fails the suite
+instead of a room.
+
+### 5. Third probe colour → v30
+
+**Observed.** B §2: red covered both reading and logged, so there was no cue
+for when to lift the probe out.
+
+**Shipped.** Green = stab now, red = reading, **white = logged, pull probe**.
+
+### 6. Triage note cells → v30
+
+**Observed.** B §7, asked as a confirmation rather than a report.
+
+**Shipped.** Triage, spot and flush now return nothing from
+`buildRoomNotes()` unconditionally. A triage targets the tables already known
+to be bad, so anything it could say about them is a foregone conclusion, and
+the cells are shared. Findings stay in the CSV and on the done screen.

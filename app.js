@@ -678,7 +678,7 @@ $('startbtn').onclick=function(){
   if(!S.room) return;
   if(S.mode==='triage' && !(S.triage&&S.triage.length)){ toast('pick the tables to triage first'); return; }
   applyRoomCfg();
-  S.route=buildRoute(S.room,S.dir,S.mode); S.i=0; S.rows=[]; S.notes={};
+  S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
   S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
@@ -904,16 +904,14 @@ function battPaint(){
 }
 function isConn(){ if(DEMO) return true;
   return !!(S.dev && S.dev.gatt && S.dev.gatt.connected && S.chr); }
-/* v28: a traffic light, which is what the field asked for after amber-and-grey
-   read as ambiguous mid-walk. One question only — may I put the probe in a
-   bag? GREEN (pulsing) yes, the probe is clear and armed. RED no, either it
-   is still reading or it is logged and has not left the bag yet. Stabbing on
-   red is exactly what loses a mid-bag reading, so red covers 'hold' as well
-   as 'settling'; the label says which of the two it is. */
+/* Three probe states, one colour each (Addendum B §2). GREEN pulsing: clear
+   and armed, stab now. RED: reading, hold still. WHITE: logged, pull the
+   probe out. v28 gave reading and logged the same red, which left no cue for
+   the moment to lift out — the one the operator was moving too fast through. */
 function setBig(){
   var b=$('log'); if(!S.roomStarted) return;
   b.disabled=false;
-  b.classList.remove('busy','wait','dim','ready');
+  b.classList.remove('busy','wait','pull','dim','ready');
   if(S.connecting){ b.textContent='CONNECTING…'; b.classList.add('dim'); return; }
   if(!isConn()){ b.textContent=S.everConn?'RECONNECT':'CONNECT'; return; }
   if(S.verifying){ b.textContent='CHECKING PROBE…'; b.classList.add('busy'); return; }
@@ -925,7 +923,7 @@ function setBig(){
   }
   if(DEMO){
     if(A.state==='settling'){ b.textContent='READING… HOLD STILL'; b.classList.add('wait'); }
-    else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('wait'); }
+    else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('pull'); }
     else{ b.textContent='TAP TO STAB'; b.classList.add('ready'); }
     return;
   }
@@ -933,7 +931,7 @@ function setBig(){
     b.textContent=A.prompted?'NO STABLE READING · TAP TO COMMIT':'READING… HOLD STILL';
     b.classList.add('wait');
   }
-  else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('wait'); }
+  else if(A.state==='hold'){ b.textContent='LOGGED · PULL PROBE'; b.classList.add('pull'); }
   else{ b.textContent='STAB NOW'; b.classList.add('ready'); }
 }
 function step(m){ var d=$('diag'); if(d) d.textContent=m; }

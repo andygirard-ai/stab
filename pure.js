@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v29';
+var VER='v30';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -226,43 +226,40 @@ function rxFlushStale(){
 }
 
 /* ---- route ---- */
-/* The snake's phase belongs to the WALK, not to the table number.
-   v26 and earlier keyed it on table parity — odd tables front→header, even
-   tables header→front — which is right walking up from T1 and wrong walking
-   the other way: reversing the order reversed the tables but left every
-   table starting at the same end it started at before, so on 9/9 the app
-   asked for header while the operator stood at the front of T12. The
-   operator always enters at the front end, so the first table of any walk
-   starts at 'front' and it alternates from there. Walking up from T1 this
-   is identical to the old mapping (walk index 0 is T1, odd walk indices are
-   even tables); walking down it is the flip that was missing. The target
-   picker reads the route, so it inherits this. */
-function serpentine(walkIndex){
-  return (walkIndex%2===0)?['front','center','header']:['header','center','front'];
+/* Tables are walked in AISLES, two to an aisle, and you always enter an aisle
+   at the front: the first table of an aisle runs front→center→header, the
+   second header→center→front. That never changes. What changes is which
+   tables share an aisle, and that is a fact about the SIDE of the row:
+
+     standard   (t1,t2) (t3,t4) (t5,t6) …
+     opposite   (t1) (t2,t3) (t4,t5) …    first table alone against the wall
+
+   Keyed on side, not on direction. Which end you start from reorders the
+   tables; it does not change which of them share an aisle. Getting that axis
+   wrong is what broke this three times running — v26 keyed the phase on table
+   parity, v27 on the walk index, v29 on direction — and each was right in
+   exactly the cases that happened to get walked that week. Addendum B §1
+   carries the four-row truth table and test/adda.js encodes it verbatim, so
+   a fourth wrong axis fails the suite instead of a room.
+
+   The target picker reads the route, so it inherits this. */
+function aislePos(walkIndex, side){
+  return side==='opposite'
+    ? (walkIndex===0 ? 0 : (walkIndex-1)%2)
+    : walkIndex%2;
 }
-/* v29, from the floor on 9/10: walking opposite is not a mirror of walking up.
-   The operator enters at the front either way, so the first table runs
-   front→header — but at the far end of the room he then has to walk back to
-   the front to reach the second table, and the snake only starts from the
-   third. Opposite therefore goes front, front, header, front, header…, which
-   is the ordinary snake with one extra step inserted after the first table.
-   v27 fixed the first table and left the rest a mirror, so from the second
-   table on it was a position out: the app asked for T10 front while the
-   operator stood at T10's header.
-   Assumed to hold in every room, since it is about where the door is rather
-   than how many tables there are. If a room turns out to differ, the target
-   picker is the escape hatch — tap the label and say where you are. */
-function walkPhase(walkIndex, dir){
-  return serpentine(dir==='down' && walkIndex>0 ? walkIndex+1 : walkIndex);
+function walkPhase(walkIndex, side){
+  return aislePos(walkIndex,side)===0
+    ? ['front','center','header'] : ['header','center','front'];
 }
-function buildRoute(room, dir, mode){
+function buildRoute(room, dir, mode, side){
   var cfg=ROOMS[room], r=[];
   if(mode==='triage'){
     var picks=(S.triage||[]).slice();
     if(!picks.length){ for(var z0=1;z0<=cfg.t;z0++) picks.push(z0); }
     if(dir==='down') picks.reverse();
     picks.forEach(function(t,pi){
-      var seq=walkPhase(pi,dir);
+      var seq=walkPhase(pi,side);
       seq.forEach(function(p){
         r.push({t:t,pos:p,depth:'reference'});
         if(cfg.bag===2) r.push({t:t,pos:p,depth:'mid-bag'});
@@ -281,7 +278,7 @@ function buildRoute(room, dir, mode){
   var order=[]; for(var z=1;z<=cfg.t;z++) order.push(z);
   if(dir==='down') order.reverse();
   for(var oi=0;oi<order.length;oi++){ var t=order[oi];
-    var seq=walkPhase(oi,dir);
+    var seq=walkPhase(oi,side);
     for(var p=0;p<3;p++){
       r.push({t:t,pos:seq[p],depth:'reference'});
       if(cfg.bag===2) r.push({t:t,pos:seq[p],depth:'mid-bag'});
@@ -660,6 +657,11 @@ function roomNoteExceptions(){
   return out.join('\n').split('\n').filter(Boolean).slice(0,ROOMNOTE_MAX);
 }
 function buildRoomNotes(){
+  /* Addendum B §7: a triage deliberately targets the tables already known to
+     be bad, so anything it could say about them is a foregone conclusion —
+     and the note cells are shared. Triage, spot and flush write nothing at
+     all; their findings live in the CSV and on the done screen. */
+  if(S.mode==='triage'||S.mode==='spot'||S.mode==='flush') return '';
   var ex=roomNoteExceptions();
   if(!ex.length) return '';
   ex=ex.slice();
