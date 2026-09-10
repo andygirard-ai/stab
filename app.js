@@ -183,7 +183,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
-  skipped:{}, access:null, alarmQueue:[], huntFails:0,
+  skipped:{}, access:null, alarmQueue:[], huntFails:0, shotMidSweep:false,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
@@ -680,7 +680,7 @@ $('startbtn').onclick=function(){
   applyRoomCfg();
   S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
-  S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; renderAlarm();
+  S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false; renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
@@ -1389,7 +1389,7 @@ function doCommit(r, meta){
     room:S.room, table:stop.t, position:stop.pos, depth:stop.depth,
     strain:((RMAP[S.room]||{})[String(stop.t)]||['',''])[0],
     flags:((RMAP[S.room]||{})[String(stop.t)]||['',''])[1],
-    hrs:(function(){var h=hoursSinceShot(S.room); return h===null?'':h.toFixed(1);})(),
+    hrs:(function(){var h=hoursSinceShot(S.room,null,stop.t); return h===null?'':h.toFixed(1);})(),
     mode:S.mode, dir:S.dir, feedEC:(S.feedEC==null?'':S.feedEC), feedPH:(S.feedPH==null?'':S.feedPH),
     plant:(stop.extra?'adjacent':''),
     bag:ROOMS[S.room].bag, media:ROOMS[S.room].media,
@@ -1409,6 +1409,19 @@ function doCommit(r, meta){
     zeroEc:(r.bulk!=null && r.bulk<0.02 && r.vwc<20),
     _pc:pc||null, _out:!!outlier
   };
+  /* §4: a shot that fires mid-sweep splits the room into two populations
+     that are not comparable — on 9/9 C-3 flipped from 1.9h to 0.0h partway
+     through and nobody was told. Rows after the shot carry postShot so the
+     CSV can separate them, and the operator gets one alarm at the moment. */
+  if(S.rows.length){
+    var prevHrs=parseFloat(S.rows[S.rows.length-1].hrs);
+    var nowHrs=parseFloat(row.hrs);
+    if(!isNaN(prevHrs) && !isNaN(nowHrs) && nowHrs < prevHrs - 0.25){
+      S.shotMidSweep=true;
+      showAlarm('a shot fired mid-sweep — readings from here are not comparable to the ones before it');
+    }
+  }
+  row.postShot=!!S.shotMidSweep;
   S.rows.push(row);
   A.holdV=r.vwc;   /* what 'hold' watches for the probe leaving */
   PREV[key]={d:row.date,v:row.vwc,e:row.ec,ts:Date.now()};
@@ -1528,6 +1541,19 @@ $('note').onclick=function(){
   openPegs(t);
 };
 $('pos').onclick=function(){ openTarget(null); };
+$('schedbtn').onclick=openSchedule;
+$('schedparse').onclick=function(){
+  SCHEDPARSE=parseSchedule($('schedpaste').value);
+  drawSchedParse();
+};
+$('schedok').onclick=function(){
+  if(!SCHEDPARSE || !SCHEDPARSE.tables.length) return;
+  saveSched(S.room,{savedAt:Date.now(), room:S.room, tables:SCHEDPARSE.tables});
+  $('schedsheet').classList.add('hide');
+  showBrief();
+  toast('schedule saved for '+S.room+' · '+SCHEDPARSE.tables.length+' tables');
+};
+$('schedclose').onclick=function(){ $('schedsheet').classList.add('hide'); SCHEDPARSE=null; };
 $('targetcancel').onclick=function(){ $('targetsheet').classList.add('hide'); TP.forRow=null; };
 $('exit').onclick=function(){
   if(S.rows.length && !confirm('End sweep with '+S.rows.length+' readings?')) return;
@@ -1824,19 +1850,20 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot\n';
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
-      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table))].join(',');
+      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':'')].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
      record that eight were skipped or why. One record row per skipped table,
      measurements empty, carries it. */
-  var nCols=head.trim().split(',').length;
+  var cols=head.trim().split(',');
+  var nCols=cols.length, iSkip=cols.indexOf('Skipped');
   var skD=new Date().toLocaleDateString('en-US');
   var skT=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   skippedList().sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
@@ -1846,7 +1873,7 @@ function finish(){
     cells[10]=S.mode; cells[11]=S.dir;
     cells[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; cells[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     cells[14]=S.side; cells[24]=S.op||'';
-    cells[nCols-1]=csvq(skipReason(t));
+    cells[iSkip]=csvq(skipReason(t));
     lines.push(cells.join(','));
   });
   var body=lines.join('\n');
@@ -2043,6 +2070,72 @@ function fld(label,inner){ return '<div class="f"><label>'+label+'</label>'+inne
 function roomCfg(){
   try{ return JSON.parse(localStorage.getItem('stab_roomcfg')||'{}'); }catch(e){ return {}; }
 }
+/* Imported schedules, keyed by room. Late-bound the same way getHist is, so
+   pure.js can reach them without knowing about storage. Addendum B §4. */
+function getSched(){
+  try{ return JSON.parse(localStorage.getItem('stab_sched')||'{}'); }catch(e){ return {}; }
+}
+function saveSched(rm,rec){
+  var a=getSched(); a[rm]=rec; lsSet('stab_sched',JSON.stringify(a));
+}
+
+/* ---------------- schedule paste-in (Addendum B §4) ----------------
+   Copy the room's whole schedule screen out of Growlink, paste, check what
+   was read, commit. The verification step is the point: a paste that was
+   misread and silently trusted is how hours-since-shot goes wrong, which is
+   the bug this feature exists to kill. */
+var SCHEDPARSE=null;
+function openSchedule(){
+  if(!S.room){ toast('pick a room first'); return; }
+  SCHEDPARSE=null;
+  $('schedtop').textContent='Schedule · '+S.room;
+  $('schedpaste').value='';
+  var cur=getSched()[S.room];
+  $('schedbody').innerHTML=cur
+    ? '<div class="sn">last imported '+(cur.savedAt?new Date(cur.savedAt).toLocaleString('en-US'):'—')+
+      ' · '+cur.tables.length+' tables</div>'
+    : '<div class="sn">nothing imported yet — this room falls back to the weekly file</div>';
+  $('schedok').classList.add('hide');
+  $('schedsheet').classList.remove('hide');
+}
+function schedFmt(sec){
+  if(sec==null) return '—';
+  var m=Math.floor(sec/60), r=Math.round(sec%60);
+  return m+'m'+(r?' '+r+'s':'');
+}
+function drawSchedParse(){
+  var r=SCHEDPARSE;
+  if(!r || !r.tables.length){
+    $('schedbody').innerHTML='<div class="sn bad">nothing read from that paste — is it the whole room screen?</div>';
+    $('schedok').classList.add('hide');
+    return;
+  }
+  var wrongRoom=(r.room && r.room!==S.room);
+  var h='';
+  if(wrongRoom) h+='<div class="sn bad">that paste says '+r.room+', you are on '+S.room+'</div>';
+  h+='<div class="sn">'+r.tables.length+' table'+(r.tables.length>1?'s':'')+' read'+
+     (r.warnings.length?' · '+r.warnings.length+' thing'+(r.warnings.length>1?'s':'')+' to look at':'')+'</div>';
+  h+='<table class="sched"><tr><th>T</th><th>start</th><th>shot</th><th>every</th><th>x</th><th>total</th></tr>';
+  r.tables.forEach(function(t){
+    var p=t.P1||{};
+    var bad=(t.reconciles===false);
+    h+='<tr'+(bad?' class="bad"':'')+'><td>'+t.table+(t.shared?'<span class="sh">+</span>':'')+'</td>'+
+       '<td>'+(p.start?fmt12(+p.start.split(':')[0],p.start.split(':')[1]):'—')+'</td>'+
+       '<td>'+schedFmt(p.duration)+'</td>'+
+       '<td>'+(p.interval?(p.interval/3600).toFixed(1)+'h':'—')+'</td>'+
+       '<td>'+(p.frequency||'—')+'</td>'+
+       '<td>'+schedFmt(t.runtimeSec)+(bad?' ⚠':'')+'</td></tr>';
+    if(t.P2) h+='<tr class="p2"><td>P2</td><td>'+(t.P2.start||'—')+'</td><td>'+schedFmt(t.P2.duration)+
+       '</td><td>'+(t.P2.interval?(t.P2.interval/3600).toFixed(1)+'h':'—')+'</td><td>'+(t.P2.frequency||'—')+'</td><td></td></tr>';
+  });
+  h+='</table>';
+  var bad=r.tables.filter(function(t){ return t.reconciles===false; });
+  if(bad.length) h+='<div class="sn bad">⚠ T'+bad.map(function(t){return t.table;}).join(', T')+
+    ': shot x frequency does not match the total runtime, so something was misread</div>';
+  if(r.warnings.length) h+='<div class="sn bad">'+r.warnings.join('<br>')+'</div>';
+  $('schedbody').innerHTML=h;
+  $('schedok').classList.toggle('hide', wrongRoom);
+}
 function saveRoomCfg(rm,o){
   var a=roomCfg(); a[rm]=o; lsSet('stab_roomcfg',JSON.stringify(a));
 }
@@ -2110,6 +2203,17 @@ function showBrief(){
     rows.push(['shots', sc]);
     rows.push(['now', (hs==null?'—':hs.toFixed(1)+'h since last shot')+
       (nx==null?'':' · next in '+nx.toFixed(1)+'h')]);
+  }
+  /* §4: say out loud which schedule those two lines came from. The weekly
+     file goes stale between grows and looks exactly like a current one. */
+  var imp=getSched()[S.room];
+  var sb=$('schedbtn');
+  if(sb){
+    sb.classList.toggle('set',!!imp);
+    sb.textContent=imp
+      ? 'irrigation schedule · imported '+new Date(imp.savedAt).toLocaleDateString('en-US')+
+        ' · '+imp.tables.length+' tables'
+      : 'irrigation schedule · paste one in (using the weekly file)';
   }
   var open=getEv().filter(function(e){
     return e.room===S.room && (e.kind==='fault'||e.kind==='bulb') && e.status==='open'; });

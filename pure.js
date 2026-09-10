@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v30';
+var VER='v31';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -26,39 +26,230 @@ var SKIPWHY=['crew','dark','harvest','other'];
    of what the room should be receiving rather than an absolute floor. */
 function flushMins(rm){ return MTASK.flush[rm.charAt(0)]||21; }
 
-function hoursSinceShot(room, nowDate){
-  var c=SCHED[room]; if(!c) return null;
-  var now=nowDate||new Date(), p=c[0].split(':'), best=null;
-  for(var d=-1; d<=0; d++){
-    var t0=new Date(now); t0.setDate(t0.getDate()+d);
-    t0.setHours(+p[0],+p[1],0,0);
-    for(var k=0;k<c[2];k++){
-      var t=new Date(t0.getTime()+k*c[1]*60000);
-      if(t<=now && (best===null || t>best)) best=t;
+/* Every irrigation series that waters a table today. An imported schedule
+   wins over rooms.js, and it is per table because tiers within one room
+   routinely differ — B3 read 1.7h since its last shot on 9/10 when the real
+   answer was 5.6h, because rooms.js still carried the previous grow's five
+   shots. P2 is a second series, not a variant of the first. */
+function schedSeries(room, table){
+  var imp=(typeof getSched==='function')?(getSched()||{}):{};
+  var rec=imp[room];
+  if(rec && rec.tables && rec.tables.length){
+    var t=null, i;
+    for(i=0;i<rec.tables.length;i++){
+      if(table!=null && rec.tables[i].table===table){ t=rec.tables[i]; break; }
+    }
+    /* A table the paste did not cover falls back to the rest of the import,
+       never to the weekly file: mixing a current schedule with a stale one
+       inside one room is the exact failure §4 exists to end, and it would be
+       invisible in the rows. The paste screen warns when tables are missing,
+       which is the moment to fix it. */
+    if(!t) t=rec.tables[0];
+    if(t){
+      var out=[];
+      [t.P1,t.P2].forEach(function(ph){
+        if(ph && ph.start && ph.frequency)
+          out.push({start:ph.start, intervalMin:(ph.interval||0)/60, count:ph.frequency});
+      });
+      if(out.length) return out;
     }
   }
+  var c=SCHED[room];
+  return c ? [{start:c[0], intervalMin:c[1], count:c[2]}] : [];
+}
+function shotTimes(room, table, nowDate){
+  var now=nowDate||new Date(), all=[];
+  schedSeries(room,table).forEach(function(ser){
+    var p=ser.start.split(':');
+    for(var d=-1; d<=1; d++){
+      var t0=new Date(now); t0.setDate(t0.getDate()+d);
+      t0.setHours(+p[0],+p[1],0,0);
+      for(var k=0;k<ser.count;k++) all.push(new Date(t0.getTime()+k*ser.intervalMin*60000));
+    }
+  });
+  all.sort(function(a,b){ return a-b; });
+  return all;
+}
+function hoursSinceShot(room, nowDate, table){
+  var now=nowDate||new Date(), all=shotTimes(room,table,now), best=null;
+  for(var i=0;i<all.length;i++) if(all[i]<=now && (best===null||all[i]>best)) best=all[i];
   return best===null ? null : (now-best)/3600000;
 }
 /* The same walk as hoursSinceShot, forwards: when the room next gets water.
    Used by the pre-walk brief (A §5) so the operator can see whether he is
    about to read a room just before or just after a shot. */
-function hoursToNextShot(room, nowDate){
-  var c=SCHED[room]; if(!c) return null;
-  var now=nowDate||new Date(), p=c[0].split(':'), best=null;
-  for(var d=0; d<=1; d++){
-    var t0=new Date(now); t0.setDate(t0.getDate()+d);
-    t0.setHours(+p[0],+p[1],0,0);
-    for(var k=0;k<c[2];k++){
-      var t=new Date(t0.getTime()+k*c[1]*60000);
-      if(t>now && (best===null || t<best)) best=t;
-    }
-  }
+function hoursToNextShot(room, nowDate, table){
+  var now=nowDate||new Date(), all=shotTimes(room,table,now), best=null;
+  for(var i=0;i<all.length;i++) if(all[i]>now && (best===null||all[i]<best)) best=all[i];
   return best===null ? null : (best-now)/3600000;
 }
-function schedLine(room){
-  var c=SCHED[room]; if(!c) return '';
-  var p=c[0].split(':');
-  return c[2]+' shot'+(c[2]>1?'s':'')+' from '+fmt12(+p[0],p[1])+', every '+(c[1]/60)+'h';
+/* ============ SCHEDULE PASTE-IN (Addendum B §4) ============
+   Growlink exposes no schedule endpoint, so the operator copies the room's
+   whole schedule screen and pastes it here. The screen puts the VALUE before
+   its LABEL:
+
+     4            <- value
+     Mins         <- unit
+     44
+     Secs
+     Duration     <- the label those four lines belong to
+
+   so the parser is label-driven rather than positional: accumulate lines
+   until a known label arrives, then interpret what was accumulated. That
+   survives the fields appearing in a different order or a field being absent,
+   which a positional parser would not.
+
+   Nothing here trusts its own output. parseSchedule reports what it could not
+   read alongside what it could, and the operator confirms per table on a
+   verification screen before any of it is committed — the paste is a
+   convenience, not an authority. */
+var SCHED_LABELS={'start time':'start','duration':'duration','interval':'interval',
+                  'frequency':'frequency','total runtime':'runtime'};
+function schedSeconds(pend){
+  /* number/unit pairs: 4 Mins 44 Secs -> 284 */
+  var s=0, saw=false;
+  for(var i=0;i<pend.length-1;i++){
+    var n=parseFloat(pend[i]);
+    if(isNaN(n)) continue;
+    var u=String(pend[i+1]||'').toLowerCase();
+    if(/^hr|^hour/.test(u)){ s+=n*3600; saw=true; }
+    else if(/^min/.test(u)){ s+=n*60; saw=true; }
+    else if(/^sec/.test(u)){ s+=n; saw=true; }
+  }
+  return saw?s:null;
+}
+function schedClock(pend){
+  for(var i=pend.length-1;i>=0;i--){
+    var m=/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i.exec(pend[i]);
+    if(m){
+      var h=+m[1], ap=(m[3]||'').toUpperCase();
+      if(ap==='PM' && h<12) h+=12;
+      if(ap==='AM' && h===12) h=0;
+      return ('0'+h).slice(-2)+':'+m[2];
+    }
+  }
+  return null;
+}
+function schedRuntime(line){
+  /* "18m 56s" as printed under the control type */
+  var m=/(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*(?:(\d+)\s*s)?/i.exec(String(line).trim());
+  if(!m || (!m[1]&&!m[2]&&!m[3])) return null;
+  return (+(m[1]||0))*3600 + (+(m[2]||0))*60 + (+(m[3]||0));
+}
+/* "B5 Table 1", "A1 Table 11+12" — the A-wing shared-valve convention means a
+   header can name more than one table, and both get the same schedule. */
+function schedHeader(line){
+  var m=/^([A-Za-z]-?\d+)\s+Table\s+([\d+\s]+?)(?:\s|\t|$)/.exec(String(line));
+  if(!m) return null;
+  var tables=m[2].split('+').map(function(x){ return parseInt(x,10); })
+                 .filter(function(x){ return !isNaN(x); });
+  if(!tables.length) return null;
+  return {room:m[1].replace('-',''), tables:tables};
+}
+function parseSchedule(text){
+  var lines=String(text||'').split(/\r?\n/).map(function(l){ return l.replace(/\t.*$/,'').trim(); });
+  var blocks=[], cur=null, pend=[], section='P1', warn=[];
+  function close(){ if(cur && (cur.P1.start||cur.P1.duration!=null)) blocks.push(cur); cur=null; }
+  for(var i=0;i<lines.length;i++){
+    var ln=lines[i];
+    if(!ln) continue;
+    var hd=schedHeader(ln);
+    if(hd){ close(); cur={room:hd.room, tables:hd.tables, control:null, runtime:null,
+                          P1:{}, P2:{}, flush:{}}; pend=[]; section='P1'; continue; }
+    if(!cur){ continue; }                      /* preamble before the first table */
+    var low=ln.toLowerCase();
+    if(/^p1\s+timers?$/.test(low)){ section='P1'; pend=[]; continue; }
+    if(/^p2\s+timers?$/.test(low)){ section='P2'; pend=[]; continue; }
+    if(/^flush\s+timers?$/.test(low)){ section='flush'; pend=[]; continue; }
+    if(/^(simple timer|copilot)$/.test(low)){ cur.control=ln; pend=[]; continue; }
+    if(cur.control && cur.runtime===null && /^[\dhms\s]+$/i.test(ln) && /[hms]/i.test(ln)){
+      cur.runtime=schedRuntime(ln); pend=[]; continue;
+    }
+    var key=SCHED_LABELS[low];
+    if(key){
+      var tgt=cur[section]||(cur[section]={});
+      if(key==='start') tgt.start=schedClock(pend);
+      else if(key==='frequency'){
+        var f=parseFloat(pend[pend.length-1]);
+        tgt.frequency=isNaN(f)?null:f;
+      }
+      else if(key==='runtime') cur.runtime=schedSeconds(pend);
+      else tgt[key]=schedSeconds(pend);
+      if(tgt[key]===null && key!=='frequency') warn.push('could not read '+low+' for T'+cur.tables.join('+'));
+      pend=[];
+      continue;
+    }
+    pend.push(ln);
+  }
+  close();
+  /* one record per table, so a shared-valve header fans out */
+  var tables=[];
+  blocks.forEach(function(b){
+    b.tables.forEach(function(t){
+      /* Every phase's duration x frequency, plus the flush, should equal the
+         total runtime the screen prints. When it does, the block was read
+         correctly; when it does not, something was misread and the
+         verification screen says so rather than the operator finding out
+         from a wrong dryback call. A Copilot room's total covers P1, P2 and
+         the flush together, so checking P1 alone would flag every one of
+         them. */
+      var calc=null;
+      [b.P1,b.P2].forEach(function(ph){
+        if(ph && ph.duration!=null && ph.frequency) calc=(calc||0)+ph.duration*ph.frequency;
+      });
+      if(b.flush && b.flush.duration!=null) calc=(calc||0)+b.flush.duration;
+      tables.push({table:t, room:b.room, control:b.control, runtimeSec:b.runtime,
+                   shared:b.tables.length>1?b.tables.slice():null,
+                   P1:b.P1, P2:(b.P2&&b.P2.start)?b.P2:null,
+                   flush:(b.flush&&(b.flush.duration!=null))?b.flush:null,
+                   reconciles:(calc!=null&&b.runtime!=null)?(Math.abs(calc-b.runtime)<=60):null});
+    });
+  });
+  tables.sort(function(a,b){ return a.table-b.table; });
+  var rm=(blocks[0]&&blocks[0].room)||null;
+  /* The screen is meant to be pasted whole. A short paste is not an error,
+     but the uncovered tables will read off their neighbours' schedule, so
+     the operator has to be told which ones before he commits it. */
+  if(rm && ROOMS[rm]){
+    var have={}, miss=[];
+    tables.forEach(function(t){ have[t.table]=1; });
+    for(var n=1;n<=ROOMS[rm].t;n++) if(!have[n]) miss.push(n);
+    if(miss.length) warn.push('no schedule for T'+miss.join(', T')+
+      ' — those tables will read off T'+(tables[0]?tables[0].table:'?'));
+  }
+  return {room:rm, tables:tables, warnings:warn};
+}
+/* The brief's one-line summary of when the room gets water. It reads the
+   same source hoursSinceShot does, so the brief can never describe one
+   schedule while the rows are stamped against another — which is how B3's
+   1.7h looked plausible on 9/10. Tables in one room routinely differ, so
+   where they do the line says so rather than picking one and hiding it. */
+function schedLine(room, table){
+  var ser=schedSeries(room, table);
+  if(!ser.length) return '';
+  var txt=ser.map(function(s){
+    var p=s.start.split(':');
+    return s.count+' shot'+(s.count>1?'s':'')+' from '+fmt12(+p[0],p[1])+
+           (s.count>1?', every '+(s.intervalMin/60)+'h':'');
+  }).join(' · then ');
+  if(table==null && schedTiers(room)>1) txt+=' (T'+schedTables(room)[0]+'; tiers differ)';
+  return txt;
+}
+/* How many distinct schedules an imported room has, and which tables carry
+   them. Zero means nothing imported and the weekly file is in charge. */
+function schedTables(room){
+  var rec=((typeof getSched==='function')?(getSched()||{}):{})[room];
+  return (rec&&rec.tables)?rec.tables.map(function(t){ return t.table; }):[];
+}
+function schedTiers(room){
+  var rec=((typeof getSched==='function')?(getSched()||{}):{})[room], seen={};
+  if(!rec||!rec.tables) return 0;
+  rec.tables.forEach(function(t){
+    var p=t.P1||{};
+    seen[[p.start,p.duration,p.interval,p.frequency,
+          t.P2?[t.P2.start,t.P2.duration,t.P2.interval,t.P2.frequency].join('/'):''].join('|')]=1;
+  });
+  return Object.keys(seen).length;
 }
 /* Days since flower start. Counted off a date rather than carried as a number
    against a reference day, so it cannot go stale between move-ins. */

@@ -113,7 +113,7 @@ function enterSettling(w,vwc,rawBulk){
     ok(/Manual commit/.test(head) && /Zero EC flag/.test(head),'CSV header carries both new columns: "'+head+'"');
     const row=d.getElementById('csv').value.split('\n')[1];
     // v27 appended a Skipped column, empty on an unskipped table
-    ok(row.split(',').slice(-3).join(',')==='YES,YES,""','manual + zero-EC row ends ...,YES,YES,"": "'+row.split(',').slice(-3).join(',')+'"');
+    ok(row.split(',').slice(-4,-1).join(',')==='YES,YES,""','manual + zero-EC row ends ...,YES,YES,"": "'+row.split(',').slice(-4,-1).join(',')+'"');
     ok(errors.length===0,'no runtime errors (1.1/1.4): '+errors.join('|'));
     w.close(); }
 

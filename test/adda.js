@@ -279,13 +279,13 @@ function rowsFor(w,room,spec){
     ok(w.S.route[w.S.i].t!==tbl,'one tap skipped the table and advanced to T'+w.S.route[w.S.i].t);
     d.getElementById('exit').click(); await sleep(50);
     const csv=d.getElementById('csv').value.split('\n');
-    ok(/,Skipped$/.test(csv[0]),'CSV has a Skipped column');
-    const skipRows=csv.slice(1).filter(l=>/"crew"$/.test(l));
+    ok(/,Skipped,After mid-sweep shot$/.test(csv[0]),'CSV has a Skipped column');
+    const skipRows=csv.slice(1).filter(l=>/"crew",?$/.test(l));
     ok(skipRows.length>0,'the skip is recorded in the export: '+skipRows.length+' row(s)');
     const nCols=csv[0].split(',').length;
     ok(csv.slice(1).every(l=>l.split(',').length===nCols),'every row has the header\'s column count');
     // a table skipped with no readings at all still leaves a record row
-    const fully=csv.slice(1).filter(l=>{ const c=l.split(','); return c[15]==='' && /"crew"$/.test(l); });
+    const fully=csv.slice(1).filter(l=>{ const c=l.split(','); return c[15]==='' && /"crew",?$/.test(l); });
     ok(fully.length>=0,'record rows for never-measured tables are well formed');
     ok(errors.length===0,'no runtime errors (§2 CSV): '+errors.join('|')); }
 
@@ -338,6 +338,196 @@ function rowsFor(w,room,spec){
     const wrong=Object.keys(first).filter(k=>!w.SCHED[k]||w.SCHED[k][0]!==first[k]);
     ok(wrong.length===0,'every room\'s first shot matches lights-on + 2h15'+(wrong.length?': '+wrong.join(','):''));
     ok(Object.keys(w.SCHED).length===19,'all 19 production rooms are scheduled');
+    w.close(); }
+
+
+  // ============ §4 schedule paste-in ============
+  // The Growlink screen prints the VALUE before its LABEL, so the parser is
+  // label-driven: accumulate, then interpret when a known label arrives.
+  // These blocks are built from the one documented sample (main spec §3.2);
+  // the multi-table, shared-valve and Copilot shapes are derived from it and
+  // are the parts to re-check against a real paste when one arrives.
+  const schedBlock=(head,control,total,rows)=>[head+'\t---',control,total].concat(rows).join('\n');
+  const P1_284=['Recycle Timer','01:15:00 AM','Start Time','4','Mins','44','Secs','Duration',
+                '2','Hrs','30','Mins','Interval','4','Frequency'];
+  const B5_ONE=schedBlock('B5 Table 1','Simple Timer','18m 56s',P1_284);
+
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(B5_ONE);
+    const t=r.tables[0]||{};
+    ok(r.room==='B5' && r.tables.length===1,'documented block reads as one B5 table: '+r.room+' x'+r.tables.length);
+    ok(t.control==='Simple Timer','control type: '+t.control);
+    ok(t.runtimeSec===1136,'total runtime 18m 56s -> 1136s: '+t.runtimeSec);
+    ok(t.P1.start==='01:15','start time, 12-hour screen to 24-hour: '+t.P1.start);
+    ok(t.P1.duration===284,'shot 4m 44s -> 284s: '+t.P1.duration);
+    ok(t.P1.interval===9000,'interval 2h 30m -> 9000s: '+t.P1.interval);
+    ok(t.P1.frequency===4,'frequency: '+t.P1.frequency);
+    ok(t.reconciles===true,'4 x 4m44s = 18m56s, so the block was read correctly');
+    ok(r.warnings.length===1 && /no schedule for T2/.test(r.warnings[0]),
+       'one table of an eleven-table room is a short paste, and it says so: '+r.warnings[0]);
+    ok(w.parseSchedule(B5_ONE).tables.every(x=>x.P1.start==='01:15'),'…without refusing what it did read');
+    w.close(); }
+
+  // a table the paste missed reads off the rest of the import, never off the
+  // weekly file — half a room on a current schedule and half on a stale one
+  // would be invisible in the rows, which is the failure §4 exists to end
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const at=new Date(); at.setHours(10,52,0,0);
+    w.saveSched('B3',{savedAt:Date.now(), room:'B3', tables:[
+      {table:1, room:'B3', P1:{start:'01:15', duration:284, interval:7200, frequency:3}, P2:null, flush:null}]});
+    ok(Math.abs(w.hoursSinceShot('B3',at,9)-5.6)<0.1,
+       'T9 was not in the paste and still reads 5.6h, not the weekly file\'s 1.6h: '+
+       w.hoursSinceShot('B3',at,9).toFixed(1)+'h');
+    w.close(); }
+
+  // per-table tiers in one paste — the whole room screen, not table by table
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(B5_ONE+'\n'+schedBlock('B5 Table 2','Simple Timer','14m 12s',
+      ['Recycle Timer','01:15:00 AM','Start Time','4','Mins','44','Secs','Duration',
+       '2','Hrs','30','Mins','Interval','3','Frequency']));
+    ok(r.tables.length===2,'one paste, two tables: '+r.tables.length);
+    ok(r.tables[0].table===1 && r.tables[1].table===2,'and they come back in table order');
+    ok(r.tables[0].P1.frequency===4 && r.tables[1].P1.frequency===3,
+       'tiers differ within the room: T1 x'+r.tables[0].P1.frequency+', T2 x'+r.tables[1].P1.frequency);
+    ok(r.tables.every(x=>x.reconciles===true),'both reconcile against their own printed totals');
+    w.close(); }
+
+  // the A-wing shared valve: one header, two tables, one schedule
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(schedBlock('A1 Table 11+12','Simple Timer','18m 56s',P1_284));
+    ok(r.tables.length===2 && r.tables[0].table===11 && r.tables[1].table===12,
+       'T11+12 fans out to two records: '+r.tables.map(x=>x.table).join(','));
+    ok(r.tables.every(x=>x.shared && x.shared.join('+')==='11+12'),
+       'both carry the shared valve, so a wrong dryback call on one is legible on the other');
+    ok(r.tables[0].P1.start===r.tables[1].P1.start && r.tables[0].P1.frequency===r.tables[1].P1.frequency,
+       'and they carry the same schedule');
+    w.close(); }
+
+  // Copilot: P1 and P2 are separate series, not variants of one
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(schedBlock('C3 Table 7','Copilot','27m 30s',
+      ['P1 timers','01:15:00 AM','Start Time','3','Mins','0','Secs','Duration',
+       '1','Hrs','30','Mins','Interval','3','Frequency',
+       'P2 timers','07:00:00 AM','Start Time','2','Mins','30','Secs','Duration',
+       '1','Hrs','0','Mins','Interval','5','Frequency',
+       'Flush timers','6','Mins','0','Secs','Duration']));
+    const t=r.tables[0]||{};
+    ok(t.control==='Copilot','control type: '+t.control);
+    ok(t.P1.start==='01:15' && t.P1.duration===180 && t.P1.frequency===3,
+       'P1 parsed on its own: '+t.P1.start+' x'+t.P1.frequency+' of '+t.P1.duration+'s');
+    ok(t.P2 && t.P2.start==='07:00' && t.P2.duration===150 && t.P2.frequency===5,
+       'P2 parsed separately: '+(t.P2?t.P2.start+' x'+t.P2.frequency+' of '+t.P2.duration+'s':'missing'));
+    ok(t.flush && t.flush.duration===360,'flush duration kept: '+(t.flush?t.flush.duration:'missing'));
+    ok(t.reconciles===true,'P1 + P2 + flush = the printed total, so a Copilot room is not falsely flagged');
+    w.close(); }
+
+  // a misread block is caught by the arithmetic rather than by the operator
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(schedBlock('B5 Table 1','Simple Timer','18m 56s',
+      P1_284.slice(0,-2).concat(['6','Frequency'])));
+    ok(r.tables[0].reconciles===false,
+       '6 x 4m44s is 28m24s, not the 18m56s printed — flagged, not committed');
+    w.close(); }
+
+  // ============ §3, via §4: hours-since-shot from the schedule ============
+  // B3 logged 1.7h on 9/10 when the true answer was 5.6h. The arithmetic was
+  // never wrong: SCHED.B3 still carried the previous grow's five shots, and
+  // the room actually stops after 05:15. This is the case the feature exists
+  // for, so it is pinned to the numbers the operator reported.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const at=new Date(); at.setHours(10,52,0,0);
+    const stale=w.hoursSinceShot('B3',at,1);
+    ok(w.SCHED.B3[2]===5,'the weekly file still says five shots');
+    ok(Math.abs(stale-1.6)<0.1,'…so uncorrected it reads '+stale.toFixed(1)+'h, the number he saw');
+    w.saveSched('B3',{savedAt:Date.now(), room:'B3', tables:[
+      {table:1, room:'B3', control:'Simple Timer', runtimeSec:852,
+       P1:{start:'01:15', duration:284, interval:7200, frequency:3}, P2:null, flush:null, reconciles:true}]});
+    const fixed=w.hoursSinceShot('B3',at,1);
+    ok(Math.abs(fixed-5.6)<0.1,'an imported schedule reads '+fixed.toFixed(1)+'h, the real one');
+    ok(w.hoursToNextShot('B3',at,1)>10,'and the room is not watered again until tomorrow');
+    w.close(); }
+
+  // per-table tiers reach hours-since-shot, not just the verification screen
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const at=new Date(); at.setHours(10,52,0,0);
+    w.saveSched('C3',{savedAt:Date.now(), room:'C3', tables:[
+      {table:1, room:'C3', P1:{start:'01:15', duration:180, interval:7200, frequency:3}, P2:null, flush:null},
+      {table:7, room:'C3', P1:{start:'01:15', duration:180, interval:5400, frequency:3},
+       P2:{start:'07:00', duration:150, interval:3600, frequency:5}, flush:null}]});
+    const t1=w.hoursSinceShot('C3',at,1), t7=w.hoursSinceShot('C3',at,7);
+    ok(Math.abs(t1-5.6)<0.1,'C3 T1, three shots ending 05:15: '+t1.toFixed(1)+'h');
+    ok(Math.abs(t7-0.9)<0.1,'C3 T7, P2 still running: '+t7.toFixed(1)+'h');
+    ok(t1!==t7,'two tables in one room, two different answers — which is the point');
+    w.close(); }
+
+  // ============ §4 a shot that fires mid-sweep ============
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    w.hoursSinceShot=()=>3.4;
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].postShot===false,'a row taken before the shot is not marked');
+    w.hoursSinceShot=()=>0.0;                       // the shot fires
+    enterSettling(w,36.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[1].postShot===true,'the row after it is');
+    ok(!d.getElementById('alarm').classList.contains('hide'),'and the operator is told at the moment, not at the export');
+    ok(/shot fired mid-sweep/.test(d.getElementById('alarm').textContent),
+       'alarm says what happened: '+d.getElementById('alarm').textContent.trim().slice(0,60));
+    enterSettling(w,36.5,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[2].postShot===true,'every row after the shot stays on the far side of it');
+    d.getElementById('exit').click(); await sleep(50);
+    const csv=d.getElementById('csv').value.split('\n');
+    ok(/,After mid-sweep shot$/.test(csv[0]),'the CSV separates the two populations');
+    ok(csv[1].split(',').pop()==='' && csv[2].split(',').pop()==='YES',
+       'and marks the right rows: "'+csv[1].split(',').pop()+'" then "'+csv[2].split(',').pop()+'"'); }
+
+  // ============ §4 the verification screen ============
+  // The paste is a convenience, not an authority: nothing is committed until
+  // the operator has seen what was read.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B5"]').click(); await sleep(20);
+    ok(/using the weekly file/.test(d.getElementById('schedbtn').textContent),
+       'before any import the setup screen says which schedule it is using: '+d.getElementById('schedbtn').textContent);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    ok(!d.getElementById('schedsheet').classList.contains('hide'),'the sheet opens from the room brief');
+    ok(d.getElementById('schedok').classList.contains('hide'),'…with nothing offered to save yet');
+    d.getElementById('schedpaste').value=B5_ONE+'\n'+schedBlock('B5 Table 2','Simple Timer','14m 12s',
+      ['Recycle Timer','01:15:00 AM','Start Time','4','Mins','44','Secs','Duration',
+       '2','Hrs','30','Mins','Interval','3','Frequency']);
+    d.getElementById('schedparse').click(); await sleep(20);
+    const body=d.getElementById('schedbody').textContent;
+    ok(/2 tables read/.test(body),'the screen says what it read: '+body.slice(0,40));
+    ok(/1:15 AM/.test(body),'in the operator\'s clock, not the machine\'s');
+    ok(!d.getElementById('schedok').classList.contains('hide'),'and only now offers to save');
+    d.getElementById('schedok').click(); await sleep(20);
+    const saved=JSON.parse(w.localStorage.getItem('stab_sched')||'{}');
+    ok(saved.B5 && saved.B5.tables.length===2,'saved under the room: '+(saved.B5?saved.B5.tables.length+' tables':'nothing'));
+    ok(d.getElementById('schedsheet').classList.contains('hide'),'and the sheet closes');
+    ok(/imported/.test(d.getElementById('schedbtn').textContent) &&
+       d.getElementById('schedbtn').classList.contains('set'),
+       'and the setup screen now says where its numbers come from: '+d.getElementById('schedbtn').textContent);
+    ok(/tiers differ/.test(w.schedLine('B5')),
+       'the brief admits the room is not one schedule: '+w.schedLine('B5'));
+    ok(/4 shots from 1:15 AM/.test(w.schedLine('B5',1)) && /3 shots from 1:15 AM/.test(w.schedLine('B5',2)),
+       'and per table it is exact: T1 "'+w.schedLine('B5',1)+'", T2 "'+w.schedLine('B5',2)+'"');
+    ok(errors.length===0,'no runtime errors (§4 sheet): '+errors.join('|'));
+    w.close(); }
+
+  // a paste from the wrong room, or of nothing at all, cannot be committed
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B5"]').click(); await sleep(20);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value='some other thing entirely';
+    d.getElementById('schedparse').click(); await sleep(20);
+    ok(d.getElementById('schedok').classList.contains('hide'),'an unreadable paste offers no save');
+    ok(/nothing read/.test(d.getElementById('schedbody').textContent),'and says so plainly');
+    d.getElementById('schedpaste').value=schedBlock('A1 Table 3','Simple Timer','18m 56s',P1_284);
+    d.getElementById('schedparse').click(); await sleep(20);
+    ok(d.getElementById('schedok').classList.contains('hide'),'an A1 paste on the B5 screen offers no save either');
+    ok(/says A1, you are on B5/.test(d.getElementById('schedbody').textContent),
+       'and names the mismatch: '+d.getElementById('schedbody').textContent.slice(0,50));
     w.close(); }
 
   console.log(out.join('\n'));

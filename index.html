@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v30</title>
+<title>Stab v31</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -324,6 +324,30 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 #logrecent .r{font-family:var(--mono);font-size:12px;color:var(--dim);padding:7px 0;
   border-top:1px solid var(--line);line-height:1.5}
 
+/* ---------- schedule paste-in (B §4) ---------- */
+#schedsheet{position:fixed;inset:0;background:var(--bg);z-index:23;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#schedtop{font-size:28px;font-weight:700;margin-bottom:2px}
+#schedsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
+#schedpaste{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:11px;font-family:var(--mono);font-size:12px;color:var(--ink);resize:none;
+  -webkit-user-select:text;user-select:text;margin-bottom:9px}
+#schedbody{margin:12px 0}
+#schedbody .sn{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5}
+#schedbody .sn.bad{color:var(--warn)}
+table.sched{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+table.sched th{text-align:left;color:var(--dimmer);font-weight:400;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--line)}
+table.sched td{padding:6px;border-bottom:1px solid var(--line);color:var(--ink)}
+table.sched tr.bad td{color:var(--warn)}
+table.sched tr.p2 td{color:var(--dimmer);font-size:11px}
+table.sched .sh{color:var(--live)}
+#schedbtn{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:12px;margin:8px 0 4px}
+#schedbtn.set{border-style:solid;border-color:var(--live);color:var(--live)}
+#schedok{background:var(--ok);color:#052D14}
+#schedclose{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+
 /* ---------- pre-walk room brief (A §5) ---------- */
 #brief{background:var(--surface);border:1px solid var(--line);border-radius:10px;
   padding:10px 12px;margin:12px 0 4px}
@@ -374,7 +398,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v30</b></div>
+  <div class="brand">Substrate sweep · <b>v31</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -389,6 +413,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   <div class="lbl" style="margin-top:0">Pick a room</div>
   <div id="rooms"></div>
   <div id="brief" class="hide"></div>
+  <button id="schedbtn">irrigation schedule</button>
   <div class="lbl">Side of row</div>
   <div class="two">
     <button class="side on" data-side="standard">standard</button>
@@ -508,7 +533,7 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v30</div>
+  <div class="v">stab v31</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -596,12 +621,26 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   <button id="targetcancel">Cancel</button>
 </div>
 
+<div id="schedsheet" class="hide">
+  <div id="schedtop">Schedule</div>
+  <div id="schedsub">Copy the whole schedule screen out of Growlink and paste it
+    here — every table at once, not one at a time. Nothing is saved until you
+    have looked at what was read.</div>
+  <textarea id="schedpaste" rows="5" placeholder="paste the Growlink schedule screen"></textarea>
+  <button id="schedparse" class="fp">Read it</button>
+  <div id="schedbody"></div>
+  <div class="lgact">
+    <button id="schedok" class="hide">Save schedule</button>
+    <button id="schedclose">Close</button>
+  </div>
+</div>
+
 <div id="alarm" class="hide"><span id="alarmtxt"></span><button id="alarmok">OK</button></div>
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=30"></script>
-<script src="pure.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script src="rooms.js?v=31"></script>
+<script src="pure.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

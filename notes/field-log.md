@@ -17,29 +17,30 @@ interrupted by a reload. This is the list to execute against.
 
 **Live on main: v29.**
 
-**Queued on the branch, tested, not live:**
+**Queued on the branch, tested, not live** — held at the operator's request
+while a couple of other things are worked out, so this batch ships together:
 
 | | change | source |
 |---|---|---|
 | v30 | aisle grouping — the phase belongs to SIDE, not direction | B §1 |
 | v30 | third probe colour: white = logged, pull probe | B §2 |
 | v30 | triage/spot/flush write nothing to the note cells | B §7 |
+| v31 | schedule paste-in, per table, with a verification screen | B §4 |
+| v31 | hours-since-shot from the imported schedule, per table | B §3 |
+| v31 | a shot that fires mid-sweep is flagged and marks its rows | B §4 |
 
 **Not yet actioned, in build order:**
 
-- **B §3 hours-since-shot is wrong.** B3 logged 1.7h when it was 5.6h. The
-  computation is right; `SCHED.B3` is stale — it says five shots, the room
-  actually stopped after 05:15. Root cause is schedule data, fixed properly
-  by §4. No safe local fix without the real schedule.
-- **B §4 schedule paste-in.** The real fix for §3, and it removes a manual
-  step rather than adding one. Wants: whole-room paste, per-table tiers, the
-  A-wing `T11+12` shared-valve convention, a verification screen before
-  commit, then hours-since-shot computed from schedule + clock, and a flag
-  when a shot fires mid-sweep.
 - **B §5 / §6 room config.** Dripper count, strain map, flower start,
-  underlight flags — editable, part of move-in.
+  underlight flags — editable, part of move-in. Dripper count is what
+  volume-per-plant is still missing; §4 has the runtime it needs.
 - **B §8 operator field.** Mark a bag-feel-only sweep so a room without probe
   data is distinguishable from one with it.
+
+**Waiting on the floor:** three real Growlink pastes — one full Simple Timer
+room, one Copilot room with P1/P2/Flush, one A-wing room showing `T11+12`.
+The §4 parser is built against the single documented `B5 Table 1` sample and
+the rest of the block shapes are derived, not observed.
 
 ---
 
@@ -173,3 +174,53 @@ for when to lift the probe out.
 `buildRoomNotes()` unconditionally. A triage targets the tables already known
 to be bad, so anything it could say about them is a foregone conclusion, and
 the cells are shared. Findings stay in the CSV and on the done screen.
+
+### 7. Hours-since-shot was reading the previous grow's schedule → v31
+
+**Observed.** B §3: "B3 logged 1.7h when it was 5.6h."
+
+**What it was.** Not arithmetic. `SCHED.B3` in the weekly file still carried
+the previous grow's five shots — 01:15 every two hours through 09:15 — and
+the room actually stops after 05:15. At 10:52 the app walked a schedule that
+said the room had been watered at 09:15 and answered 1.6h. Every number in
+that chain was correct except the schedule itself.
+
+There was no safe local fix. Editing `SCHED.B3` by hand would have made B3
+right and left the same trap set in eighteen other rooms, one Monday at a
+time, with nothing to say when it sprang.
+
+**Shipped, as §4.** The operator copies the room's whole Growlink schedule
+screen and pastes it in. Growlink prints the value *before* its label —
+
+    4 / Mins / 44 / Secs / Duration
+
+— so the parser accumulates lines and interprets them when a label arrives,
+rather than counting positions. That survives a field moving or going
+missing, which a positional parser would not.
+
+What it reads per table: control type, total runtime, P1 start, shot
+duration, interval and frequency; P2 as a separate series where a Copilot
+room has one; flush duration. Per table, because tiers inside one room
+routinely differ — C3 T1 and T7 are 5.6h and 0.9h apart at the same moment.
+The A-wing `T11+12` shared-valve header fans out to two records that each
+carry the pair, so a dryback call on one is legible against the other.
+
+**Nothing here trusts its own output.** Frequency × duration, plus P2 and the
+flush, has to equal the total runtime the screen prints; when it does not,
+the table is flagged on the verification screen and the operator sees it
+before anything is committed. A paste from the wrong room offers no save at
+all. That check is the feature: a schedule silently misread is exactly the
+failure this exists to end, and it would look identical to the one it fixes.
+
+Once a room has an imported schedule it wins over the weekly file, and B3 at
+10:52 reads 5.6h.
+
+**Also shipped.** A shot that fires mid-sweep splits a room into two
+populations that are not comparable. The app now notices the drop, tells the
+operator at the moment rather than at the export, and marks every row after
+it with a new CSV column.
+
+**Still assumed, and worth a real paste.** The multi-table, Copilot and
+`T11+12` block shapes are derived from the one documented `B5 Table 1`
+sample, not from a screen. Three pastes would settle it: a full Simple Timer
+room, a Copilot room with P1/P2/Flush, and an A-wing room showing `T11+12`.
