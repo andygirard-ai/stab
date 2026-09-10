@@ -15,33 +15,28 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v29.**
+**Live on main: v31** — v30 and v31 shipped 9/10.
 
-**Queued on the branch, tested, not live** — held at the operator's request
-while a couple of other things are worked out, so this batch ships together:
+**Queued on the branch, tested, not live:**
 
 | | change | source |
 |---|---|---|
-| v30 | aisle grouping — the phase belongs to SIDE, not direction | B §1 |
-| v30 | third probe colour: white = logged, pull probe | B §2 |
-| v30 | triage/spot/flush write nothing to the note cells | B §7 |
-| v31 | schedule paste-in, per table, with a verification screen | B §4 |
-| v31 | hours-since-shot from the imported schedule, per table | B §3 |
-| v31 | a shot that fires mid-sweep is flagged and marks its rows | B §4 |
-| v31 | row notes say which positions are below floor | floor, 9/10 |
+| v32 | parser corrections against the two real pastes | backlog §2 |
+| v32 | feel bands derived from the room's floor | backlog §1.1 |
 
-**Not yet actioned, in build order:**
+**Not yet actioned, in the consolidated backlog's build order:**
 
-- **B §5 / §6 room config.** Dripper count, strain map, flower start,
-  underlight flags — editable, part of move-in. Dripper count is what
-  volume-per-plant is still missing; §4 has the runtime it needs.
-- **B §8 operator field.** Mark a bag-feel-only sweep so a room without probe
-  data is distinguishable from one with it.
+4. §3 operator picker + probe-less 1.25-gal hard flag
+5. §4 landing cleanup + qualifying-sweep rule for records
+6. §6.1 row-aligned export · §6.7 conditional mid-bag stab
+7. §5.1 commit/settle/undo · §5.2 crew skip — confirm status first
+8. §5.4 room config incl. dripper count and tank
+9. §6.2 table flags · §6.3 day coverage
+10. §5.3 display · §5.5 sweep windows · §6.4 post-change reminder
+11. §6.5 rename tool
+12. §5.6 Growlink device log
 
-**Waiting on the floor:** three real Growlink pastes — one full Simple Timer
-room, one Copilot room with P1/P2/Flush, one A-wing room showing `T11+12`.
-The §4 parser is built against the single documented `B5 Table 1` sample and
-the rest of the block shapes are derived, not observed.
+Items through 6 are the second-operator gate.
 
 ---
 
@@ -270,3 +265,74 @@ is a change to the shared vocabulary in BB_fert_data and to how every
 1.25-gallon room reads back through history, so it is his call, not a
 cleanup: either the bands move up four points, or the words keep describing
 feel and the new clause carries the floor.
+
+---
+
+## 9/10/2026 — evening, the consolidated backlog
+
+### 9. v30 and v31 to main
+
+Shipped together. Standard side had been fine all week and every
+opposite-side sweep on main was still off by one table, which is no way to
+spend a morning.
+
+For the dry check in Bluefy, A-1 opposite from T1 should ask for:
+
+    T1 front · T2 front · T3 header · T4 front · T5 header · T6 front …
+
+first table alone against the wall, pairs from T2 on. The suite asserts this
+against Addendum B §1's four-row table, but the room is the real test.
+
+### 10. The parser met two real screens → v32
+
+Both attached pastes now parse clean: A-1 to twelve records with six
+duration tiers, C-4 to eleven with two. No warnings on either. Four things
+the single documented sample had not shown:
+
+**The printed total is P1 only.** A-1 prints 16m 14s, which is 8:07 × 2 and
+nothing else — the 28-minute flush is excluded, as is the parked P2. The v31
+guard summed every phase against that total, so it would have flagged all
+twelve A-wing tables as misread. Reconciliation is P1 duration × P1
+frequency against the printed total, which on a Simple Timer room is the
+same rule because there is only P1.
+
+**One header is lower case.** Ten A-1 records read `A1 Table N` and the
+eleventh reads `A1 table 11+12`. Matching case dropped exactly the
+shared-valve record — the one that carries two tables and is the worst one
+to lose. Matched case-insensitively now.
+
+**A parked P2 is not an absent one.** Growlink holds it at 0 Mins 1 Secs,
+one-minute interval, frequency 1. Read literally that is a second daily
+series delivering about a millilitre, which would move hours-since-shot and
+show on the verification screen as a real shot. A phase under two seconds is
+off.
+
+**The sensor column is free text and decides nothing.** C-4 alone carries
+`C4 Table 1 moisture`, `Substrate Moisture #20004907`, `C4 Table table 7
+moisture` and a bare `C4 Table 11`. Table identity comes from the first
+tab-separated field only. A parser reading the second field would mis-number
+three of eleven tables.
+
+Also: `Create new timer` ends every Simple Timer record and is ignored.
+
+### 11. Feel bands now come from the floor → v32
+
+The words described how a bag feels; the floor was a separate number. In a
+1.25-gallon room "ok" ran 26 to 30 with the floor at 30, so a table picked
+for a triage *because* it was under could be described as ok. A derived word
+contradicting a derived threshold is a defect, and the hand goes blind below
+about 25% in those bags anyway — the word carries nothing the number does
+not.
+
+One table of offsets from `room.floor` replaces the two hard-coded ones:
+−4 dry · 0 dry ok · +4 ok · +8 ok good · +12 good · +16 good solid ·
++22 solid · +28 solid heavy.
+
+Floor 22 resolves to 18/22/26/30/34/38/44/50 — bit for bit the old 2-gallon
+table. The 9/1 fixtures confirm it: every changed row note in the diff is a
+1.25-gallon room, and no 2-gallon line moved. Below floor is now always
+"dry" or "dry ok" in every room, asserted by sweeping every half-point under
+three different floors rather than by spot checks. A new bag size resolves
+from its own floor with no second table to keep in step.
+
+The v31 below-floor clause stays, positions and all.

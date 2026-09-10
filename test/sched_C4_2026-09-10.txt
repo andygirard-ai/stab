@@ -1,0 +1,252 @@
+C4 Table 1	C4 Table 1 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 2	C4 Table 2 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 3	C4 Table 3 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 4	C4 Table 4 moisture	
+Simple Timer
+
+31m 55s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+23
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 5	C4 Table 5 moisture	
+Simple Timer
+
+31m 55s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+23
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 6	Substrate Moisture #20004907	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 7	C4 Table table 7 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 8	C4 Table 8 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 9	C4 Table 9 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 10	C4 Table 10 moisture	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer
+
+C4 Table 11	C4 Table 11	
+Simple Timer
+
+26m 35s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+19
+Secs
+Duration
+1
+Hrs
+30
+Mins
+Interval
+5
+Frequency
+Create new timer

@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v31';
+var VER='v32';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -48,7 +48,7 @@ function schedSeries(room, table){
     if(t){
       var out=[];
       [t.P1,t.P2].forEach(function(ph){
-        if(ph && ph.start && ph.frequency)
+        if(schedPhaseOn(ph))
           out.push({start:ph.start, intervalMin:(ph.interval||0)/60, count:ph.frequency});
       });
       if(out.length) return out;
@@ -139,12 +139,26 @@ function schedRuntime(line){
 /* "B5 Table 1", "A1 Table 11+12" — the A-wing shared-valve convention means a
    header can name more than one table, and both get the same schedule. */
 function schedHeader(line){
-  var m=/^([A-Za-z]-?\d+)\s+Table\s+([\d+\s]+?)(?:\s|\t|$)/.exec(String(line));
+  /* Case-insensitive on 'Table': ten of the eleven A1 records read
+     "A1 Table N" and the last reads "A1 table 11+12". Matching case would
+     drop exactly the shared-valve record, which is the worst one to lose.
+     The line reaching here has already been cut at its first tab, so the
+     sensor-name column never takes part — it is free text and says things
+     like "C4 Table table 7 moisture" and "Substrate Moisture #20004907". */
+  var m=/^([A-Za-z]-?\d+)\s+table\s+([\d+\s]+?)(?:\s|\t|$)/i.exec(String(line));
   if(!m) return null;
   var tables=m[2].split('+').map(function(x){ return parseInt(x,10); })
                  .filter(function(x){ return !isNaN(x); });
   if(!tables.length) return null;
   return {room:m[1].replace('-',''), tables:tables};
+}
+/* A parked P2 is not an absent one: Growlink holds it at 0 Mins 1 Secs, a
+   1-minute interval and a frequency of 1. Read literally that is a second
+   daily series delivering about a millilitre, which would move
+   hours-since-shot and show up on the verification screen as a real shot.
+   A phase under two seconds is off. */
+function schedPhaseOn(ph){
+  return !!(ph && ph.start && ph.frequency && ph.duration!=null && ph.duration>1);
 }
 function parseSchedule(text){
   var lines=String(text||'').split(/\r?\n/).map(function(l){ return l.replace(/\t.*$/,'').trim(); });
@@ -162,6 +176,8 @@ function parseSchedule(text){
     if(/^p2\s+timers?$/.test(low)){ section='P2'; pend=[]; continue; }
     if(/^flush\s+timers?$/.test(low)){ section='flush'; pend=[]; continue; }
     if(/^(simple timer|copilot)$/.test(low)){ cur.control=ln; pend=[]; continue; }
+    /* Simple Timer records end with this; Copilot records have no marker. */
+    if(low==='create new timer'){ pend=[]; continue; }
     if(cur.control && cur.runtime===null && /^[\dhms\s]+$/i.test(ln) && /[hms]/i.test(ln)){
       cur.runtime=schedRuntime(ln); pend=[]; continue;
     }
@@ -186,21 +202,20 @@ function parseSchedule(text){
   var tables=[];
   blocks.forEach(function(b){
     b.tables.forEach(function(t){
-      /* Every phase's duration x frequency, plus the flush, should equal the
-         total runtime the screen prints. When it does, the block was read
-         correctly; when it does not, something was misread and the
-         verification screen says so rather than the operator finding out
-         from a wrong dryback call. A Copilot room's total covers P1, P2 and
-         the flush together, so checking P1 alone would flag every one of
-         them. */
-      var calc=null;
-      [b.P1,b.P2].forEach(function(ph){
-        if(ph && ph.duration!=null && ph.frequency) calc=(calc||0)+ph.duration*ph.frequency;
-      });
-      if(b.flush && b.flush.duration!=null) calc=(calc||0)+b.flush.duration;
+      /* P1 duration x frequency should equal the total runtime the screen
+         prints. When it does, the block was read correctly; when it does
+         not, something was misread and the verification screen says so
+         rather than the operator finding out from a wrong dryback call.
+
+         P1 only. The printed total on a Copilot room excludes P2 and the
+         flush — A1 prints 16m 14s, which is 8:07 x 2 and nothing else,
+         while the flush alone is 28 minutes. Summing the phases would flag
+         every correct A-wing table. On a Simple Timer room there is only
+         P1, so it is the same rule. */
+      var calc=(b.P1.duration!=null&&b.P1.frequency)?b.P1.duration*b.P1.frequency:null;
       tables.push({table:t, room:b.room, control:b.control, runtimeSec:b.runtime,
                    shared:b.tables.length>1?b.tables.slice():null,
-                   P1:b.P1, P2:(b.P2&&b.P2.start)?b.P2:null,
+                   P1:b.P1, P2:schedPhaseOn(b.P2)?b.P2:null,
                    flush:(b.flush&&(b.flush.duration!=null))?b.flush:null,
                    reconciles:(calc!=null&&b.runtime!=null)?(Math.abs(calc-b.runtime)<=60):null});
     });
@@ -521,21 +536,36 @@ function rowNote(t){
 /* ============ WORKBOOK PASTE BLOCK ============
    Row notes in the format used in BB_fert_data, the notes-column
    paragraph, and a CHECK section generated from the data. */
-function feelWord(v,bag){
-  var b = bag===2
-    ? [[18,'dry'],[22,'dry ok'],[26,'ok'],[30,'ok good'],[34,'good'],[38,'good solid'],[44,'solid'],[50,'solid heavy']]
-    : [[22,'dry'],[26,'dry ok'],[30,'ok'],[34,'ok good'],[38,'good'],[43,'good solid'],[48,'solid'],[53,'solid heavy']];
-  for(var i=0;i<b.length;i++) if(v<b[i][0]) return b[i][1];
+/* The feel words, as offsets from the room's floor rather than a table per
+   bag size. The 2-gallon numbers are unchanged — floor 22 resolves to
+   18/22/26/30/34/38/44/50, exactly the table this replaces, and the 9/1
+   fixtures produce identical row notes.
+
+   Deriving them fixes the 1.25-gallon rooms, where the old table was the
+   2-gallon one shifted four points while the floor moves eight: "ok" ran
+   26 to 30 and sat entirely below the 30 floor, so a table picked for a
+   triage because it was under could be described as ok. A derived word
+   contradicting a derived threshold is a defect. It also means a new bag
+   size — coco, when it comes back — resolves from its floor with no second
+   table to keep in step.
+
+   The hand goes blind below about 25% in a 1.25-gallon bag, so the word
+   there carries nothing the number does not. Below floor is now always
+   'dry' or 'dry ok', in every room. */
+var FEEL_OFFSETS=[[-4,'dry'],[0,'dry ok'],[4,'ok'],[8,'ok good'],
+                  [12,'good'],[16,'good solid'],[22,'solid'],[28,'solid heavy']];
+function feelWord(v,floor){
+  for(var i=0;i<FEEL_OFFSETS.length;i++) if(v<floor+FEEL_OFFSETS[i][0]) return FEEL_OFFSETS[i][1];
   return 'heavy';
 }
 /* Row-note grammar (BB_fert_data): first word is the dominant feel; a slash
    adds the other end of the spread; "splotchy dry/solid" when the spread is
    two or more steps wide (driest first, heaviest last). */
 var FEEL_ORDER=['dry','dry ok','ok','ok good','good','good solid','solid','solid heavy','heavy'];
-function feelDesc(vals,bag){
+function feelDesc(vals,floor){
   if(!vals.length) return '';
-  var lo=feelWord(Math.min.apply(null,vals),bag), hi=feelWord(Math.max.apply(null,vals),bag);
-  var dom=feelWord(med(vals),bag);
+  var lo=feelWord(Math.min.apply(null,vals),floor), hi=feelWord(Math.max.apply(null,vals),floor);
+  var dom=feelWord(med(vals),floor);
   if(lo===hi) return dom;
   var span=FEEL_ORDER.indexOf(hi)-FEEL_ORDER.indexOf(lo);
   if(span>=2) return 'splotchy '+lo+'/'+hi;
@@ -704,7 +734,7 @@ function checkLines(){
    line and states why, so the pasted column stays aligned with the workbook's
    own table rows instead of everything below it moving up one. */
 function rowNoteLines(){
-  var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag;
+  var fp=floorFor(S.room);
   var tabs=byTable(), keys={};
   Object.keys(tabs).forEach(function(t){ keys[t]=1; });
   skippedList().forEach(function(t){ keys[t]=1; });
@@ -716,7 +746,7 @@ function rowNoteLines(){
     var md=rr.filter(function(r){return r.depth==='mid-bag';});
     if(!rf.length) return;
     var vals=rf.map(function(r){return r.vwc;});
-    var desc=feelDesc(vals,bag);
+    var desc=feelDesc(vals,fp);
     var parts=rf.map(function(r){
       var p=r.vwc.toFixed(0)+(r.ec!=null?'/'+r.ec.toFixed(2):'');
       if(r.plant) p+=' '+r.plant;
@@ -735,7 +765,7 @@ function rowNoteLines(){
        It matters most in a triage, where the room-note cells are deliberately
        empty (B §7) so this line is the only thing that reaches the workbook,
        and where every table on the walk was picked for being below floor. */
-    var fp=floorFor(S.room), low=rf.filter(function(r){ return r.vwc<fp; });
+    var low=rf.filter(function(r){ return r.vwc<fp; });
     if(low.length){
       /* Name the positions rather than count them. A count next to rounded
          numbers reads as a contradiction — "1 of 3 below floor 30" beside a

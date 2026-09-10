@@ -341,6 +341,36 @@ function rowsFor(w,room,spec){
     w.close(); }
 
 
+
+  // ============ feel bands derived from the room's floor ============
+  // The words described bag feel and the floor was a separate number, so in
+  // a 1.25-gallon room "ok" ran 26 to 30 with the floor at 30 — a derived
+  // word contradicting a derived threshold. One table of offsets now serves
+  // every bag size, including whatever comes back after coco.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    // the 2-gallon table this replaces, asserted boundary by boundary
+    const want=[[17.9,'dry'],[18,'dry ok'],[21.9,'dry ok'],[22,'ok'],[25.9,'ok'],
+                [26,'ok good'],[29.9,'ok good'],[30,'good'],[33.9,'good'],[34,'good solid'],
+                [37.9,'good solid'],[38,'solid'],[43.9,'solid'],[44,'solid heavy'],
+                [49.9,'solid heavy'],[50,'heavy']];
+    const bad=want.filter(([v,word])=>w.feelWord(v,22)!==word);
+    ok(bad.length===0,'2-gallon words are unchanged at every boundary'+
+       (bad.length?': '+bad.map(([v,x])=>v+' wanted '+x+' got '+w.feelWord(v,22)).join(', '):''));
+    // and the invariant that was missing: below floor is never a good word
+    let leak=[];
+    [22,30,26].forEach(f=>{ for(let v=0;v<f;v+=0.5){
+      const word=w.feelWord(v,f);
+      if(word!=='dry' && word!=='dry ok') leak.push('floor '+f+' at '+v+' reads "'+word+'"'); } });
+    ok(leak.length===0,'no reading below any floor can be described as ok or better'+
+       (leak.length?': '+leak.slice(0,3).join('; '):''));
+    // the case from the field: C4 T5, three readings under a floor of 30
+    ok(w.feelWord(27,30)==='dry ok','27 in a 1.25-gallon room is dry ok, not ok: '+w.feelWord(27,30));
+    ok(w.feelWord(27,22)==='ok good','…and the same 27 in a 2-gallon room is still ok good: '+w.feelWord(27,22));
+    // a floor nobody has yet resolves without a new table
+    ok(w.feelWord(25,26)==='dry ok' && w.feelWord(40,26)==='good solid',
+       'an unseen floor of 26 resolves from the same offsets');
+    w.close(); }
+
   // ============ row notes say when a reading is below floor ============
   // Field report, 9/10: "triage mode not showing row notes below floor".
   // The lines were there; what was missing was the finding. The feel words
@@ -360,8 +390,9 @@ function rowsFor(w,room,spec){
     [['front',24],['center',33],['header',35]].forEach(a=>w.S.rows.push(mk(5,a[0],a[1])));
     const lines=w.rowNoteLines();
     ok(/^T3 /.test(lines[0]) && /^T5 /.test(lines[1]),'a triage still writes one row-note line per table');
-    ok(/ok/.test(lines[0]),'the feel word on T3 is still "ok" — that is what the bag feels like: '+lines[0]);
-    ok(/all below floor 30$/.test(lines[0]),'…and the line now says all three are under: '+lines[0]);
+    ok(/^T3  dry\/dry ok /.test(lines[0]),
+       'the feel word can no longer read "ok" on a bag under the floor: '+lines[0]);
+    ok(/all below floor 30$/.test(lines[0]),'…and the line says all three are under: '+lines[0]);
     ok(/front below floor 30$/.test(lines[1]),
        'a partial names the end of the table that is dry, which is what he walked over to find: '+lines[1]);
     ok(w.buildRoomNotes()==='','the room-note cells stay empty in a triage (B §7)');
@@ -457,22 +488,67 @@ function rowsFor(w,room,spec){
        'and they carry the same schedule');
     w.close(); }
 
-  // Copilot: P1 and P2 are separate series, not variants of one
+  // ============ the two real screens, 9/10 ============
+  // Everything above is derived from the one documented sample. These are
+  // pastes off the phone, and they are the oracle: each block shape that
+  // only ever existed as a guess is settled here.
+  const paste=f=>fs.readFileSync(path.join(__dirname,f),'utf8');
+
+  // A1 — Copilot, P1/P2/Flush, shared valve, six duration tiers
   { const {w,d,errors}=boot(null); await sleep(50);
-    const r=w.parseSchedule(schedBlock('C3 Table 7','Copilot','27m 30s',
-      ['P1 timers','01:15:00 AM','Start Time','3','Mins','0','Secs','Duration',
-       '1','Hrs','30','Mins','Interval','3','Frequency',
-       'P2 timers','07:00:00 AM','Start Time','2','Mins','30','Secs','Duration',
-       '1','Hrs','0','Mins','Interval','5','Frequency',
-       'Flush timers','6','Mins','0','Secs','Duration']));
-    const t=r.tables[0]||{};
-    ok(t.control==='Copilot','control type: '+t.control);
-    ok(t.P1.start==='01:15' && t.P1.duration===180 && t.P1.frequency===3,
-       'P1 parsed on its own: '+t.P1.start+' x'+t.P1.frequency+' of '+t.P1.duration+'s');
-    ok(t.P2 && t.P2.start==='07:00' && t.P2.duration===150 && t.P2.frequency===5,
-       'P2 parsed separately: '+(t.P2?t.P2.start+' x'+t.P2.frequency+' of '+t.P2.duration+'s':'missing'));
-    ok(t.flush && t.flush.duration===360,'flush duration kept: '+(t.flush?t.flush.duration:'missing'));
-    ok(t.reconciles===true,'P1 + P2 + flush = the printed total, so a Copilot room is not falsely flagged');
+    const r=w.parseSchedule(paste('sched_A1_2026-09-10.txt'));
+    ok(r.room==='A1','room read off the first field: '+r.room);
+    ok(r.tables.length===12,'eleven records covering twelve tables: '+r.tables.length);
+    ok(r.warnings.length===0,'nothing to look at: '+r.warnings.join(' | '));
+    const by={}; r.tables.forEach(t=>by[t.table]=t);
+    // "A1 table 11+12" is the one lower-case header, and the one that fans out
+    ok(by[11] && by[12] && by[11].shared.join('+')==='11+12' && by[12].shared.join('+')==='11+12',
+       'the lower-case shared-valve header still parses, into T11 and T12');
+    ok(by[11].P1.duration===771 && by[12].P1.duration===771,'and both carry 12:51');
+    const tiers={1:487,2:487,3:487,4:570,5:570,6:684,7:609,8:609,9:771,10:771,11:771,12:771};
+    const wrongT=Object.keys(tiers).filter(t=>by[t].P1.duration!==tiers[t]);
+    ok(wrongT.length===0,'six duration tiers across the room, all correct'+(wrongT.length?': T'+wrongT.join(',T'):''));
+    ok(r.tables.every(t=>t.P1.start==='01:15' && t.P1.interval===7200 && t.P1.frequency===2),
+       'every table starts 1:15 AM, two hours apart, twice');
+    ok(r.tables.every(t=>t.control==='Copilot'),'control type read as Copilot throughout');
+    // 2.4: a parked P2 is 0 Mins 1 Secs / 1 Min / x1 — not a second daily shot
+    ok(r.tables.every(t=>t.P2===null),'P2 is parked, so it is off, not a 1 mL series');
+    ok(r.tables.every(t=>t.flush && t.flush.duration===1680),'flush kept at 28:00, and it is not a daily series');
+    // 2.1: the printed total is P1 only — 8:07 x 2 = 16:14, flush excluded
+    ok(r.tables.every(t=>t.reconciles===true),
+       'every table reconciles against a P1-only total (28 minutes of flush excluded)');
+    ok(by[1].runtimeSec===974,'A1 T1 prints 16m 14s = 8:07 x 2: '+by[1].runtimeSec+'s');
+    w.close(); }
+
+  // C4 — Simple Timer, whole room, two tiers, a different sensor label each time
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(paste('sched_C4_2026-09-10.txt'));
+    ok(r.room==='C4' && r.tables.length===11,'eleven tables: '+r.room+' x'+r.tables.length);
+    ok(r.warnings.length===0,'nothing to look at: '+r.warnings.join(' | '));
+    const by={}; r.tables.forEach(t=>by[t.table]=t);
+    // 2.3: the sensor column is free text and never decides table identity.
+    // T6 is "Substrate Moisture #20004907", T7 "C4 Table table 7 moisture",
+    // T11 "C4 Table 11" — a parser reading it would mis-number three tables.
+    ok(by[6] && by[7] && by[11],'the three odd sensor labels do not move their tables');
+    ok(by[4].P1.duration===383 && by[5].P1.duration===383,'T4 and T5 on 6:23');
+    ok([1,2,3,6,7,8,9,10,11].every(t=>by[t].P1.duration===319),'the other nine on 5:19');
+    ok(r.tables.every(t=>t.P1.start==='13:15'),'a PM room: first shot 1:15 PM');
+    ok(r.tables.every(t=>t.P1.interval===5400 && t.P1.frequency===5),'five shots, 90 minutes apart');
+    ok(r.tables.every(t=>t.P2===null && t.flush===null),'no P2 and no flush section on a Simple Timer room');
+    ok(r.tables.every(t=>t.reconciles===true),'5:19 x 5 = 26:35 and 6:23 x 5 = 31:55, both reconcile');
+    // 2.6: "Create new timer" ends each record and must not become a value
+    ok(by[11].P1.frequency===5,'the trailing "Create new timer" does not corrupt the last record');
+    w.close(); }
+
+  // and the tiers reach the sweep, which is the whole point of parsing them
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const at=new Date(); at.setHours(16,0,0,0);
+    const r=w.parseSchedule(paste('sched_C4_2026-09-10.txt'));
+    w.saveSched('C4',{savedAt:Date.now(), room:'C4', tables:r.tables});
+    ok(Math.abs(w.hoursSinceShot('C4',at,1)-1.25)<0.05,
+       'C4 at 4 PM is 1.25h off its 2:45 shot: '+w.hoursSinceShot('C4',at,1).toFixed(2)+'h');
+    ok(/5 shots from 1:15 PM, every 1.5h/.test(w.schedLine('C4',1)),
+       'and the brief says it in his clock: '+w.schedLine('C4',1));
     w.close(); }
 
   // a misread block is caught by the arithmetic rather than by the operator
