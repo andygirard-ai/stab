@@ -41,7 +41,22 @@ function boot(storage){
 
   // ---- 2. a short BENCH sweep builds a clean workbook block ----
   { const {w,d,errors}=boot(null); await sleep(50);
-    d.querySelector('#rooms .rm[data-room="BENCH"]').click();
+    // backlog §4: the practice room is not a tile any more. A "NOT A ROOM"
+    // heading is a label doing a lock's job, and one mis-tap on a handed-over
+    // phone puts a shift of stabs into a fixture.
+    ok(!d.querySelector('#rooms .rm[data-room="BENCH"]'),'BENCH is not in the room grid');
+    ok(!/NOT A ROOM/.test(d.getElementById('rooms').textContent),'and the grid has no fixture section left');
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(60);
+    ok(d.getElementById('setsheet').classList.contains('hide'),'a short press on the version does nothing');
+    brand.dispatchEvent(new w.MouseEvent('mouseup',{bubbles:true}));
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    ok(!d.getElementById('setsheet').classList.contains('hide'),'a long press on it opens settings');
+    d.getElementById('benchgo').click(); await sleep(30);
+    ok(w.S.room==='BENCH','and the practice room opens from there: '+w.S.room);
+    ok(d.getElementById('setsheet').classList.contains('hide'),'settings closes behind it');
     d.getElementById('demo').click();
     d.getElementById('startbtn').click(); await sleep(50);
     ok(w.S.roomStarted && w.S.route.length===4*3*2,
@@ -94,17 +109,15 @@ function boot(storage){
     ok(errors.length===0,'no runtime errors building EOD: '+errors.join('|'));
     w.close(); }
 
-  // ---- 4. labelled so it cannot be picked by accident ----
+  // ---- 4. out of reach of an accidental tap (backlog §4) ----
   { const {w,d,errors}=boot(null); await sleep(50);
-    const b=d.querySelector('#rooms .rm[data-room="BENCH"]');
-    ok(!!b,'BENCH is present in the room grid');
-    ok(b.classList.contains('test'),'BENCH button carries the .test class');
-    ok(/BENCH · test/.test(b.querySelector('.sub').textContent),
-       'sub-label reads "BENCH · test": "'+b.querySelector('.sub').textContent+'"');
     const wings=[].map.call(d.querySelectorAll('#rooms .wl'),x=>x.textContent);
-    ok(wings.indexOf('NOT A ROOM')>=0,'BENCH sits under its own heading, not in a wing: '+wings.join(' / '));
-    const bWing=[].map.call(d.querySelectorAll('#rooms .wing')[1].querySelectorAll('.rm'),x=>x.dataset.room);
-    ok(bWing.indexOf('BENCH')<0,'B WING holds only B rooms: '+bWing.join(','));
+    ok(wings.join('/')==='A WING/B WING/C WING','the grid is three wings and nothing else: '+wings.join(' / '));
+    const all=[].map.call(d.querySelectorAll('#rooms .rm'),x=>x.dataset.room);
+    ok(all.indexOf('BENCH')<0,'no fixture tile anywhere in it');
+    ok(all.length===19,'nineteen production rooms, all of them real: '+all.length);
+    // and the grid stays honest about what it does not cover
+    ok(!/BENCH/.test(d.getElementById('weekly').textContent),'the weekly line ignores bench work');
     ok(errors.length===0,'no runtime errors: '+errors.join('|'));
     w.close(); }
 

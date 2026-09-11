@@ -23,11 +23,13 @@ interrupted by a reload. This is the list to execute against.
 |---|---|---|
 | v32 | parser corrections against the two real pastes | backlog §2 |
 | v32 | feel bands derived from the room's floor | backlog §1.1 |
+| v33 | hand-only 1.25-gal sweeps flagged, on the tile and in the export | backlog §3 |
+| v33 | operator chips read as names | backlog §3 |
+| v33 | landing cleanup — settings behind a long-press on the version | backlog §4 |
+| v33 | records need a qualifying sweep, and carry stabs/min | backlog §4 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
-4. §3 operator picker + probe-less 1.25-gal hard flag
-5. §4 landing cleanup + qualifying-sweep rule for records
 6. §6.1 row-aligned export · §6.7 conditional mid-bag stab
 7. §5.1 commit/settle/undo · §5.2 crew skip — confirm status first
 8. §5.4 room config incl. dripper count and tank
@@ -336,3 +338,70 @@ three different floors rather than by spot checks. A new bag size resolves
 from its own floor with no second table to keep in step.
 
 The v31 below-floor clause stays, positions and all.
+
+### 12. A hand-only sweep of a 1.25-gal room is blind → v33
+
+Backlog §3. The hand cannot feel below about 25% VWC in a 1.25-gallon bag and
+the floor in those rooms is 30, so a bag-feel walk does not read less
+precisely — it structurally cannot find the thing the walk is for. Nine of
+the nineteen rooms are 1.25 gallon.
+
+Detection is the absence of probe frames rather than a declaration. There is
+no hand-feel entry mode to opt into, and a sweep that lost its probe halfway
+is exactly as blind as one that never had it, so the app counts frames off
+the wire. Demo frames do not count.
+
+Three places it surfaces, in the order he meets them: the room tile carries a
+`hand` badge, a `hand-only` sub-label and a red coverage bar, so the room
+does not sit there looking checked; the done screen says it in a sentence;
+the export carries `NO_PROBE_1.25GAL` in a new Sweep flags column. A hand-only
+sweep logs no rows at all, so it also emits one record row — otherwise the
+whole walk exports as a bare header line and reads as nothing happened.
+
+The operator chips now read Andy and Evan. The stored value stays initials so
+every CSV already exported still matches.
+
+### 13. Personal records were being set by walking in and out → v33
+
+Backlog §4. A record needed `clean` — no timeouts, no skips, no unstable
+frames — which is trivially true of entering a room and tapping out, and
+those three-second sweeps were holding the records.
+
+A qualifying sweep is now: full-sweep mode, at least one probe frame,
+coverage of at least 80% of the tables not skipped, and at least two stabs
+per table swept. Skipped tables come out of the denominator, so a
+crew-blocked room is not a slow sweep. Triage never qualifies — it targets
+the bad tables on purpose.
+
+**Stabs per minute is recorded beside elapsed time.** Elapsed gets better by
+skipping tables; stabs per minute does not. Both are kept, per room, plus one
+facility pace record.
+
+Everything already stored was stamped once against the rule. The sweeps are
+kept — for some of them the stored CSV is the only copy — they are just
+stamped out of the running, and the app says how many.
+
+### 14. The landing page, for somebody who has never seen it → v33
+
+Backlog §4. Eight buttons that were useful while this was being built and are
+noise to a second operator: a mic capability probe whose question is
+answered, two destructive clears one tap from the room grid, a transfer pair
+that only matters when a second phone exists, and a BENCH tile.
+
+Mic test is deleted. The rest live behind a long-press on the version string.
+The destructive three need `DELETE` typed before they unlock.
+
+**The practice room was the important one.** BENCH sat in the grid under a
+"NOT A ROOM" heading, which is a label doing a lock's job — on a phone handed
+to somebody on his first morning, one mis-tap puts a shift of stabs into a
+fixture. It opens from settings now and the grid is nineteen real rooms.
+
+**Deviation worth naming:** the backlog said export/import position history
+should move to a settings screen and the destructive controls to a hidden dev
+menu. There is one screen, not two, and it is behind the long-press. Two
+hidden menus is one more than this app needs, and export/import is Andy's
+tool for the day a second phone exists, not something Evan needs to find.
+
+**Also:** three separate versions have now appended a column to the CSV and
+broken a test that anchored on the end of the row. Those assertions read by
+column name now.

@@ -183,11 +183,13 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
-  skipped:{}, access:null, alarmQueue:[], huntFails:0, shotMidSweep:false,
+  skipped:{}, access:null, alarmQueue:[], huntFails:0, shotMidSweep:false, probeFrames:0,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
 var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[]};
+/* assigned inside buildSetup; settings calls it to open the practice room */
+var pickRoom=function(){};
 var WAIT=[];
 
 var PREV={};
@@ -219,7 +221,7 @@ function saveHist(h){
 function saveSession(){
   if(DEMO) return;
   lsSet('stab_session',JSON.stringify({v:22,
-    s:{room:S.room,side:S.side,dir:S.dir,mode:S.mode,op:S.op,i:S.i,
+    s:{room:S.room,side:S.side,dir:S.dir,mode:S.mode,op:S.op,i:S.i,probeFrames:S.probeFrames||0,
        notes:S.notes,free:S.free||{},route:S.route,startedAt:S.startedAt,
        feedEC:S.feedEC,feedPH:S.feedPH,triage:S.triage||[],
        skips:S.skips||0,unstable:S.unstable||0,
@@ -399,10 +401,14 @@ function histTs(h){
 /* ---------------- setup screen ---------------- */
 (function buildSetup(){
   /* operator chips */
+  /* §3: the chips read as names because a second operator has to recognise
+     himself on a screen he has never seen. The stored value stays initials,
+     so every CSV already exported still matches. */
+  var OPNAME={APG:'Andy', EGY:'Evan'};
   var ops=['APG','EGY'];
   if(S.op && ops.indexOf(S.op)<0) ops.push(S.op);
   var ob=$('ops'), html='';
-  ops.forEach(function(o){ html+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+o+'</button>'; });
+  ops.forEach(function(o){ html+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+(OPNAME[o]||o)+'</button>'; });
   html+='<button class="opc" data-op="+">+</button>';
   ob.innerHTML=html;
   ob.addEventListener('click',function(e){
@@ -421,19 +427,42 @@ function histTs(h){
     var ops2=['APG','EGY'];
     if(S.op && ops2.indexOf(S.op)<0) ops2.push(S.op);
     var h2='';
-    ops2.forEach(function(o){ h2+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+o+'</button>'; });
+    ops2.forEach(function(o){ h2+='<button class="opc'+(o===S.op?' on':'')+'" data-op="'+o+'">'+(OPNAME[o]||o)+'</button>'; });
     h2+='<button class="opc" data-op="+">+</button>';
     ob.innerHTML=h2;
   }
 
+  /* §4: apply the qualifying rule once to everything already stored, so the
+     three-second walk-ins stop holding records. The sweeps themselves are
+     kept — for some of them the stored CSV is the only copy — they are
+     simply stamped out of the running. */
+  (function stampQual(){
+    try{
+      if(localStorage.getItem('stab_qualrule')) return;
+      var h=getHist(), n=0;
+      h.forEach(function(x){
+        if(x.qual===undefined){ x.qual=histQualifies(x); if(!x.qual) n++; }
+      });
+      lsSet('stab_hist',JSON.stringify({v:1,items:h}));
+      lsSet('stab_qualrule','1');
+      if(n) setTimeout(function(){ toast(n+' short sweep'+(n===1?'':'s')+' no longer hold records'); },900);
+    }catch(e){}
+  })();
+
   /* saved bag sizes / feed EC must be applied before the grid draws them */
   loadRoomCfgAll();
   /* coverage from history */
-  var hist=getHist(), latest={}, now=Date.now();
+  var hist=getHist(), latest={}, blind={}, now=Date.now();
   hist.forEach(function(h){
     if(h.mode && h.mode!=='sweep') return;
     var t=histTs(h); if(!t) return;
-    if(!latest[h.room] || t>latest[h.room]) latest[h.room]=t;
+    if(!latest[h.room] || t>latest[h.room]){
+      latest[h.room]=t;
+      /* §3: the most recent sweep decides what the tile says. A hand-only
+         sweep of a 1.25-gallon room cannot find a table below floor, so it
+         must not sit there looking like a room that has been checked. */
+      blind[h.room]=!!h.handOnly;
+    }
   });
   /* weekly line */
   var wkRooms={}, wkN=0;
@@ -465,9 +494,11 @@ function histTs(h){
     var cls=(days===null)?'':(days===0?'t':(days<=3?'g':(days<=7?'a':'r')));
     /* no coverage bar on a fixture — it is not on anybody's rotation */
     var sub=cfg.kind?(k+' · '+cfg.kind):(cfg.bag+' gal · '+age);
-    b.innerHTML=k+(days===0&&!cfg.kind?'<span class="tb">today</span>':'')+
+    if(blind[k]) sub=cfg.bag+' gal · hand-only';
+    b.innerHTML=k+(blind[k]?'<span class="tb hb">hand</span>'
+                 :(days===0&&!cfg.kind?'<span class="tb">today</span>':''))+
       '<span class="sub">'+sub+'</span>'+
-      '<span class="cov '+(cfg.kind?'':cls)+'"></span>';
+      '<span class="cov '+(cfg.kind?'':(blind[k]?'r':cls))+'"></span>';
     return b;
   }
   function roomSection(label,keys){
@@ -482,12 +513,20 @@ function histTs(h){
     roomSection(w+' WING', Object.keys(ROOMS).filter(function(k){
       return k[0]===w && !ROOMS[k].kind; }));
   });
-  roomSection('NOT A ROOM', Object.keys(ROOMS).filter(function(k){
-    return !!ROOMS[k].kind; }));
+  /* §4: the practice room is no longer a tile. It sat in the grid under a
+     "NOT A ROOM" heading, which is a label doing a lock's job — on a phone
+     handed to somebody on his first morning, one mis-tap puts a shift's
+     worth of stabs into a fixture. It lives in settings now. */
   box.addEventListener('click',function(e){
     var b=e.target.closest('.rm'); if(!b) return;
+    pickRoom(b.dataset.room);
+  });
+  pickRoom=function(k){
+    if(!ROOMS[k]) return;
+    var b=box.querySelector('.rm[data-room="'+k+'"]');
     [].forEach.call(box.querySelectorAll('.rm'),function(x){x.classList.remove('on');});
-    b.classList.add('on'); S.room=b.dataset.room;
+    if(b){ b.classList.add('on'); b.scrollIntoView({block:'nearest'}); }
+    S.room=k;
     S.triage=[];
     S.access=null; syncAccessBtn();   /* access is per room */
     $('startbtn').textContent='Start '+S.room;
@@ -496,7 +535,7 @@ function histTs(h){
     showRoomHistory();
     showBrief();
     showRoomCfg();
-  });
+  };
 
   /* side / dir / mode / capture */
   S.side=PREF.side||'standard';
@@ -544,12 +583,49 @@ function histTs(h){
       '<b>'+h+'</b> saved sweep'+(h===1?'':'s')+'<br>'+
       '<b>'+pv+'</b> position histor'+(pv===1?'y':'ies')+'<br>'+
       '<b>'+cal+'</b> calibration pair'+(cal===1?'':'s');
-    $('clrsweeps').disabled=!h; $('clrprev').disabled=!pv;
   }
-  dataCounts();
+
+  /* ---------------- settings (backlog §4) ----------------
+     The landing page carried eight buttons that were useful while this was
+     being built and are noise to a second operator: a mic capability probe
+     whose question is answered, two destructive clears one tap from the room
+     grid, and a transfer pair that only matters when a second phone exists.
+     They are all here now, behind a long-press on the version string, and
+     nothing on this screen is needed to run a sweep.
+
+     The practice room comes with them. BENCH sat in the room grid under a
+     "NOT A ROOM" heading, which is a label doing a lock's job. */
+  var LP=null;
+  function openSettings(){
+    dataCounts();
+    $('dangerword').value=''; armDanger();
+    $('setsheet').classList.remove('hide');
+  }
+  function armDanger(){
+    var ok=($('dangerword').value||'').trim().toUpperCase()==='DELETE';
+    ['clrsweeps','clrprev','clrall'].forEach(function(id){ $(id).disabled=!ok; });
+  }
+  (function bindLongPress(){
+    var el=document.querySelector('.brand'); if(!el) return;
+    var fire=function(){ LP=null; openSettings(); };
+    el.addEventListener('touchstart',function(){ LP=setTimeout(fire,700); },{passive:true});
+    ['touchend','touchmove','touchcancel'].forEach(function(ev){
+      el.addEventListener(ev,function(){ if(LP){ clearTimeout(LP); LP=null; } },{passive:true});
+    });
+    el.addEventListener('mousedown',function(){ LP=setTimeout(fire,700); });
+    ['mouseup','mouseleave'].forEach(function(ev){
+      el.addEventListener(ev,function(){ if(LP){ clearTimeout(LP); LP=null; } });
+    });
+  })();
+  $('dangerword').oninput=armDanger;
+  $('setclose').onclick=function(){ $('setsheet').classList.add('hide'); };
+  $('benchgo').onclick=function(){
+    $('setsheet').classList.add('hide');
+    pickRoom('BENCH');
+  };
   $('clrsweeps').onclick=function(){
     var h=getHist();
-    if(!h.length) return;
+    if(!h.length){ toast('no saved sweeps'); return; }
     if(!confirm('Remove '+h.length+' saved sweep CSV'+(h.length===1?'':'s')+
       '?\n\nExport anything you still need first. Calibration pairs and position history stay.')) return;
     try{ localStorage.removeItem('stab_hist'); }catch(e){}
@@ -557,7 +633,7 @@ function histTs(h){
   };
   $('clrprev').onclick=function(){
     var n=Object.keys(PREV).length;
-    if(!n) return;
+    if(!n){ toast('no position history'); return; }
     if(!confirm('Remove '+n+' position baselines?\n\nThe "last here" line and Δ comparisons start over. Saved sweeps and calibration pairs stay.')) return;
     PREV={};
     try{ localStorage.removeItem('stab_prev'); }catch(e){}
@@ -592,17 +668,6 @@ function histTs(h){
     dataCounts();
     toast('merged: '+res.added+' new, '+res.updated+' newer, '+res.kept+' kept');
   }
-  /* ---- mic capability probe: settles the voice-note question on the device ---- */
-  $('mictest').onclick=function(){
-    var md=navigator.mediaDevices;
-    if(!md||!md.getUserMedia){ toast('no getUserMedia here — voice recording is not possible in this browser'); return; }
-    if(typeof MediaRecorder==='undefined'){ toast('mic exists but no MediaRecorder — cannot save audio'); return; }
-    md.getUserMedia({audio:true}).then(function(st){
-      st.getTracks().forEach(function(t){ t.stop(); });
-      var m4a=MediaRecorder.isTypeSupported('audio/mp4'), webm=MediaRecorder.isTypeSupported('audio/webm');
-      toast('mic OK · '+(m4a?'audio/mp4':webm?'audio/webm':'no audio type')+(canShareFiles()?' · file share OK':' · no file share'));
-    }).catch(function(e){ toast('mic refused: '+((e&&e.name)||e)); });
-  };
   $('clrall').onclick=function(){
     if(!confirm('Start fresh?\n\nRemoves saved sweeps, position history and any interrupted sweep.\n\nKeeps calibration pairs, crop names and your settings.')) return;
     PREV={};
@@ -637,7 +702,7 @@ function histTs(h){
   function hydrate(){
     if(sess){
       S.room=sess.room; S.side=sess.side||S.side; S.dir=sess.dir||S.dir;
-      S.mode=sess.mode||S.mode; S.op=sess.op||S.op;
+      S.mode=sess.mode||S.mode; S.op=sess.op||S.op; S.probeFrames=sess.probeFrames||0;
       S.notes=sess.notes||{}; S.free=sess.free||{}; S.route=sess.route||[]; S.i=sess.i||0;
       S.startedAt=sess.startedAt||Date.now();
       S.triage=sess.triage||[]; S.skips=sess.skips||0; S.unstable=sess.unstable||0;
@@ -680,7 +745,8 @@ $('startbtn').onclick=function(){
   applyRoomCfg();
   S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
-  S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false; renderAlarm();
+  S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false;
+  S.probeFrames=0; renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
@@ -979,6 +1045,10 @@ emitUnparsed=function(tag,txt){
 emitReading=function(pr){
   var now=Date.now();
   if(pr.direct) DBG.directs++; else DBG.statusFrames++;
+  /* §3: proof the probe was in the room. Demo frames are not proof, and a
+     sweep that lost the probe partway is as blind as one that never had it,
+     so this counts frames rather than trusting a setting. */
+  if(!DEMO) S.probeFrames=(S.probeFrames||0)+1;
   var media=S.room?ROOMS[S.room].media:'Bio365';
   var ec=poreEC(pr.counts,pr.bulk,pr.tC,offsetFor(media));
   var r={vwc:+vwcFor(media,pr.counts).toFixed(1), tmp:+pr.tC.toFixed(1),
@@ -1784,6 +1854,32 @@ function evToday(){
   var d=new Date(); d.setHours(0,0,0,0);
   return getEv().filter(function(e){ return e.ts>=d.getTime(); });
 }
+/* §4: whether a stored sweep may hold a record. Entries written before this
+   rule existed carry no qual field; they are not grandfathered in, because
+   the whole reason for the rule is that some of them are three-second walks
+   in and out. An old entry qualifies only if it can still prove it. */
+function histQualifies(h){
+  if(!h || h.mode && h.mode!=='sweep') return false;
+  if(h.qual===true) return true;
+  if(h.qual===false) return false;
+  var cfg=ROOMS[h.room];
+  if(!cfg || cfg.kind) return false;
+  if(!h.n || !h.dur) return false;
+  var live=cfg.t-(h.skipped||0);
+  if(live<=0) return false;
+  /* pre-rule entries recorded no coverage or frame count, so infer what can
+     be inferred: stabs per live table stands in for both. */
+  return h.n >= 2*Math.ceil(live*0.8);
+}
+function qualWhy(){
+  if(S.mode!=='sweep') return 'only full sweeps are timed';
+  if(probeFrames()===0) return 'no probe reading';
+  var c=coverage(), live=c.total-c.skipped;
+  if(live<=0) return 'no tables left to sweep';
+  if(c.swept<Math.ceil(live*0.8))
+    return c.swept+' of '+live+' tables, needs '+Math.ceil(live*0.8);
+  return measuredRows().length+' stabs over '+c.swept+' tables, needs '+(2*c.swept);
+}
 function mlFor(room,mins){
   var cfg=ROOMS[room]; if(!cfg) return null;
   var rate = (room.charAt(0)==='A') ? 70 : 95;   /* mL per plant per minute */
@@ -1817,14 +1913,31 @@ function finish(){
   var lows=msd.filter(function(r){return r.flag;}).length;
   var dur=S.startedAt?Date.now()-S.startedAt:0;
   var clean=(DBG.timeouts===0 && S.skips===0 && S.unstable===0);
-  /* previous same-room sweep for delta + PR */
-  var hist=getHist(), prev=null, pr=null;
+  /* §4: a record needs a qualifying sweep under it. "Clean" only said
+     nothing went wrong, which is trivially true of walking in and tapping
+     out, and that is what was setting records. */
+  var qual=qualifyingSweep();
+  var spm=stabsPerMin(measuredRows().length,dur);
+  /* previous same-room sweep for delta, and the records this one is racing:
+     the room's own and the facility's. Elapsed and stabs/min are kept apart
+     because they reward opposite things — elapsed gets better by skipping
+     tables, stabs/min does not. */
+  var hist=getHist(), prev=null, pr=null, prSpm=null, fsSpm=null, fsRoom=null;
   for(var i=0;i<hist.length;i++){
     var h=hist[i];
-    if(h.room!==S.room) continue;
     if(h.mode && h.mode!=='sweep') continue;
-    if(!prev && h.med!=null) prev=h;
-    if(h.clean && h.dur){ if(pr==null||h.dur<pr) pr=h.dur; }
+    if(!histQualifies(h)) continue;
+    if(h.room===S.room){
+      if(h.dur && (pr==null||h.dur<pr)) pr=h.dur;
+      if(h.spm && (prSpm==null||h.spm>prSpm)) prSpm=h.spm;
+    }
+    if(h.spm && (fsSpm==null||h.spm>fsSpm)){ fsSpm=h.spm; fsRoom=h.room; }
+  }
+  for(var i2=0;i2<hist.length;i2++){
+    var hp=hist[i2];
+    if(hp.room!==S.room) continue;
+    if(hp.mode && hp.mode!=='sweep') continue;
+    if(hp.med!=null){ prev=hp; break; }
   }
   $('dtitle').textContent=S.room+' · '+S.rows.length+' readings';
   var html='reference median <b class="big">'+(m==null?'--':m.toFixed(1)+'%')+'</b>';
@@ -1839,24 +1952,36 @@ function finish(){
   var dead=S.rows.filter(function(r){return r.zeroEc;});
   if(dead.length) html+='<span class="low">'+dead.length+' dead bag'+(dead.length>1?'s':'')+' flagged — '+
     dead.map(function(r){return 'T'+r.table+' '+r.position;}).join(', ')+'</span><br>';
-  html+='time '+fmtDur(dur);
+  html+='time '+fmtDur(dur)+(spm?' · '+spm.toFixed(1)+' stabs/min':'');
   if(S.mode==='sweep'){
-    if(clean){
-      html+=' · <span class="pr">clean ✓</span>';
-      if(pr==null || dur<pr) html+=' <span class="pr">new PR</span>';
-      else html+=' · PR '+fmtDur(pr);
-    }else if(pr!=null) html+=' · PR '+fmtDur(pr);
+    if(clean) html+=' · <span class="pr">clean ✓</span>';
+    if(qual){
+      html+='<br>';
+      html+=(pr==null||dur<pr) ? '<span class="pr">fastest '+S.room+' yet</span>'
+                               : S.room+' best '+fmtDur(pr);
+      if(spm){
+        html+=(prSpm==null||spm>prSpm) ? ' · <span class="pr">best pace here</span>'
+                                       : ' · pace best '+prSpm.toFixed(1);
+        if(fsSpm==null||spm>fsSpm) html+=' · <span class="pr">facility best pace</span>';
+        else html+=' · facility '+fsSpm.toFixed(1)+' ('+fsRoom+')';
+      }
+    }else{
+      html+='<br><span class="low">not a qualifying sweep — '+qualWhy()+'</span>';
+    }
   }
+  if(handOnlyBlind()) html+='<br><span class="low">'+NO_PROBE_FLAG+
+    ' — no probe reading in a 1.25 gal room. Bag feel cannot find a bag below the 30 floor.</span>';
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags\n';
+  var swFlags=sweepFlags().join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
-      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':'')].join(',');
+      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
@@ -1874,8 +1999,21 @@ function finish(){
     cells[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; cells[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     cells[14]=S.side; cells[24]=S.op||'';
     cells[iSkip]=csvq(skipReason(t));
+    cells[nCols-1]=swFlags;
     lines.push(cells.join(','));
   });
+  /* §3: a hand-only sweep produces no rows at all, so without this the whole
+     walk exports as a bare header line and reads as "nothing happened". One
+     record row carries the room, the operator and the flag. */
+  if(!lines.length && S.roomStarted){
+    var hc=[]; while(hc.length<nCols) hc.push('');
+    hc[0]=skD; hc[1]=skT; hc[2]=S.room;
+    hc[10]=S.mode; hc[11]=S.dir;
+    hc[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; hc[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
+    hc[14]=S.side; hc[24]=S.op||'';
+    hc[nCols-1]=swFlags||'NO_READINGS';
+    lines.push(hc.join(','));
+  }
   var body=lines.join('\n');
   CSV_TEXT=head+body;
   CSV_NAME=S.room+'_'+fnameDate()+'.csv';
@@ -1898,7 +2036,10 @@ function finish(){
     var h2=getHist();
     h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
       n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)), low:lows,
-      dur:dur, clean:clean, csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
+      dur:dur, clean:clean, qual:qual, spm:(spm==null?null:+spm.toFixed(2)),
+      probeFrames:S.probeFrames||0, handOnly:handOnlyBlind(),
+      skipped:skippedList().length, swept:coverage().swept,
+      csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
       dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
       notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
     saveHist(h2);

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v32</title>
+<title>Stab v33</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -51,6 +51,8 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
   font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.06em;
   padding:2px 5px;border-radius:6px}
 .rm.on .tb{background:#07121F;color:#A7CBFD}
+.rm .tb.hb{background:var(--warn);color:#2A1503}
+.rm.on .tb.hb{background:#2A1503;color:var(--warn)}
 .rm.on{background:linear-gradient(180deg,#83B3FB 0%,#5B92EC 100%);border-color:#5B92EC;border-top-color:#A7CBFD;color:#07121F;
   box-shadow:0 5px 14px rgba(96,165,250,.35), inset 0 1px 0 rgba(255,255,255,.4)}
 .rm.on .sub{color:#07121F;opacity:.7}
@@ -342,6 +344,16 @@ table.sched td{padding:6px;border-bottom:1px solid var(--line);color:var(--ink)}
 table.sched tr.bad td{color:var(--warn)}
 table.sched tr.p2 td{color:var(--dimmer);font-size:11px}
 table.sched .sh{color:var(--live)}
+/* ---------- settings, behind a long-press on the version (backlog §4) ---------- */
+#setsheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#settop{font-size:28px;font-weight:700;margin-bottom:2px}
+#setsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:6px;line-height:1.5}
+#dangerword{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:11px;font-family:var(--mono);font-size:13px;color:var(--ink);margin:8px 0}
+#dangerbtns{display:grid;gap:8px}
+#dangerbtns .dbtn[disabled]{opacity:.35}
+.brand{-webkit-user-select:none;user-select:none}
 #schedbtn{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);
   border-radius:9px;padding:11px;font-family:var(--mono);font-size:12px;margin:8px 0 4px}
 #schedbtn.set{border-style:solid;border-color:var(--live);color:var(--live)}
@@ -398,7 +410,7 @@ table.sched .sh{color:var(--live)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v32</b></div>
+  <div class="brand">Substrate sweep · <b>v33</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -480,19 +492,6 @@ table.sched .sh{color:var(--live)}
     Long-press the big button for CAL mode.
   </div>
 
-  <div class="lbl">Saved data</div>
-  <div id="dcounts" class="tiny"></div>
-  <div id="dbtns">
-    <button class="dbtn" id="clrsweeps">Clear saved sweeps</button>
-    <button class="dbtn" id="clrprev">Clear position history</button>
-    <button class="dbtn" id="expprev">Export position history · for the other phone</button>
-    <button class="dbtn" id="impprev">Import position history</button>
-    <input type="file" id="impfile" accept=".json,application/json,text/plain" class="hide">
-    <textarea id="imppaste" class="hide" rows="3" placeholder="or paste the exported text here, then tap Import again"></textarea>
-    <button class="dbtn" id="mictest">Mic test · is voice recording possible in this browser?</button>
-    <button class="dbtn danger" id="clrall">Start fresh</button>
-  </div>
-  <div class="tiny">Calibration pairs are never removed by these.</div>
 </section>
 <div id="startbar"><button id="logbtn2">log</button><button id="eodbtn">EOD</button><button id="accbtn">access</button><button id="startbtn">Start</button></div>
 
@@ -533,7 +532,7 @@ table.sched .sh{color:var(--live)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v32</div>
+  <div class="v">stab v33</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -635,12 +634,48 @@ table.sched .sh{color:var(--live)}
   </div>
 </div>
 
+<div id="setsheet" class="hide">
+  <div id="settop">Settings</div>
+  <div id="setsub">Long-press the version string to get back here. Nothing on
+    this screen is needed to run a sweep.</div>
+
+  <div class="lbl">Saved data</div>
+  <div id="dcounts" class="tiny"></div>
+
+  <div class="lbl">Position history · for the other phone</div>
+  <div id="dbtns">
+    <button class="dbtn" id="expprev">Export position history</button>
+    <button class="dbtn" id="impprev">Import position history</button>
+    <input type="file" id="impfile" accept=".json,application/json,text/plain" class="hide">
+    <textarea id="imppaste" class="hide" rows="3" placeholder="or paste the exported text here, then tap Import again"></textarea>
+  </div>
+
+  <div class="lbl">Practice room</div>
+  <div class="tiny" id="benchnote">A four-table fixture for learning the probe.
+    It is not a real room and never counts towards coverage.</div>
+  <button class="dbtn" id="benchgo">Open BENCH</button>
+
+  <div class="lbl">Destructive</div>
+  <div class="tiny">These cannot be undone. Type the word to confirm.
+    Calibration pairs are never removed.</div>
+  <input id="dangerword" placeholder="type DELETE to unlock" autocapitalize="characters">
+  <div id="dangerbtns">
+    <button class="dbtn danger" id="clrsweeps" disabled>Clear saved sweeps</button>
+    <button class="dbtn danger" id="clrprev" disabled>Clear position history</button>
+    <button class="dbtn danger" id="clrall" disabled>Start fresh</button>
+  </div>
+
+  <div class="lgact">
+    <button id="setclose">Close</button>
+  </div>
+</div>
+
 <div id="alarm" class="hide"><span id="alarmtxt"></span><button id="alarmok">OK</button></div>
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=32"></script>
-<script src="pure.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="rooms.js?v=33"></script>
+<script src="pure.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

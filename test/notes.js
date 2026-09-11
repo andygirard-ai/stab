@@ -92,9 +92,10 @@ async function demoStab(w,d){
     ok(!!line && /— crew/.test(line),'skipped table shows its reason in row notes: "'+line+'"');
     // and the skip reaches the CSV, which it never did before v27
     const csv=d.getElementById('csv').value.split('\n');
-    ok(/,Skipped,After mid-sweep shot$/.test(csv[0]),'CSV carries a Skipped column');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(col('Skipped')>=0,'CSV carries a Skipped column');
     const partial=csv.slice(1).filter(l=>l.split(',')[3]===String(tbl));
-    ok(partial.length>0 && partial.every(l=>/"crew",?$/.test(l)),
+    ok(partial.length>0 && partial.every(l=>l.split(',')[col('Skipped')]==='"crew"'),
        'every row of the skipped table carries the reason: '+(partial[0]||'').slice(-40));
     ok(errors.length===0,'no runtime errors (skip): '+errors.join('|'));
     w.close(); }

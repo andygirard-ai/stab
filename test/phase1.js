@@ -112,8 +112,12 @@ function enterSettling(w,vwc,rawBulk){
     const head=d.getElementById('csv').value.split('\n')[0];
     ok(/Manual commit/.test(head) && /Zero EC flag/.test(head),'CSV header carries both new columns: "'+head+'"');
     const row=d.getElementById('csv').value.split('\n')[1];
-    // v27 appended a Skipped column, empty on an unskipped table
-    ok(row.split(',').slice(-4,-1).join(',')==='YES,YES,""','manual + zero-EC row ends ...,YES,YES,"": "'+row.split(',').slice(-4,-1).join(',')+'"');
+    // read by column name: three separate versions have appended a column to
+    // the end of this row and broken a tail-anchored assertion
+    const hcol=n=>head.split(',').indexOf(n);
+    const cells=row.split(',');
+    const tail=[cells[hcol('Manual commit')],cells[hcol('Zero EC flag')],cells[hcol('Skipped')]].join(',');
+    ok(tail==='YES,YES,""','manual + zero-EC row reads YES,YES,"" in its own columns: "'+tail+'"');
     ok(errors.length===0,'no runtime errors (1.1/1.4): '+errors.join('|'));
     w.close(); }
 

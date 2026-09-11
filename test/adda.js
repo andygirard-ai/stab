@@ -279,13 +279,14 @@ function rowsFor(w,room,spec){
     ok(w.S.route[w.S.i].t!==tbl,'one tap skipped the table and advanced to T'+w.S.route[w.S.i].t);
     d.getElementById('exit').click(); await sleep(50);
     const csv=d.getElementById('csv').value.split('\n');
-    ok(/,Skipped,After mid-sweep shot$/.test(csv[0]),'CSV has a Skipped column');
-    const skipRows=csv.slice(1).filter(l=>/"crew",?$/.test(l));
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(col('Skipped')>=0,'CSV has a Skipped column');
+    const skipRows=csv.slice(1).filter(l=>l.split(',')[col('Skipped')]==='"crew"');
     ok(skipRows.length>0,'the skip is recorded in the export: '+skipRows.length+' row(s)');
     const nCols=csv[0].split(',').length;
     ok(csv.slice(1).every(l=>l.split(',').length===nCols),'every row has the header\'s column count');
     // a table skipped with no readings at all still leaves a record row
-    const fully=csv.slice(1).filter(l=>{ const c=l.split(','); return c[15]==='' && /"crew",?$/.test(l); });
+    const fully=csv.slice(1).filter(l=>{ const c=l.split(','); return c[15]==='' && c[col('Skipped')]==='"crew"'; });
     ok(fully.length>=0,'record rows for never-measured tables are well formed');
     ok(errors.length===0,'no runtime errors (§2 CSV): '+errors.join('|')); }
 
@@ -341,6 +342,124 @@ function rowsFor(w,room,spec){
     w.close(); }
 
 
+
+
+  // ============ §3 a hand-only sweep of a 1.25-gal room is blind ============
+  // The hand cannot feel below about 25% in those bags and the floor is 30,
+  // so a bag-feel walk does not read less precisely — it structurally cannot
+  // find the thing the walk is for. A room done that way must never come
+  // back looking covered.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'C4',1.25);
+    ok(w.S.probeFrames===0,'no probe frames yet');
+    ok(w.handOnlyBlind(),'C4 is 1.25 gal, so with no probe it is blind');
+    ok(/hand-only · cannot detect below floor/.test(w.coverageLine()),
+       'the coverage line says so in words: "'+w.coverageLine()+'"');
+    ok(w.sweepFlags().join()==='NO_PROBE_1.25GAL','and the export carries the flag');
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    ok(/,Sweep flags$/.test(csv[0]),'CSV gains a sweep-flags column');
+    // a hand-only sweep logs nothing, so without a record row the whole walk
+    // exports as a bare header and reads as "nothing happened"
+    ok(csv.length>1 && csv[1].split(',').pop()==='NO_PROBE_1.25GAL',
+       'a sweep with no readings still exports one row carrying the flag: '+csv[1].split(',').pop());
+    ok(csv[1].split(',')[2]==='C4','…naming the room it was');
+    ok(/NO_PROBE_1.25GAL/.test(d.getElementById('stats').textContent),
+       'and the done screen says it outright');
+    ok(errors.length===0,'no runtime errors (§3): '+errors.join('|')); }
+
+  // one probe frame is enough to stop being blind, and a 2-gal room never is
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'C4',1.25); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,35.0,900); await sleep(20);
+    ok(w.S.probeFrames>0,'frames counted off the wire: '+w.S.probeFrames);
+    ok(!w.handOnlyBlind(),'so the sweep is no longer hand-only');
+    ok(w.coverageLine().indexOf('hand-only')<0,'and the coverage line drops the warning');
+    /* sweep-started blocks leave the keep-awake promise in flight; closing
+       the window under it tears down document before that resolves */ }
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B1',2);
+    ok(w.S.probeFrames===0 && !w.handOnlyBlind(),
+       'a 2-gallon room with no probe is not flagged — the hand can still find its 22 floor'); }
+
+  // the room tile is where he looks before walking, so the flag lives there
+  { const t0=new Date(); t0.setHours(0,0,0,0);
+    const ts=Math.max(Date.now()-3600e3, t0.getTime()+60e3);
+    const hist=[{room:'C4',ts:ts,when:new Date(ts).toLocaleString('en-US'),n:0,mode:'sweep',
+                 med:null,handOnly:true,qual:false}];
+    const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
+    const tile=d.querySelector('#rooms .rm[data-room="C4"]');
+    ok(/hand/.test(tile.querySelector('.tb').textContent),'the tile is badged hand, not today');
+    ok(/hand-only/.test(tile.querySelector('.sub').textContent),'…and says so in the sub-label');
+    ok(tile.querySelector('.cov').className.indexOf('r')>=0,
+       'its coverage bar reads as not done: "'+tile.querySelector('.cov').className+'"');
+    w.close(); }
+
+  // ============ §4 what counts as a sweep worth racing ============
+  // Walking into a room and tapping out was setting personal records: no
+  // timeouts, no skips, no unstable frames, three seconds.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    w.S.startedAt=Date.now()-3000;
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(!w.qualifyingSweep(),'one stab in an eleven-table room does not qualify');
+    ok(/1 of 11 tables/.test(w.qualWhy()),'and it says why: '+w.qualWhy());
+    d.getElementById('exit').click(); await sleep(60);
+    const st=d.getElementById('stats').textContent;
+    ok(/not a qualifying sweep/.test(st),'the done screen refuses it a record: '+
+       (st.match(/not a qualifying sweep[^\n]*/)||[''])[0]);
+    ok(!/fastest/.test(st),'…and offers no PR at all'); }
+
+  // coverage, stabs and a probe frame — the three conditions, one at a time
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B2'; w.S.mode='sweep'; w.S.skipped={}; w.S.probeFrames=5;
+    const fill=(tables,perTable)=>{ w.S.rows=[];
+      for(let t=1;t<=tables;t++) for(let i=0;i<perTable;i++)
+        w.S.rows.push({room:'B2',table:t,position:'center',depth:'reference',vwc:30,ec:4,
+                       bulk:0.5,tmp:25,flag:false,raw:'x'}); };
+    fill(11,6); ok(w.qualifyingSweep(),'eleven of eleven tables, six stabs each: qualifies');
+    fill(9,6);  ok(w.qualifyingSweep(),'nine of eleven is 82%, still qualifies');
+    fill(8,6);  ok(!w.qualifyingSweep(),'eight of eleven is 73%, does not: '+w.qualWhy());
+    fill(11,1); ok(!w.qualifyingSweep(),'full coverage but one stab per table does not: '+w.qualWhy());
+    fill(11,2); ok(w.qualifyingSweep(),'two per table is the floor, and it clears');
+    fill(11,6); w.S.probeFrames=0;
+    ok(!w.qualifyingSweep(),'and without a probe frame nothing qualifies: '+w.qualWhy());
+    // skipped tables come out of the denominator — a crew-blocked room is not
+    // a slow sweep, and triaging deliberately targets a handful of tables
+    w.S.probeFrames=5; w.S.skipped={9:'crew',10:'crew',11:'crew'};
+    fill(8,6); ok(w.qualifyingSweep(),'eight of eight live tables qualifies with three skipped for crew');
+    w.S.mode='triage';
+    ok(!w.qualifyingSweep(),'a triage is never timed — it targets the bad tables on purpose');
+    w.close(); }
+
+  // stabs per minute, kept because elapsed time gets better by skipping work
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(Math.abs(w.stabsPerMin(66,600000)-6.6)<0.01,'66 stabs in 10 minutes is 6.6/min: '+w.stabsPerMin(66,600000));
+    ok(w.stabsPerMin(0,600000)===null && w.stabsPerMin(66,0)===null,'and it refuses to divide by nothing');
+    w.close(); }
+
+  // old entries do not get grandfathered into the record book
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.histQualifies({room:'B2',mode:'sweep',n:66,dur:900000})===true,
+       'a stored 66-stab B2 sweep can still prove itself');
+    ok(w.histQualifies({room:'B2',mode:'sweep',n:2,dur:3000})===false,
+       'a two-stab three-second one cannot');
+    ok(w.histQualifies({room:'B2',mode:'sweep',n:66,dur:900000,qual:false})===false,
+       'and an explicit stamp wins over the inference');
+    ok(w.histQualifies({room:'BENCH',mode:'sweep',n:24,dur:400000})===false,
+       'bench work never holds a record');
+    w.close(); }
+
+  // the stamp runs once, on everything already stored
+  { const hist=[{room:'B2',ts:Date.now()-8.64e7,when:'9/9/2026',n:66,mode:'sweep',med:33,dur:900000,clean:true},
+                {room:'B2',ts:Date.now()-8.65e7,when:'9/9/2026',n:2,mode:'sweep',med:33,dur:3000,clean:true}];
+    const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
+    const h=w.getHist();
+    ok(h[0].qual===true && h[1].qual===false,'both stored sweeps stamped: '+h.map(x=>x.n+':'+x.qual).join(', '));
+    ok(w.localStorage.getItem('stab_qualrule')==='1','and the rule records that it has run');
+    ok(h.length===2,'neither sweep is deleted — for some of them the stored CSV is the only copy');
+    w.close(); }
 
   // ============ feel bands derived from the room's floor ============
   // The words described bag feel and the floor was a separate number, so in
@@ -609,9 +728,10 @@ function rowsFor(w,room,spec){
     ok(w.S.rows[2].postShot===true,'every row after the shot stays on the far side of it');
     d.getElementById('exit').click(); await sleep(50);
     const csv=d.getElementById('csv').value.split('\n');
-    ok(/,After mid-sweep shot$/.test(csv[0]),'the CSV separates the two populations');
-    ok(csv[1].split(',').pop()==='' && csv[2].split(',').pop()==='YES',
-       'and marks the right rows: "'+csv[1].split(',').pop()+'" then "'+csv[2].split(',').pop()+'"'); }
+    const psc=csv[0].split(',').indexOf('After mid-sweep shot');
+    ok(psc>=0,'the CSV separates the two populations');
+    ok(csv[1].split(',')[psc]==='' && csv[2].split(',')[psc]==='YES',
+       'and marks the right rows: "'+csv[1].split(',')[psc]+'" then "'+csv[2].split(',')[psc]+'"'); }
 
   // ============ §4 the verification screen ============
   // The paste is a convenience, not an authority: nothing is committed until

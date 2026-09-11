@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v32';
+var VER='v33';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -626,7 +626,46 @@ function coverageLine(){
   var c=coverage();
   var s=c.swept+' of '+c.total+' tables swept';
   if(c.skipped) s+=' · '+c.skipped+' skipped'+(c.why.length?' ('+c.why.join(', ')+')':'');
+  if(handOnlyBlind()) s+=' · hand-only · cannot detect below floor';
   return s;
+}
+/* ===== hand-only sweeps (backlog §3) =====
+   The hand goes blind below about 25% VWC in a 1.25-gallon bag, and the
+   floor in those rooms is 30. So a bag-feel sweep of a 1.25-gallon room does
+   not merely read less precisely — it structurally cannot find the thing the
+   sweep is for. A room walked that way must never come back looking covered.
+
+   Detection is the absence of probe frames, not an operator declaration:
+   there is no hand-feel entry mode to opt into, and a sweep that lost its
+   probe partway is exactly as blind as one that never had it. */
+var NO_PROBE_FLAG='NO_PROBE_1.25GAL';
+function probeFrames(){ return S.probeFrames||0; }
+function handOnly(){ return probeFrames()===0; }
+function handOnlyBlind(){
+  var cfg=ROOMS[S.room];
+  return handOnly() && !!cfg && cfg.bag<2;
+}
+function sweepFlags(){
+  return handOnlyBlind() ? [NO_PROBE_FLAG] : [];
+}
+/* ===== what counts as a sweep worth racing (backlog §4) =====
+   Entering a room and tapping out was being recorded as a personal record:
+   no timeouts, no skips, no unstable frames, three seconds. Elapsed time on
+   its own rewards not doing the work, so a record needs a floor under it and
+   a second number beside it. */
+function qualifyingSweep(){
+  if(S.mode!=='sweep') return false;
+  if(probeFrames()===0) return false;
+  var c=coverage(), live=c.total-c.skipped;
+  if(live<=0) return false;
+  if(c.swept < Math.ceil(live*0.8)) return false;
+  return measuredRows().length >= 2*c.swept;
+}
+/* Stabs per minute. Elapsed time alone gets faster by skipping tables; this
+   does not, so both are kept and both are shown. */
+function stabsPerMin(n,durMs){
+  if(!durMs || durMs<1000 || !n) return null;
+  return n/(durMs/60000);
 }
 function sweepStamp(){
   if(S.rows.length && S.rows[0].time){
@@ -815,7 +854,8 @@ function roomHead(){
     ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
     ' · '+lows+'/'+msd.length+' below floor'+
     (ecs.length?' · EC '+med(ecs).toFixed(1):'')+
-    ' · '+coverageLine();
+    ' · '+coverageLine()+
+    (handOnlyBlind()?'  ·  '+NO_PROBE_FLAG:'');
 }
 function roomPara(){
   var cfg=ROOMS[S.room]||{bag:2}, bag=cfg.bag, f=floorFor(S.room);
