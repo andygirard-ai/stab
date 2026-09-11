@@ -30,9 +30,10 @@ The whole thing takes under two minutes and needs no phone.
 The probe is an **Aroya Solus** — a rebadged **METER ZSC** Bluetooth interface attached to a **TEROS 12** substrate sensor.
 
 ```
-Service   DECA0001-10C7-43A8-8C9F-42B70E03808D
-Write     DECA0002-…
-Notify    DECA0003-…   notify only, not readable
+Service   DECA0001-10C7-43A8-8C9F-42B70E03808D   the only service on the device
+Write     DECA0002-…   write + writeWithoutResponse
+Notify    DECA0003-…   notify only
+             — confirmed by GATT dump 9/11/2026: nothing on this device is readable
 
 Frame     7C 61 | length (2 bytes, big-endian, whole frame) | ASCII payload | CRC-16/XMODEM
 Trigger   "sdicmd 0XR3!!" wrapped in that frame
@@ -68,20 +69,26 @@ service `0x180F`, characteristic `0x2A19`, `getUint8(0)`, 0–100, with
 `battery_service` in `optionalServices` — and that implementation returned
 nothing across weeks of sweeps.
 
-**What is and is not established.** The SIG numbers are not in doubt.
-Whether *this bridge* implements them is a question about the device, and
-nothing on record answers it. The 8/30 audit that introduced the column was
-a code audit — its findings are S1–S10, all software defects — and it
-contains no GATT dump; `Batt` was appended alongside `Operator`, `Frame` and
-`Lat ms` as a speculative diagnostic. **Nobody has ever observed `0x180F` on
-this device.** Equally, nobody has observed its absence: the manual's silence
-proves nothing, and an MCU can derive a percentage from an ADC on the supply
-rail without any fuel-gauge IC, which the Battery Service spec expressly
-allows (Battery Level may represent expected usable lifetime).
+**Settled by GATT dump, 9/11/2026, probe ZSC08328** (`test/probe_scan_2026-09-11.txt`):
 
-**Settings → Probe scan** asks the bridge directly and prints the error name
-verbatim. **If it ever returns a byte, put the column back** — the deletion
-was a judgement on evidence, not a fact about the hardware.
+```
+services granted and present: DECA0001-10C7-43A8-8C9F-42B70E03808D
+  service DECA0001-10C7-43A8-8C9F-42B70E03808D
+    DECA0002-…  [write,writeWithoutResponse]
+    DECA0003-…  [notify]
+```
+
+`battery_service` **was** in `optionalServices` on that build, so the
+enumeration was authoritative: had the device carried `0x180F`, it would be
+in that list. It is not. **One service, two characteristics, and neither is
+readable** — so there is no vendor battery reading hiding in the DECA service
+either. Both `0x180F` attempts rejected.
+
+This is a fact about the device now, not a judgement on evidence. Do not add
+the column back, and do not re-open the question from documentation: the SIG
+numbers, the manuals and the fuel-gauge argument are all beside the point
+next to the dump. **Settings → Probe scan** re-runs it in ten seconds if a
+different bridge ever needs checking.
 
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 

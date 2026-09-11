@@ -680,6 +680,20 @@ function histTs(h){
      is one error name. This asks the bridge and prints what it says,
      verbatim and copyable. If a byte comes back, the column goes straight
      back in and the deletion was wrong. */
+  /* "180f by UUID: 2" — that was this scan reporting a rejection whose .name
+     was empty, so it fell through and printed the value itself. Bluefy's Web
+     Bluetooth shim does not always reject with a DOMException. Everything a
+     rejection carries goes in now, because the one time this matters is the
+     time the shape is unfamiliar. */
+  function errText(e){
+    if(e==null) return 'unknown';
+    var bits=[];
+    if(e.name) bits.push(e.name);
+    if(e.message && e.message!==e.name) bits.push(e.message);
+    if(e.code!=null) bits.push('code '+e.code);
+    if(!bits.length) bits.push(typeof e+' '+String(e));
+    return bits.join(' · ');
+  }
   $('scango').onclick=function(){
     var out=[], el=$('scanout');
     function line(x){ out.push(x); el.textContent=out.join('\n'); }
@@ -711,7 +725,7 @@ function histTs(h){
             ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
             line(indent+c.uuid+'  ['+f.join(',')+']');
           });
-        }).catch(function(e){ line(indent+'(characteristics unreadable — '+((e&&e.name)||e)+')'); });
+        }).catch(function(e){ line(indent+'(characteristics unreadable — '+errText(e)+')'); });
       }
       /* Dump the service's characteristics before reading, so "180f present
          but non-conforming" is distinguishable from "180f absent". The
@@ -733,8 +747,8 @@ function histTs(h){
               line(label+': 2a19 = '+pct+(pct>100?'  (out of range — not a percentage)':'%'));
               line('*** BATTERY READS. Send this to me and the column goes back in. ***');
             });
-          }).catch(function(e){ line(label+': 180f found but 2a19 failed — '+((e&&e.name)||e)); });
-        }).catch(function(e){ line(label+': '+((e&&e.name)||e)); });
+          }).catch(function(e){ line(label+': 180f found but 2a19 failed — '+errText(e)); });
+        }).catch(function(e){ line(label+': '+errText(e)); });
       }
       return attempt('180f by UUID', BAT_SVC)
         .then(function(){ return attempt('battery_service by alias','battery_service'); })
@@ -750,7 +764,7 @@ function histTs(h){
                 return chars(svc,'    ');
               });
             }, Promise.resolve());
-          }).catch(function(e){ line('service enumeration: '+((e&&e.name)||e)); });
+          }).catch(function(e){ line('service enumeration: '+errText(e)); });
         })
         .then(function(){ line('— end of scan —'); });
     });

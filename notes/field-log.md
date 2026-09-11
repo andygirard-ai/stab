@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v46** — v30–v34 shipped 9/10, v35–v46 on 9/11.
+**Live on main: v47** — v30–v34 shipped 9/10, v35–v47 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -51,6 +51,7 @@ interrupted by a reload. This is the list to execute against.
 | v44 | probe scan — ask the bridge instead of arguing about it | 9/11 |
 | v45 | -9991 is not a battery gauge · the scan dumps 180f's characteristics | 9/11 |
 | v46 | the scan connects itself · START is no longer one-way | 9/11 |
+| v47 | GATT dump settles the battery question · the scan reports rejections properly | 9/11 scan |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1158,3 +1159,50 @@ asking, because skips are already a record of the walk.
 
 Discarding leaves nothing behind: no history entry, no CSV, no coverage, no
 interrupted-sweep marker, and the room's tile untouched.
+
+### 40. The dump. No battery on this device. → v47
+
+Probe **ZSC08328**, 2:02 PM, 9/11. Kept as `test/probe_scan_2026-09-11.txt`.
+
+```
+services granted and present: DECA0001-10C7-43A8-8C9F-42B70E03808D
+  service DECA0001-10C7-43A8-8C9F-42B70E03808D
+    DECA0002-…  [write,writeWithoutResponse]
+    DECA0003-…  [notify]
+```
+
+**One service. Two characteristics. Neither readable.**
+
+`battery_service` was in `optionalServices` on that build, which is what
+makes the enumeration authoritative rather than merely suggestive: Web
+Bluetooth returns granted services that are present, so had the device
+carried `0x180F` it would be in that list. It is not. Both `0x180F` attempts
+rejected. And with nothing readable anywhere on the device, there is no
+vendor battery value hiding in the DECA service either — which was the last
+place it could have been.
+
+So the deletion in v43 was right, and it is now a fact about the device
+rather than a judgement on evidence. CLAUDE.md records the dump itself and
+says not to re-open the question from documentation: the SIG numbers, the
+manuals and the fuel-gauge argument are all beside the point next to this.
+
+**Worth being clear about what was and was not proven along the way.** My
+v43 reasoning — the manual is silent, and a two-AA device has no fuel gauge —
+was criticised as weak, and the criticism was correct: neither of those
+arguments establishes anything, and I have not used them here. The second
+opinion's counter-premise, that the ZSC "exposed/advertised `0x180F`", was
+equally unfounded and is now disproved. Both of us spent two days reasoning
+from documents about a device that answers in ten seconds.
+
+**The scan found one defect in itself.** It printed `180f by UUID: 2` —
+Bluefy rejected with something carrying no `.name`, and the reporter
+`((e&&e.name)||e)` fell through to the bare value. "2" says nothing. It now
+prints name, message and code, whichever are present, and falls back to the
+type and value rather than the value alone. Four call sites, one helper, and
+a test that rejects with `{code:2}` and asserts it reads as `code 2`.
+
+**One more thing the dump gave us, unasked for.** The device reports a name:
+**ZSC08328**. With a second probe going to Evan, that is a way to attribute a
+sweep to the probe that took it — useful when two probes disagree about the
+same bag, and the prerequisite for per-probe calibration offsets if they ever
+diverge. Not built; offered.

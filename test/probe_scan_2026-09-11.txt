@@ -1,0 +1,11 @@
+probe scan · 9/11/2026, 2:02:10 PM
+not connected — connecting…  (wake the probe: press its button, LED blinks)
+device: ZSC08328
+trigger: confirmed · framed "sdicmd 0XR3!!"
+180f by UUID: 2
+battery_service by alias: 2
+services granted and present: DECA0001-10C7-43A8-8C9F-42B70E03808D
+  service DECA0001-10C7-43A8-8C9F-42B70E03808D
+    DECA0002-10C7-43A8-8C9F-42B70E03808D  [write,writeWithoutResponse]
+    DECA0003-10C7-43A8-8C9F-42B70E03808D  [notify]
+— end of scan —

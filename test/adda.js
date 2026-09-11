@@ -816,8 +816,24 @@ function rowsFor(w,room,spec){
     ok(!JSON.parse(w.localStorage.getItem('stab_setup')||'{}').postFlush,
        'it is not remembered — Monday must not inherit a lifted ceiling'); }
 
-  // the scan that can overturn the deletion: it asks the bridge rather than
-  // a document, and prints the error name verbatim
+  // The scan ran on probe ZSC08328 on 9/11 and settled it: one service,
+  // DECA0001, carrying only DECA0002 [write,writeWithoutResponse] and
+  // DECA0003 [notify]. battery_service was granted, so the enumeration was
+  // authoritative — 0x180F is not on the device, and nothing on it is
+  // readable. test/probe_scan_2026-09-11.txt is the dump.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const dump=fs.readFileSync(path.join(__dirname,'probe_scan_2026-09-11.txt'),'utf8');
+    const svcLine=(dump.match(/services granted and present: (.*)/)||['',''])[1];
+    ok(svcLine.trim().toLowerCase()==='deca0001-10c7-43a8-8c9f-42b70e03808d',
+       'the device carries exactly one service: '+svcLine.trim());
+    ok(!/180f/i.test(svcLine),'…and 0x180F is not it');
+    ok(!/\[.*read.*\]/.test(dump),'no characteristic on the device is readable');
+    ok(/DECA0002.*\[write,writeWithoutResponse\]/.test(dump) && /DECA0003.*\[notify\]/.test(dump),
+       'write and notify only, which is what CLAUDE.md records');
+    w.close(); }
+
+  // the scan that settled it: it asks the bridge rather than a document, and
+  // reports everything a rejection carries
   { const {w,d,errors}=boot(null); await sleep(50);
     ok(w.BAT_SVC==='0000180f-0000-1000-8000-00805f9b34fb','the SIG Battery Service UUID');
     ok(w.BAT_CHR==='00002a19-0000-1000-8000-00805f9b34fb','and the Battery Level characteristic');
@@ -855,6 +871,7 @@ function rowsFor(w,room,spec){
     const t=d.getElementById('scanout').textContent;
     ok(/180f by UUID: NotFoundError/.test(t),'the UUID attempt reports its error name: '+
        (t.match(/180f by UUID: [^\n]*/)||[''])[0]);
+
     ok(/battery_service by alias: NotFoundError/.test(t),
        'and the alias separately, so a naming mistake cannot pass for absence');
     ok(/deca0002.*write/.test(t) && /deca0003.*notify/.test(t),
@@ -884,6 +901,22 @@ function rowsFor(w,room,spec){
     ok(/180f found but 2a19 failed/.test(t),
        'and the read failure is reported separately from the service being absent');
     ok(!/BATTERY READS/.test(t),'nothing claims a battery was found');
+    w.close(); }
+
+  // the real scan printed "180f by UUID: 2" — Bluefy rejected with something
+  // that had no .name, and the reporter fell through to the bare value
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    w.S.dev={name:'ZSC08328', gatt:{connected:true,
+      getPrimaryService:()=>Promise.reject({code:2}),
+      getPrimaryServices:()=>Promise.resolve([])}};
+    d.getElementById('scango').click(); await sleep(80);
+    const t=d.getElementById('scanout').textContent;
+    ok(/180f by UUID: code 2/.test(t),
+       'a rejection carrying only a code now says so: '+(t.match(/180f by UUID: [^\n]*/)||[''])[0]);
+    ok(!/180f by UUID: 2$/m.test(t),'…rather than printing the bare value');
     w.close(); }
 
   // ============ the pad, in the order the buttons are actually used =======
