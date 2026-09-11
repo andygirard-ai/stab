@@ -113,9 +113,16 @@ var MTASK={flush:{A:28,B:21,C:21}, rescue:12,
    a room absent from this map has an unknown count, not an assumed one, and
    nothing computes volume from it yet (Addendum A §4 / §6.6). */
 var DRIPPERS={
+ A1:{1:4,2:4,3:4,4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4,12:4},
  A2:{1:4,2:4,3:2,4:2,5:2,6:2,7:2,8:2,9:2,10:2,11:2,12:2},
+ A4:{1:4,2:4,3:4,4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4,12:4},
  C3:{1:2,2:2,3:2,4:3,5:3,6:3,7:3,8:3,9:3,10:3,11:3}
 };
+/* The wing's usual count, for a room nobody has walked with a clipboard yet.
+   It is a default and is labelled as one everywhere it reaches the screen —
+   A2 and C3 both turned out to differ table by table, so an unverified room
+   is a guess, not a fact. Room config is where it stops being a guess. */
+var DRIP_DEFAULT={A:4, B:3, C:3};
 /* mL per minute per EMITTER, by wing. B/C is a half-gallon-per-hour emitter:
    0.5 x 3785.41 mL/gal / 60 = 31.54. Three of them is 94.6 mL/min/plant,
    which is where the 95 figure comes from — so 95 describes a 3-emitter

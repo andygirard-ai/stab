@@ -345,6 +345,93 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ §5.4 room setup ============
+  // Two wrong calls on 9/10 came from this being uneditable: C3 showed the
+  // previous grow's strain map and produced a wrong tiering recommendation,
+  // and B3 read DOF 77 when it was 7.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="C3"]').click(); await sleep(20);
+    ok(/never confirmed/.test(d.getElementById('cfgbtn').textContent),
+       'a room nobody has confirmed says so: '+d.getElementById('cfgbtn').textContent);
+    ok(d.getElementById('cfgbtn').classList.contains('stale'),'…and is marked');
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    ok(!d.getElementById('cfgsheet').classList.contains('hide'),'the sheet opens');
+    const rows=d.querySelectorAll('#cfgtables tr').length-1;
+    ok(rows===w.ROOMS.C3.t,'one row per table: '+rows);
+    // drippers counted in the field read differently from the wing default
+    const dr=t=>d.querySelector('#cfgtables .dr[data-t="'+t+'"]');
+    ok(dr(1).value==='2' && dr(7).value==='3','C3 carries its counted split: T1 '+dr(1).value+', T7 '+dr(7).value);
+    ok(dr(1).classList.contains('known'),'and it is shown as counted, not assumed');
+    d.querySelector('#rooms .rm[data-room="C5"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    ok(d.querySelector('#cfgtables .dr[data-t="1"]').value==='3','an uncounted C room falls back to the wing default 3');
+    ok(!d.querySelector('#cfgtables .dr[data-t="1"]').classList.contains('known'),
+       '…and is not dressed up as a measurement');
+    w.close(); }
+
+  // the strain map and the flower start are editable, and the overrides win
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="C3"]').click(); await sleep(20);
+    const was=w.strainFor('C3',1)[0], wasDof=w.dofNow('C3');
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    d.querySelector('#cfgtables .st[data-t="1"]').value='Scooby Snack';
+    d.querySelector('#cfgtables .ul[data-t="1"]').click();
+    d.querySelector('#cfgtables .dr[data-t="1"]').value='4';
+    d.querySelector('#cfgtables .dr[data-t="1"]').dispatchEvent(new w.Event('input',{bubbles:true}));
+    d.getElementById('cfg_fs').value='2026-09-01';
+    d.getElementById('cfg_tank').value='B';
+    d.getElementById('cfg_plants').value='36';
+    d.getElementById('cfgsave').click(); await sleep(30);
+    ok(d.getElementById('cfgsheet').classList.contains('hide'),'saving closes the sheet');
+    ok(w.strainFor('C3',1)[0]==='Scooby Snack','the strain map is the operator\'s now, not the file\'s: was "'+was+'"');
+    ok(w.strainFor('C3',1)[1].indexOf('U')>=0,'underlights set on that table');
+    ok(w.strainFor('C3',2)[0]===w.RMAP.C3['2'][0],'and the tables he did not touch are unchanged');
+    ok(w.drippersFor('C3',1)===4,'the dripper count is his too: '+w.drippersFor('C3',1));
+    ok(w.tankFor('C3')==='B' && w.plantsFor('C3')===36,'tank and plant count stored');
+    ok(w.flowerStartFor('C3')==='2026-09-01','flower start overridden');
+    ok(w.dofNow('C3')!==wasDof,'so DOF moves with it: '+wasDof+' -> '+w.dofNow('C3'));
+    ok(/confirmed/.test(d.getElementById('cfgbtn').textContent) &&
+       !d.getElementById('cfgbtn').classList.contains('stale'),
+       'and the room stops reading as unconfirmed: '+d.getElementById('cfgbtn').textContent);
+    // the move-in fields have to survive a Start, which used to replace the record
+    d.getElementById('startbtn').click(); await sleep(30);
+    ok(w.strainFor('C3',1)[0]==='Scooby Snack' && w.drippersFor('C3',1)===4 && w.tankFor('C3')==='B',
+       'starting a sweep does not wipe them');
+    ok(w.S.rows.length===0,'…and nothing is logged yet');
+    ok(errors.length===0,'no runtime errors (§5.4): '+errors.join('|')); }
+
+  // volume per plant, the way the plumbing actually works
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.mlPerPlant('C3',1,10)===Math.round(10*2*31.54),
+       '10 minutes on a 2-dripper C table: '+w.mlPerPlant('C3',1,10)+' mL');
+    ok(w.mlPerPlant('C3',7,10)===Math.round(10*3*31.54),
+       'the same 10 minutes on a 3-dripper one: '+w.mlPerPlant('C3',7,10)+' mL');
+    ok(w.mlPerPlant('C3',1,10)!==w.mlPerPlant('C3',7,10),
+       'which is the whole point — identical runtimes, different volumes');
+    ok(w.mlPerPlant('A2',1,10)===Math.round(10*4*17.5),'A wing emitters are 17.5: '+w.mlPerPlant('A2',1,10));
+    ok(w.mlPlantToday('C4',1)===null,'no imported schedule, no computed volume — the weekly file stands in');
+    const r=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_C4_2026-09-10.txt'),'utf8'));
+    w.saveSched('C4',{savedAt:Date.now(),room:'C4',tables:r.tables});
+    ok(w.mlPlantToday('C4',1)===Math.round((1595/60)*3*31.54),
+       'C4 T1 prints 26m 35s on three drippers: '+w.mlPlantToday('C4',1)+' mL');
+    ok(w.mlPlantToday('C4',4)>w.mlPlantToday('C4',1),
+       'and T4, which runs 31m 55s, gets more: '+w.mlPlantToday('C4',4)+' vs '+w.mlPlantToday('C4',1));
+    w.close(); }
+
+  // tank reaches the export, because runoff EC means different things on different tanks
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    w.saveRoomCfg('B2',{tank:'A',savedAt:Date.now()});
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(col('Tank')>=0 && col('Drippers')>=0,'CSV carries tank and dripper count');
+    ok(csv[1].split(',')[col('Tank')]==='A','the tank is stamped on the row: '+csv[1].split(',')[col('Tank')]);
+    ok(csv[1].split(',')[col('Drippers')]==='3','and the dripper count with it: '+csv[1].split(',')[col('Drippers')]); }
+
   // ============ §6.7 the mid-bag stab is conditional ============
   // 893 reference/mid pairs say the opposite of the 9/8 note: above 30 the
   // mid reads 3-6 under with a tight spread and confirms nothing, and 75% of
@@ -487,11 +574,12 @@ function rowsFor(w,room,spec){
     ok(w.sweepFlags().join()==='NO_PROBE_1.25GAL','and the export carries the flag');
     d.getElementById('exit').click(); await sleep(60);
     const csv=d.getElementById('csv').value.split('\n');
-    ok(/,Sweep flags$/.test(csv[0]),'CSV gains a sweep-flags column');
+    const sfc=csv[0].split(',').indexOf('Sweep flags');
+    ok(sfc>=0,'CSV gains a sweep-flags column');
     // a hand-only sweep logs nothing, so without a record row the whole walk
     // exports as a bare header and reads as "nothing happened"
-    ok(csv.length>1 && csv[1].split(',').pop()==='NO_PROBE_1.25GAL',
-       'a sweep with no readings still exports one row carrying the flag: '+csv[1].split(',').pop());
+    ok(csv.length>1 && csv[1].split(',')[sfc]==='NO_PROBE_1.25GAL',
+       'a sweep with no readings still exports one row carrying the flag: '+csv[1].split(',')[sfc]);
     ok(csv[1].split(',')[2]==='C4','…naming the room it was');
     ok(/NO_PROBE_1.25GAL/.test(d.getElementById('stats').textContent),
        'and the done screen says it outright');

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v34</title>
+<title>Stab v35</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -344,6 +344,35 @@ table.sched td{padding:6px;border-bottom:1px solid var(--line);color:var(--ink)}
 table.sched tr.bad td{color:var(--warn)}
 table.sched tr.p2 td{color:var(--dimmer);font-size:11px}
 table.sched .sh{color:var(--live)}
+/* ---------- room setup (backlog §5.4) ---------- */
+#cfgsheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#cfgtop{font-size:28px;font-weight:700;margin-bottom:2px}
+#cfgsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:6px;line-height:1.5}
+#cfg_dof{margin-top:8px}
+.cfg2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cfg2 label{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.cfg2 input,.cfg2 select{width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:14px;color:var(--ink)}
+table.cfgt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+table.cfgt th{text-align:left;color:var(--dimmer);font-weight:400;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;padding:4px 4px;border-bottom:1px solid var(--line)}
+table.cfgt td{padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.cfgt input[type=text]{width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;color:var(--ink)}
+table.cfgt input.dr{width:46px;text-align:center;background:var(--surface);border:1px solid var(--line);
+  border-radius:7px;padding:8px 2px;font-family:var(--mono);font-size:12px;color:var(--ink)}
+table.cfgt input.dr.known{font-weight:700;border-color:var(--live);color:var(--live)}
+table.cfgt .ul{background:var(--surface);border:1px solid var(--line);border-radius:7px;
+  padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--dimmer)}
+table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
+#cfgsave{background:var(--ok);color:#052D14}
+#cfgclose{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+#cfgbtn{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);
+  border-radius:9px;padding:11px;font-family:var(--mono);font-size:12px;margin:0 0 4px}
+#cfgbtn.stale{border-style:solid;border-color:var(--warn);color:var(--warn)}
+
 /* ---------- settings, behind a long-press on the version (backlog §4) ---------- */
 #setsheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
@@ -410,7 +439,7 @@ table.sched .sh{color:var(--live)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v34</b></div>
+  <div class="brand">Substrate sweep · <b>v35</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -426,6 +455,7 @@ table.sched .sh{color:var(--live)}
   <div id="rooms"></div>
   <div id="brief" class="hide"></div>
   <button id="schedbtn">irrigation schedule</button>
+  <button id="cfgbtn">room setup</button>
   <div class="lbl">Side of row</div>
   <div class="two">
     <button class="side on" data-side="standard">standard</button>
@@ -540,7 +570,7 @@ table.sched .sh{color:var(--live)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v34</div>
+  <div class="v">stab v35</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -642,6 +672,36 @@ table.sched .sh{color:var(--live)}
   </div>
 </div>
 
+<div id="cfgsheet" class="hide">
+  <div id="cfgtop">Room setup</div>
+  <div id="cfgsub">What the room is, as opposed to what it is doing this week.
+    Set at move-in. Anything left blank falls back to the weekly file, and the
+    screen says which is which.</div>
+
+  <div class="lbl">Room</div>
+  <div class="cfg2">
+    <div><label>flower start</label><input id="cfg_fs" placeholder="YYYY-MM-DD"></div>
+    <div><label>bag gal</label>
+      <select id="cfg_bag2"><option value="2">2</option><option value="1.25">1.25</option></select></div>
+    <div><label>plants/table</label><input id="cfg_plants" inputmode="numeric" placeholder="—"></div>
+    <div><label>tank</label>
+      <select id="cfg_tank"><option value="">—</option><option value="A">A</option>
+        <option value="B">B</option><option value="C">C</option>
+        <option value="water">water</option></select></div>
+  </div>
+  <div id="cfg_dof" class="tiny"></div>
+
+  <div class="lbl">Tables</div>
+  <div class="tiny">Drippers in <b>bold</b> have been counted. The rest are the
+    wing's usual number and are a guess until somebody walks the room.</div>
+  <div id="cfgtables"></div>
+
+  <div class="lgact">
+    <button id="cfgsave">Save room setup</button>
+    <button id="cfgclose">Close</button>
+  </div>
+</div>
+
 <div id="setsheet" class="hide">
   <div id="settop">Settings</div>
   <div id="setsub">Long-press the version string to get back here. Nothing on
@@ -682,8 +742,8 @@ table.sched .sh{color:var(--live)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=34"></script>
-<script src="pure.js?v=34"></script>
-<script src="app.js?v=34"></script>
+<script src="rooms.js?v=35"></script>
+<script src="pure.js?v=35"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>

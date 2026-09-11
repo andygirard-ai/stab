@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v34';
+var VER='v35';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -268,8 +268,87 @@ function schedTiers(room){
 }
 /* Days since flower start. Counted off a date rather than carried as a number
    against a reference day, so it cannot go stale between move-ins. */
+/* ===== room config (backlog §5.4) =====
+   Everything a room carries that changes at move-in rather than weekly:
+   flower start, strain and underlight per table, bag size, plant count,
+   dripper count per table, tank. rooms.js holds what was true when it was
+   written; the config overlay holds what the operator has since found, and
+   the overlay wins. Two wrong calls on 9/10 came from this gap — C3 showed
+   the previous grow's strain map and produced a wrong tiering
+   recommendation, and B3 read DOF 77 when it was 7.
+
+   Reached through accessors, never by indexing RMAP or DRIPPERS directly,
+   so there is one place an override can be missed. */
+function rcfg(rm){
+  try{ return (typeof roomCfg==='function' ? (roomCfg()[rm]||{}) : {}); }
+  catch(e){ return {}; }
+}
+function flowerStartFor(rm){
+  var c=rcfg(rm);
+  return c.flowerStart || FLOWER_START[rm] || '';
+}
+function strainFor(rm, t){
+  var c=rcfg(rm), k=String(t);
+  if(c.strains && c.strains[k]) return c.strains[k];
+  return (RMAP[rm]||{})[k] || ['',''];
+}
+function tankFor(rm){
+  var c=rcfg(rm);
+  if(c.tank) return c.tank;
+  return (FEEDEC[rm]===0) ? 'water' : '';
+}
+function plantsFor(rm){
+  var c=rcfg(rm);
+  return (c.plants!=null && !isNaN(+c.plants)) ? +c.plants : null;
+}
+/* Dripper count, and whether anybody has actually counted it. Identical
+   runtimes deliver different volumes when the count differs — A2 T1/T2 get
+   twice what T3-T12 do — so an assumed count must never be presented as a
+   measured one. */
+function drippersFor(rm, t){
+  var c=rcfg(rm), k=String(t);
+  if(c.drippers && c.drippers[k]!=null) return +c.drippers[k];
+  var d=DRIPPERS[rm];
+  if(d && d[t]!=null) return d[t];
+  if(d && d[k]!=null) return d[k];
+  return DRIP_DEFAULT[String(rm).charAt(0)] || 3;
+}
+function drippersKnown(rm, t){
+  var c=rcfg(rm), k=String(t);
+  if(c.drippers && c.drippers[k]!=null) return true;
+  var d=DRIPPERS[rm];
+  return !!(d && (d[t]!=null || d[k]!=null));
+}
+/* Millilitres per plant from runtime, the way the plumbing actually works:
+   minutes x drippers x flow per dripper. The flat 70/95 mL/min the app used
+   was this same arithmetic with the dripper count assumed — 4 in A wing,
+   3 in B and C — which is exactly the assumption A2 and C3 break. */
+function mlPerPlant(rm, t, runtimeMin){
+  if(runtimeMin==null || isNaN(runtimeMin)) return null;
+  var flow=DRIP_FLOW[String(rm).charAt(0)];
+  if(flow==null) return null;
+  return Math.round(runtimeMin*drippersFor(rm,t)*flow);
+}
+/* What a plant on this table actually gets today, from the imported
+   schedule's printed P1 runtime and the dripper count. The workbook Volume
+   column is P1 only, and on these screens the printed total is P1 only too,
+   so the two agree. Returns null rather than a guess when either half is
+   missing — SCHED_ML in the weekly file is the fallback, and it is a room
+   figure that cannot see a tiered table. */
+function mlPlantToday(rm, t){
+  var imp=(typeof getSched==='function')?(getSched()||{}):{};
+  var rec=imp[rm];
+  if(!rec || !rec.tables || !rec.tables.length) return null;
+  var row=null;
+  for(var i=0;i<rec.tables.length;i++){
+    if(t!=null && rec.tables[i].table===t){ row=rec.tables[i]; break; }
+  }
+  if(!row) row=rec.tables[0];
+  if(row.runtimeSec==null) return null;
+  return mlPerPlant(rm, (t==null?row.table:t), row.runtimeSec/60);
+}
 function dofNow(rm, nowDate){
-  var s=FLOWER_START[rm]; if(!s) return '';
+  var s=flowerStartFor(rm); if(!s) return '';
   var p=s.split('-'), start=new Date(+p[0],+p[1]-1,+p[2]).getTime();
   var n=nowDate?new Date(nowDate):new Date();
   return Math.round((n.setHours(0,0,0,0)-start)/86400000);
@@ -883,7 +962,10 @@ function roomHead(){
   var ecs=ref.filter(function(r){return r.ec!=null;}).map(function(r){return r.ec;});
   var lows=msd.filter(function(r){return r.flag;}).length;
   var hrs=S.rows.length?S.rows[0].hrs:'';
-  var vol=(SCHED_ML&&SCHED_ML[S.room])||null;
+  /* computed from the imported schedule and the dripper count where both are
+     known; the weekly room figure otherwise, which cannot see a tiered table */
+  var volC=mlPlantToday(S.room,null);
+  var vol=volC!=null?volC:((SCHED_ML&&SCHED_ML[S.room])||null);
   var nSkip=skippedList().length;
   var prevMed=null;
   try{
@@ -895,7 +977,8 @@ function roomHead(){
     ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
   var dof=dofNow(S.room);
   return S.room+' · DOF '+(dof===''?'—':dof)+' · '+bag+' gal'+
-    (vol?' · '+vol+' mL':'')+
+    (vol?' · '+vol+' mL'+(volC!=null?'':' (weekly file)'):'')+
+    (tankFor(S.room)?' · tank '+tankFor(S.room):'')+
     (hrs?' · '+hrs+'h':'')+
     ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+
     ' · '+lows+'/'+msd.length+' below floor'+

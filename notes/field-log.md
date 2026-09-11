@@ -29,11 +29,11 @@ interrupted by a reload. This is the list to execute against.
 | v33 | records need a qualifying sweep, and carry stabs/min | backlog §4 |
 | v34 | the mid-bag stab is conditional, not routine | backlog §6.7 |
 | v34 | row notes are row-aligned — one line per table, blanks included | backlog §6.1 |
+| v35 | room setup screen — strains, drippers, tank, flower start, plants | backlog §5.4 |
+| v35 | volume per plant from runtime x drippers x emitter flow | backlog §5.4 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
-7. §5.1 commit/settle/undo · §5.2 crew skip — confirm status first
-8. §5.4 room config incl. dripper count and tank
 9. §6.2 table flags · §6.3 day coverage
 10. §5.3 display · §5.5 sweep windows · §6.4 post-change reminder
 11. §6.5 rename tool
@@ -460,3 +460,63 @@ start working in spot mode as a side effect — they are per table, and until
 now a spot sweep had none. A stab taken before any table is chosen still
 lands, in an `UNASSIGNED` block at the end rather than silently out of the
 column.
+
+### 17. Status audit of §5.1, §5.2, §5.3 — all shipped, nothing to build
+
+The backlog asked to confirm before building. Checked against the code and
+the suite rather than from memory:
+
+- **A §1.2** pause removed, tap commits — v27, `app.js:1299`.
+- **A §1.3** settle gate lowered — v27. AIR is 3.5 and INS 6 against a
+  2.0–2.3% bare-hand baseline, so anything meaningfully above the sensor
+  floor counts as a bag. A-7 T12 at 6–8% logs.
+- **A §1.4** undo clears the alarm banner — v27, `app.js:1628`.
+- **A §2** auto-advance on skip, the Skipped column with its reason, the
+  coverage line, and medians over measured tables with the denominator
+  printed — all v27, all asserted in test/adda.js.
+- **A §5** standard/opposite labels, T1 default, a today badge distinct from
+  swept-recently, and the room brief from the tile — all v27.
+
+Still open from §5.7: the room state toggle (active / harvest / empty) and
+greying the median line when the prior sweep is over four days old.
+
+### 18. Room setup → v35
+
+Backlog §5.4. Two wrong calls on 9/10 came from this being uneditable — C3
+displayed the previous grow's strain map and produced a wrong tiering
+recommendation, and B3 read DOF 77 when it was 7.
+
+One screen per room, off the setup page: flower start (DOF computes live as
+you type it, and says if the date is in the future or over 90 days), bag
+size, plants per table, tank, and a row per table carrying strain, dripper
+count and the underlight flag.
+
+rooms.js is now a fallback rather than the truth. Everything left blank falls
+through to it, and the screen says which is which — **a dripper count
+somebody has actually counted shows in bold green; the rest is the wing's
+usual number and is labelled a guess.** A2 and C3 both turned out to differ
+table by table, so an unverified room is a guess, not a fact. Typing a count
+makes it counted.
+
+The button on the setup page reads `never confirmed for this grow` until
+somebody saves it, which is the staleness signal §6 asked for.
+
+**Volume per plant is unblocked.** It is minutes × drippers × emitter flow
+now, from the imported schedule's printed P1 runtime — C4 T1 and T4 come out
+different because their runtimes are, and C3 T1 and T7 come out different
+because their dripper counts are. The old flat 70 and 95 mL/min were this
+same arithmetic with the count assumed at 4 in A wing and 3 in B and C, which
+is exactly what A2 and C3 break. Where there is no imported schedule the
+weekly room figure still stands in, labelled `(weekly file)`.
+
+Tank and dripper count are in the CSV, per §6.6 — runoff EC of 6.0 means
+something different on tank A than tank C.
+
+**One bug found while doing it.** `applyRoomCfg` replaced the whole config
+record on every Start, so the move-in fields would have been wiped the first
+time anyone pressed the button. It merges now, and the test drives a Start to
+prove it.
+
+Also: appending a CSV column has now broken a positional write twice — once
+in the export itself, where the skip reason and sweep flag were written to
+`nCols-1`. Both write by column name now.

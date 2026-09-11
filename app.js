@@ -828,7 +828,7 @@ function render(){
     ? 'Spot '+(S.i+1)+(S.spotTable!=null?' · T'+S.spotTable:' · pick a table')
     : 'Table '+s.t;
   $('depth').innerHTML=s.pos+'<span class="d">'+(s.depth==='reference'?'REF':'MID')+'</span>';
-  var rm=RMAP[S.room]||{}, info=rm[String(s.t)]||['',''];
+  var info=strainFor(S.room, s.t);
   $('strain').onclick=null;
   $('strain').innerHTML=info[0]
     ? info[0]+(info[1].indexOf('U')>=0?'<span class="tag">underlights</span>':'')
@@ -897,8 +897,9 @@ function renderTargetPos(t){
    label rather than the stale one. */
 function relabelRow(r,stop){
   r.table=stop.t; r.position=stop.pos; r.depth=stop.depth;
-  r.strain=((RMAP[S.room]||{})[String(stop.t)]||['',''])[0];
-  r.flags=((RMAP[S.room]||{})[String(stop.t)]||['',''])[1];
+  var si=strainFor(S.room, stop.t);
+  r.strain=si[0];
+  r.flags=si[1];
   r.plant=(stop.extra?'adjacent':'');
   var newKey=r.room+'|'+stop.t+'|'+stop.pos+'|'+stop.depth;
   PREV[newKey]={d:r.date,v:r.vwc,e:r.ec,ts:Date.now()};
@@ -1487,8 +1488,8 @@ function doCommit(r, meta){
     time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
     room:S.room, table:(stop.spot && S.spotTable!=null)?S.spotTable:stop.t,
     position:stop.pos, depth:stop.depth,
-    strain:((RMAP[S.room]||{})[String(stop.t)]||['',''])[0],
-    flags:((RMAP[S.room]||{})[String(stop.t)]||['',''])[1],
+    strain:strainFor(S.room, stop.t)[0],
+    flags:strainFor(S.room, stop.t)[1],
     hrs:(function(){var h=hoursSinceShot(S.room,null,stop.t); return h===null?'':h.toFixed(1);})(),
     mode:S.mode, dir:S.dir, feedEC:(S.feedEC==null?'':S.feedEC), feedPH:(S.feedPH==null?'':S.feedPH),
     plant:(stop.extra?'adjacent':''),
@@ -1660,6 +1661,14 @@ $('note').onclick=function(){
 };
 $('pos').onclick=function(){ openTarget(null); };
 $('schedbtn').onclick=openSchedule;
+$('cfgbtn').onclick=openRoomSetup;
+$('cfgclose').onclick=function(){ $('cfgsheet').classList.add('hide'); };
+$('cfgsave').onclick=function(){
+  if(!saveRoomSetup()) return;
+  $('cfgsheet').classList.add('hide');
+  showRoomCfg(); showBrief();
+  toast('room setup saved for '+S.room);
+};
 $('schedparse').onclick=function(){
   SCHEDPARSE=parseSchedule($('schedpaste').value);
   drawSchedParse();
@@ -1690,8 +1699,7 @@ function openPegs(tbl){
   var existing=(S.notes[tbl]||'').split(' · ').filter(Boolean);
   existing.forEach(function(w){ PEGSEL[w]=1; });
   var list=PEGS;
-  var rm=RMAP[S.room]||{}, info=rm[String(tbl)]||[''
-,''];
+  var info=strainFor(S.room, tbl);
   $('pegtop').innerHTML='Table '+tbl+
     '<span class="sm"><b class="st">'+(info[0]||S.room)+
     '</b> · tap only what stands out</span>';
@@ -2022,21 +2030,25 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers\n';
   var swFlags=sweepFlags().join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
-      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags].join(',');
+      (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
+      tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):'')].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
      record that eight were skipped or why. One record row per skipped table,
      measurements empty, carries it. */
+  /* index by name: appending a column has broken a positional write twice
+     now, once in the export itself and once in three different tests */
   var cols=head.trim().split(',');
-  var nCols=cols.length, iSkip=cols.indexOf('Skipped');
+  var nCols=cols.length, iSkip=cols.indexOf('Skipped'), iFlags=cols.indexOf('Sweep flags'),
+      iTank=cols.indexOf('Tank');
   var skD=new Date().toLocaleDateString('en-US');
   var skT=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   skippedList().sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
@@ -2047,7 +2059,7 @@ function finish(){
     cells[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; cells[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     cells[14]=S.side; cells[24]=S.op||'';
     cells[iSkip]=csvq(skipReason(t));
-    cells[nCols-1]=swFlags;
+    cells[iFlags]=swFlags; cells[iTank]=tankFor(S.room);
     lines.push(cells.join(','));
   });
   /* §3: a hand-only sweep produces no rows at all, so without this the whole
@@ -2059,7 +2071,7 @@ function finish(){
     hc[10]=S.mode; hc[11]=S.dir;
     hc[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; hc[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     hc[14]=S.side; hc[24]=S.op||'';
-    hc[nCols-1]=swFlags||'NO_READINGS';
+    hc[iFlags]=swFlags||'NO_READINGS'; hc[iTank]=tankFor(S.room);
     lines.push(hc.join(','));
   }
   var body=lines.join('\n');
@@ -2348,7 +2360,90 @@ function applyRoomCfg(){
   if(!isNaN(ec) && ec>=0) FEEDEC[S.room]=ec;
   S.feedEC=(!isNaN(ec)&&ec>=0)?ec:FEEDEC[S.room];
   S.feedPH=(!isNaN(ph)&&ph>0)?ph:null;
-  saveRoomCfg(S.room,{bag:bag, ec:S.feedEC, ph:S.feedPH});
+  /* merge: this used to replace the whole record, which would drop the
+     move-in fields (flower start, strains, drippers, tank) on every Start */
+  var keep=roomCfg()[S.room]||{};
+  keep.bag=bag; keep.ec=S.feedEC; keep.ph=S.feedPH;
+  saveRoomCfg(S.room, keep);
+}
+/* ---------------- room setup (backlog §5.4) ----------------
+   Two wrong calls on 9/10 came from this being uneditable: C3 showed the
+   previous grow's strain map and produced a wrong tiering recommendation,
+   and B3 read DOF 77 when it was 7. Everything here changes at move-in, not
+   weekly, and everything left blank falls back to the weekly file. */
+function openRoomSetup(){
+  if(!S.room || !ROOMS[S.room]){ toast('pick a room first'); return; }
+  var c=roomCfg()[S.room]||{};
+  $('cfgtop').textContent='Room setup · '+S.room;
+  $('cfg_fs').value=c.flowerStart||'';
+  $('cfg_fs').placeholder=FLOWER_START[S.room]||'YYYY-MM-DD';
+  $('cfg_bag2').value=String(c.bag||ROOMS[S.room].bag);
+  $('cfg_plants').value=(c.plants!=null?c.plants:'');
+  $('cfg_tank').value=c.tank||'';
+  drawCfgDof();
+  var h='<table class="cfgt"><tr><th>T</th><th>strain</th><th>drip</th><th>under</th></tr>';
+  for(var t=1;t<=ROOMS[S.room].t;t++){
+    var si=strainFor(S.room,t), under=(si[1]||'').indexOf('U')>=0;
+    h+='<tr><td>'+t+'</td>'+
+       '<td><input type="text" class="st" data-t="'+t+'" value="'+esc(si[0]||'')+'"></td>'+
+       '<td><input type="text" class="dr'+(drippersKnown(S.room,t)?' known':'')+'" inputmode="numeric" '+
+         'data-t="'+t+'" value="'+drippersFor(S.room,t)+'"></td>'+
+       '<td><button class="ul'+(under?' on':'')+'" data-t="'+t+'">U</button></td></tr>';
+  }
+  $('cfgtables').innerHTML=h+'</table>';
+  [].forEach.call(document.querySelectorAll('#cfgtables .ul'),function(b){
+    b.onclick=function(){ b.classList.toggle('on'); };
+  });
+  /* a hand-entered count is a counted one from the moment it is typed */
+  [].forEach.call(document.querySelectorAll('#cfgtables .dr'),function(i){
+    i.oninput=function(){ i.classList.add('known'); };
+  });
+  $('cfg_fs').oninput=drawCfgDof;
+  $('cfgsheet').classList.remove('hide');
+}
+function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function drawCfgDof(){
+  var v=($('cfg_fs').value||'').trim() || FLOWER_START[S.room] || '';
+  var el=$('cfg_dof');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(v)){ el.innerHTML='<span class="low">no flower start — DOF cannot be computed</span>'; return; }
+  var p=v.split('-'), st=new Date(+p[0],+p[1]-1,+p[2]);
+  if(isNaN(st.getTime())){ el.innerHTML='<span class="low">that is not a date</span>'; return; }
+  var n=new Date(); n.setHours(0,0,0,0);
+  var dof=Math.round((n-st)/86400000);
+  el.innerHTML='DOF <b>'+dof+'</b> today'+
+    (($('cfg_fs').value||'').trim()?'':' · from the weekly file')+
+    (dof<0?' <span class="low">— that date is in the future</span>':'')+
+    (dof>90?' <span class="low">— over 90 days, check it</span>':'');
+}
+function saveRoomSetup(){
+  var c=roomCfg()[S.room]||{};
+  var fs=($('cfg_fs').value||'').trim();
+  if(fs && !/^\d{4}-\d{2}-\d{2}$/.test(fs)){ toast('flower start wants YYYY-MM-DD'); return false; }
+  if(fs) c.flowerStart=fs; else delete c.flowerStart;
+  c.bag=parseFloat($('cfg_bag2').value)||ROOMS[S.room].bag;
+  var pl=parseInt($('cfg_plants').value,10);
+  if(!isNaN(pl) && pl>0) c.plants=pl; else delete c.plants;
+  var tk=$('cfg_tank').value;
+  if(tk) c.tank=tk; else delete c.tank;
+  var strains={}, drip={}, anyS=false, anyD=false;
+  [].forEach.call(document.querySelectorAll('#cfgtables .st'),function(i){
+    var t=i.dataset.t, name=(i.value||'').trim();
+    var u=document.querySelector('#cfgtables .ul[data-t="'+t+'"]').classList.contains('on');
+    var old=strainFor(S.room,t);
+    var flags=(old[1]||'').replace(/U/g,'')+(u?'U':'');
+    if(name!==(old[0]||'') || flags!==(old[1]||'')){ anyS=true; }
+    strains[t]=[name, flags];
+  });
+  [].forEach.call(document.querySelectorAll('#cfgtables .dr'),function(i){
+    var n=parseInt(i.value,10);
+    if(!isNaN(n) && n>0 && i.classList.contains('known')){ drip[i.dataset.t]=n; anyD=true; }
+  });
+  if(anyS || (c.strains&&Object.keys(c.strains).length)) c.strains=strains;
+  if(anyD) c.drippers=drip;
+  c.savedAt=Date.now();
+  saveRoomCfg(S.room, c);
+  ROOMS[S.room].bag=c.bag;
+  return true;
 }
 function loadRoomCfgAll(){
   var a=roomCfg();
@@ -2395,6 +2490,17 @@ function showBrief(){
   }
   /* §4: say out loud which schedule those two lines came from. The weekly
      file goes stale between grows and looks exactly like a current one. */
+  /* §6: room config went stale between grows and looked exactly like a
+     current one. The button says when it was last confirmed. */
+  var rc=roomCfg()[S.room]||{};
+  var cb=$('cfgbtn');
+  if(cb){
+    var never=!rc.savedAt;
+    cb.classList.toggle('stale',never);
+    cb.textContent=never
+      ? 'room setup · never confirmed for this grow'
+      : 'room setup · confirmed '+new Date(rc.savedAt).toLocaleDateString('en-US');
+  }
   var imp=getSched()[S.room];
   var sb=$('schedbtn');
   if(sb){
