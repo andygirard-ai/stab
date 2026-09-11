@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v33';
+var VER='v34';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -458,6 +458,29 @@ function walkPhase(walkIndex, side){
   return aislePos(walkIndex,side)===0
     ? ['front','center','header'] : ['header','center','front'];
 }
+/* §6.7: the mid-bag stab is conditional, not routine.
+   The 9/8 note said mid-bag only informs on wet bags. With 893 reference/mid
+   pairs from the workbook — 582 of them in 2-gallon rooms — it is the
+   reverse. Above 30% the mid reads 3 to 6 points under the reference with a
+   tight spread: ordinary stratification, confirming nothing, and 75% of all
+   stabs sit above 30. Below 20% it reads 8 or more points WETTER than the
+   reference more than half the time, which is the wetting front stalling
+   above the jig depth — and that says shot size, not frequency.
+
+   So a sweep takes the reference and asks for the mid only when the
+   reference lands low enough for the answer to mean something. Profile mode
+   keeps the old every-position behaviour for post-change confirmation and
+   drainage work, and a triage is that work by definition. */
+function midTrigger(room){
+  return Math.max(25, floorFor(room));
+}
+function wantsMid(room, depth, vwc){
+  var cfg=ROOMS[room];
+  if(!cfg || cfg.bag!==2) return false;      /* the evidence is 2-gallon only */
+  if(depth!=='reference') return false;
+  return vwc < midTrigger(room);
+}
+function profileMode(){ return !!S.profile; }
 function buildRoute(room, dir, mode, side){
   var cfg=ROOMS[room], r=[];
   if(mode==='triage'){
@@ -483,11 +506,12 @@ function buildRoute(room, dir, mode, side){
   }
   var order=[]; for(var z=1;z<=cfg.t;z++) order.push(z);
   if(dir==='down') order.reverse();
+  var everyMid=(cfg.bag===2 && profileMode());
   for(var oi=0;oi<order.length;oi++){ var t=order[oi];
     var seq=walkPhase(oi,side);
     for(var p=0;p<3;p++){
       r.push({t:t,pos:seq[p],depth:'reference'});
-      if(cfg.bag===2) r.push({t:t,pos:seq[p],depth:'mid-bag'});
+      if(everyMid) r.push({t:t,pos:seq[p],depth:'mid-bag'});
     }
   }
   return r;
@@ -778,12 +802,22 @@ function rowNoteLines(){
   Object.keys(tabs).forEach(function(t){ keys[t]=1; });
   skippedList().forEach(function(t){ keys[t]=1; });
   var lines=[];
+  /* §6.1: one line per table, in room order, blank where nothing was swept.
+     A spot or triage sweep used to export only the tables it touched, so the
+     operator had to place each line by hand in an eleven- or twelve-row
+     block — and on 9/10 two of them went in wrong: B3's four lines one row
+     high, B6's three as a block on T6-T8. Eleven lines with seven blanks
+     paste at T1 and land. A full sweep is unchanged, because every table
+     already had a line. */
+  if(ROOMS[S.room] && S.mode!=='flush') for(var n=1;n<=ROOMS[S.room].t;n++) keys[n]=1;
   Object.keys(keys).sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
+    if(t==='?') return;                      /* spot stabs with no table: below */
     if(tableSkipped(t)){ lines.push('T'+t+'  — '+skipReason(t)); return; }
     var rr=tabs[t]||[];
+    if(!rr.length){ lines.push(''); return; }
     var rf=rr.filter(function(r){return r.depth==='reference';});
     var md=rr.filter(function(r){return r.depth==='mid-bag';});
-    if(!rf.length) return;
+    if(!rf.length){ lines.push(''); return; }
     var vals=rf.map(function(r){return r.vwc;});
     var desc=feelDesc(vals,fp);
     var parts=rf.map(function(r){
@@ -817,6 +851,13 @@ function rowNoteLines(){
     var nt=rowNote(t); if(nt) line+='. '+nt;
     lines.push(line);
   });
+  /* Stabs that belong to no table keep their own block at the end rather
+     than silently vanishing out of an aligned column. */
+  if(tabs['?']){
+    var sp=tabs['?'].filter(function(r){ return r.depth==='reference'; });
+    if(sp.length) lines.push('', 'UNASSIGNED  '+sp.map(function(r){
+      return r.vwc.toFixed(0)+(r.ec!=null?'/'+r.ec.toFixed(2):''); }).join(' · '));
+  }
   return lines;
 }
 /* Copy 1: the Row Notes column on its own. No summary, no CHECK, no header.
@@ -826,7 +867,12 @@ function buildRowNotes(){
   var lines=rowNoteLines();
   if(!lines.length) return '';
   lines=lines.slice();
-  lines[0]=sweepStamp()+' '+lines[0];
+  /* §6.1: with blanks holding the alignment, the stamp goes on the first
+     line that has something on it — prefixing a blank would put a timestamp
+     in the cell of a table nobody swept. */
+  for(var i=0;i<lines.length;i++){
+    if(lines[i]!==''){ lines[i]=sweepStamp()+' '+lines[i]; break; }
+  }
   return lines.join('\n');
 }
 function roomHead(){

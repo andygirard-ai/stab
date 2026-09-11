@@ -55,7 +55,12 @@ async function demoStab(w,d){
     ok(!/CHECK/.test(row),'row notes carry no CHECK section');
     ok(!/below floor/.test(row),'row notes carry no summary line');
     ok(!/ROW NOTES|NOTES  \(/.test(row+room),'neither paste carries a column header');
-    ok(row.split('\n').slice(1).every(l=>/^T\d+  /.test(l)),'every row-note line after the first is T-prefixed');
+    // §6.1: the block is row-aligned now, so a table nobody swept is a blank
+    // line holding its place in the column rather than a missing one
+    ok(row.split('\n').slice(1).every(l=>l===''||/^T\d+  /.test(l)),
+       'every written row-note line after the first is T-prefixed');
+    ok(row.split('\n').length===w.ROOMS[w.S.room].t,
+       'and there is exactly one line per table in the room: '+row.split('\n').length);
     // v27 A§3: room notes are exception-only. A clean sweep writes nothing.
     ok(room==='','a clean sweep writes nothing to the room-notes column: "'+room+'"');
     ok(!/CHECK|nothing flagged/.test(room),'the words CHECK / nothing flagged never appear there');

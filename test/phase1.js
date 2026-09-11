@@ -188,7 +188,12 @@ function enterSettling(w,vwc,rawBulk){
 
   // ================= 1.7 +plant a second time still finds the ref/mid pair =
   { const {w,d,errors}=boot(); await sleep(50);
+    // §6.7 made reference-only the default, so this case — +plant duplicating
+    // a whole ref/mid group — now belongs to profile mode, which is where the
+    // routed pairs live.
+    w.S.profile=true;
     start(w,d,'B2'); w.S.trigger=w.TRIGGER; await sleep(20);   // B2 is 2-gal: ref + mid per stop
+    ok(w.S.route[0].depth==='reference' && w.S.route[1].depth==='mid-bag','profile route pairs each position');
     for(let k=0;k<2;k++){                                     // ref + mid on T1 front
       enterSettling(w,35.0,900); await sleep(15);
       d.getElementById('log').click(); await sleep(15);

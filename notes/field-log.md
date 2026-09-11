@@ -27,10 +27,11 @@ interrupted by a reload. This is the list to execute against.
 | v33 | operator chips read as names | backlog §3 |
 | v33 | landing cleanup — settings behind a long-press on the version | backlog §4 |
 | v33 | records need a qualifying sweep, and carry stabs/min | backlog §4 |
+| v34 | the mid-bag stab is conditional, not routine | backlog §6.7 |
+| v34 | row notes are row-aligned — one line per table, blanks included | backlog §6.1 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
-6. §6.1 row-aligned export · §6.7 conditional mid-bag stab
 7. §5.1 commit/settle/undo · §5.2 crew skip — confirm status first
 8. §5.4 room config incl. dripper count and tank
 9. §6.2 table flags · §6.3 day coverage
@@ -405,3 +406,57 @@ tool for the day a second phone exists, not something Evan needs to find.
 **Also:** three separate versions have now appended a column to the CSV and
 broken a test that anchored on the end of the row. Those assertions read by
 column name now.
+
+### 15. The mid-bag stab is conditional now → v34
+
+Backlog §6.7, which corrects the 9/8 note from 36 pairs with 893 from the
+workbook. Above 30% the mid reads 3 to 6 points under the reference with a
+tight spread — ordinary stratification, confirming nothing — and 75% of all
+stabs sit above 30. Below 20% it reads 8 or more points *wetter* than the
+reference more than half the time: the wetting front stalling above the jig
+line, which is a shot-size finding, not a frequency one.
+
+So a 2-gallon sweep routes references only and earns its mids one at a time.
+A reference under `max(25, floor)` inserts a mid-bag stop at the same table
+and position, right where the operator is standing, with a toast saying why.
+It is inserted on commit rather than routed in advance, because the route
+cannot know which references will come back dry. Undoing that reference takes
+its mid with it.
+
+That is 33 stops instead of 66 in an eleven-table room, and the ones that are
+dropped are the ones that were confirming nothing.
+
+Profile mode — every position gets a mid — is a per-session toggle on the
+setup screen for post-change confirmation and drainage work. A triage keeps
+the full profile unconditionally, because a triage *is* that work.
+
+**Held to 2-gallon rooms,** which is where all 582 usable pairs are. A
+1.25-gallon bag is a different geometry and there is no evidence for it yet.
+
+The setup screen now also says what reference depth means: the Bio365
+sensor-jig line, about two inches off the bottom. Stab to the jig, not by
+eye. It belongs in room config with the rest of §5.4, but a second operator
+needs it before then.
+
+### 16. Row notes are row-aligned → v34
+
+Backlog §6.1. On 9/10 two pastes went in wrong — B3's four lines a row high,
+B6's three as a block on T6–T8 — because a sweep that touched four tables
+exported four lines into an eleven-row column and every one of them was
+placed by hand.
+
+The export is now one line per table in room order, blank where nothing was
+swept. Eleven lines, seven of them blank, paste at T1 and land. A full sweep
+is unchanged, because every table already had a line.
+
+The sweep stamp moves to the first line that has something on it — prefixing
+a blank would put a timestamp in the cell of a table nobody swept.
+
+**Spot sweeps needed a second half.** Their stabs carried table `?` and could
+not be aligned to anything, because nothing in the app knew where the
+operator was standing. Tapping a table in the route strip now says so, and
+the header reads `Spot 3 · T6` (or `· pick a table` until he does). Notes
+start working in spot mode as a side effect — they are per table, and until
+now a spot sweep had none. A stab taken before any table is chosen still
+lands, in an `UNASSIGNED` block at the end rather than silently out of the
+column.

@@ -59,8 +59,8 @@ function boot(storage){
     ok(d.getElementById('setsheet').classList.contains('hide'),'settings closes behind it');
     d.getElementById('demo').click();
     d.getElementById('startbtn').click(); await sleep(50);
-    ok(w.S.roomStarted && w.S.route.length===4*3*2,
-       'BENCH route built as 4 tables × 3 positions × 2 depths: '+w.S.route.length);
+    ok(w.S.roomStarted && w.S.route.length===4*3,
+       'BENCH route built as 4 tables × 3 positions, references only: '+w.S.route.length);
     const hdr=d.getElementById('hside').textContent;
     ok(!BAD.test(hdr),'sweep header has no NaN/undefined: "'+hdr+'"');
     ok(/DOF —/.test(hdr),'header shows DOF — for a room with no DOF');

@@ -344,6 +344,135 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ §6.7 the mid-bag stab is conditional ============
+  // 893 reference/mid pairs say the opposite of the 9/8 note: above 30 the
+  // mid reads 3-6 under with a tight spread and confirms nothing, and 75% of
+  // stabs sit above 30. Below 20 it reads 8+ points WETTER more than half the
+  // time — the wetting front stalling above the jig — which is a shot-size
+  // finding. So the route asks for the mid only when the reference earns it.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.profile=false; w.S.triage=[];
+    const r=w.buildRoute('B1','up','sweep','standard');
+    ok(r.length===11*3,'a 2-gallon sweep routes reference only: '+r.length+' stops for 11 tables');
+    ok(r.every(x=>x.depth==='reference'),'…every one of them a reference');
+    ok(w.midTrigger('B1')===25,'B1 floor 22, so the trigger is 25: '+w.midTrigger('B1'));
+    ok(w.midTrigger('C4')===30,'C4 floor 30, so the trigger is the floor: '+w.midTrigger('C4'));
+    ok(w.wantsMid('B1','reference',24.9) && !w.wantsMid('B1','reference',25.1),
+       'the boundary is exact');
+    ok(!w.wantsMid('B1','mid-bag',10),'a mid never asks for another mid');
+    ok(!w.wantsMid('C4','reference',10),'and a 1.25-gallon room asks for none — the pairs are 2-gallon');
+    w.S.profile=true;
+    const p=w.buildRoute('B1','up','sweep','standard');
+    ok(p.length===11*3*2,'profile mode still routes every position: '+p.length);
+    ok(p[0].depth==='reference' && p[1].depth==='mid-bag','reference then mid, as before');
+    w.S.profile=false;
+    w.S.triage=[3];
+    const tr=w.buildRoute('B1','up','triage','standard');
+    ok(tr.length===6 && tr[1].depth==='mid-bag',
+       'a triage keeps the full profile — it is the drainage work, by definition');
+    w.close(); }
+
+  // the sequence gains exactly one mid, at that position and nowhere else
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.profile=false;
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const n0=w.S.route.length;
+    const shape=()=>w.S.route.map(x=>'T'+x.t+' '+x.pos+' '+(x.depth==='reference'?'ref':'MID'));
+    // three healthy references on T1, then one that comes back dry
+    for(const v of [34,33,35]){ enterSettling(w,v,900); await sleep(20);
+      d.getElementById('log').click(); await sleep(20); }
+    ok(w.S.route.length===n0,'three references above the trigger add nothing: '+w.S.route.length);
+    const at=w.S.route[w.S.i];
+    enterSettling(w,19.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.route.length===n0+1,'one dry reference adds exactly one stop: '+w.S.route.length);
+    const ins=w.S.route[w.S.i];
+    ok(ins.depth==='mid-bag' && ins.t===at.t && ins.pos===at.pos,
+       'at that table and that position, next: T'+ins.t+' '+ins.pos+' '+ins.depth);
+    ok(w.S.route.filter(x=>x.depth==='mid-bag').length===1,'and nowhere else in the room');
+    // the mid itself does not breed another
+    enterSettling(w,15.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.route.filter(x=>x.depth==='mid-bag').length===1,
+       'a low mid-bag reading does not insert a second mid');
+    // undoing the reference takes its mid with it
+    const before=w.S.route.length;
+    d.getElementById('undo').click(); await sleep(20);   // undo the mid
+    d.getElementById('undo').click(); await sleep(20);   // undo the reference
+    ok(w.S.route.length===before-1,
+       'undoing the dry reference removes the mid it called for: '+w.S.route.length+' vs '+before);
+    ok(w.S.route.filter(x=>x.depth==='mid-bag').length===0,'no orphan mid left in the route');
+    ok(errors.length===0,'no runtime errors (§6.7): '+errors.join('|')); }
+
+  // ============ §6.1 the export is row-aligned ============
+  // On 9/10 two pastes went in wrong: B3's four lines one row high, B6's
+  // three as a block on T6-T8. A sweep that touches four tables exported four
+  // lines into an eleven-row column, so every line was placed by hand.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B2'; w.S.mode='triage'; w.S.triage=[4,5,6,7]; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    const mk=(t,pos,vwc)=>({date:'9/10/2026',time:'09:42:00',room:'B2',table:t,position:pos,
+      depth:'reference',plant:'',strain:'',flags:'',hrs:'2.0',mode:'triage',dir:'up',
+      bag:2,media:'Bio365',side:'standard',vwc:vwc,ec:4,bulk:0.5,tmp:25,
+      flag:vwc<w.floorFor('B2'),raw:'x',manualCommit:false,zeroEc:false});
+    [4,5,6,7].forEach(t=>['front','center','header'].forEach(p=>w.S.rows.push(mk(t,p,30))));
+    const lines=w.rowNoteLines();
+    ok(w.ROOMS.B2.t===11,'B2 has eleven tables');
+    ok(lines.length===11,'eleven lines for eleven rows, whatever was swept: '+lines.length);
+    ok(lines.slice(0,3).every(x=>x===''),'T1 to T3 are blank');
+    ok(lines.slice(3,7).every(x=>/^T[4567] /.test(x)),'T4 to T7 carry the readings');
+    ok(lines.slice(7).every(x=>x===''),'T8 to T11 are blank');
+    // the stamp cannot land in the cell of a table nobody swept
+    const out=w.buildRowNotes().split('\n');
+    ok(out[0]==='','the paste still starts blank, so it lines up at T1');
+    ok(/^\d/.test(out[3]) && /T4 /.test(out[3]),'and the stamp rides the first line that has something on it: '+out[3].slice(0,30));
+    w.close(); }
+
+  // a full sweep is unchanged — every table already had a line
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B2'; w.S.mode='sweep'; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    const mk=(t,pos)=>({date:'9/10/2026',time:'09:42:00',room:'B2',table:t,position:pos,
+      depth:'reference',plant:'',strain:'',flags:'',hrs:'2.0',mode:'sweep',dir:'up',
+      bag:2,media:'Bio365',side:'standard',vwc:33,ec:4,bulk:0.5,tmp:25,
+      flag:false,raw:'x',manualCommit:false,zeroEc:false});
+    for(let t=1;t<=11;t++) ['front','center','header'].forEach(p=>w.S.rows.push(mk(t,p)));
+    const lines=w.rowNoteLines();
+    ok(lines.length===11 && lines.every(x=>x!==''),'eleven lines, none blank: '+lines.length);
+    ok(/^\d.*T1 /.test(w.buildRowNotes().split('\n')[0]),'and the stamp is on T1 as it always was');
+    w.close(); }
+
+  // a spot stab belongs to a table once the operator says which
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
+    [].find.call(d.querySelectorAll('[data-mode]'),b=>b.dataset.mode==='spot').click();
+    await sleep(20);
+    d.getElementById('startbtn').click(); await sleep(30);
+    w.S.dev={gatt:{connected:true}}; w.S.chr={}; w.S.trigger=w.TRIGGER;
+    ['log','extra','skip','undo','redo'].forEach(id=>{ d.getElementById(id).disabled=false; });
+    ok(/pick a table/.test(d.getElementById('pos').textContent),
+       'a spot sweep opens without a table and says so: '+d.getElementById('pos').textContent);
+    d.querySelector('#route .tk[data-t="6"]').click(); await sleep(20);
+    ok(w.S.spotTable===6,'tapping the strip says where he is standing: T'+w.S.spotTable);
+    ok(/T6/.test(d.getElementById('pos').textContent),'and the header agrees: '+d.getElementById('pos').textContent);
+    enterSettling(w,30.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].table===6,'the stab lands on T6, not on "?": '+w.S.rows[0].table);
+    const lines=w.rowNoteLines();
+    ok(lines.length===11 && lines.filter(x=>x!=='').length===1,
+       'so the export aligns it: eleven lines, one of them written — '+lines.length);
+    ok(/^T6 /.test(lines[5]),'…and T6 is the line with something on it');
+    ok(errors.length===0,'no runtime errors (§6.1 spot): '+errors.join('|')); }
+
+  // an unattributed stab is kept, not dropped out of the aligned column
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='B2'; w.S.mode='spot'; w.S.rows=[]; w.S.notes={}; w.S.skipped={};
+    w.S.rows.push({date:'9/10/2026',time:'09:42:00',room:'B2',table:'?',position:'spot',
+      depth:'reference',plant:'',strain:'',flags:'',hrs:'',mode:'spot',dir:'up',bag:2,
+      media:'Bio365',side:'standard',vwc:28,ec:5,bulk:0.5,tmp:25,flag:false,raw:'x'});
+    const txt=w.buildRowNotes();
+    ok(/UNASSIGNED  28\/5.00/.test(txt),'a stab with no table gets its own block at the end: '+txt.replace(/\n/g,' | '));
+    w.close(); }
+
   // ============ §3 a hand-only sweep of a 1.25-gal room is blind ============
   // The hand cannot feel below about 25% in those bags and the floor is 30,
   // so a bag-feel walk does not read less precisely — it structurally cannot
@@ -507,13 +636,14 @@ function rowsFor(w,room,spec){
     ok(w.floorFor('C4')===30,'C4 is a 1.25-gallon room, floor 30: '+w.floorFor('C4'));
     [['front',24],['center',26],['header',22]].forEach(a=>w.S.rows.push(mk(3,a[0],a[1])));
     [['front',24],['center',33],['header',35]].forEach(a=>w.S.rows.push(mk(5,a[0],a[1])));
+    // §6.1: the lines are row-aligned now, so T3 is the third and T5 the fifth
     const lines=w.rowNoteLines();
-    ok(/^T3 /.test(lines[0]) && /^T5 /.test(lines[1]),'a triage still writes one row-note line per table');
-    ok(/^T3  dry\/dry ok /.test(lines[0]),
-       'the feel word can no longer read "ok" on a bag under the floor: '+lines[0]);
-    ok(/all below floor 30$/.test(lines[0]),'…and the line says all three are under: '+lines[0]);
-    ok(/front below floor 30$/.test(lines[1]),
-       'a partial names the end of the table that is dry, which is what he walked over to find: '+lines[1]);
+    ok(/^T3 /.test(lines[2]) && /^T5 /.test(lines[4]),'a triage still writes one row-note line per table');
+    ok(/^T3  dry\/dry ok /.test(lines[2]),
+       'the feel word can no longer read "ok" on a bag under the floor: '+lines[2]);
+    ok(/all below floor 30$/.test(lines[2]),'…and the line says all three are under: '+lines[2]);
+    ok(/front below floor 30$/.test(lines[4]),
+       'a partial names the end of the table that is dry, which is what he walked over to find: '+lines[4]);
     ok(w.buildRoomNotes()==='','the room-note cells stay empty in a triage (B §7)');
     ok(w.buildRowNotes().indexOf('below floor 30')>0,'so the finding reaches the workbook through the row note or not at all');
     w.close(); }

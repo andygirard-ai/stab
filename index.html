@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v33</title>
+<title>Stab v34</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -410,7 +410,7 @@ table.sched .sh{color:var(--live)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v33</b></div>
+  <div class="brand">Substrate sweep · <b>v34</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -464,6 +464,11 @@ table.sched .sh{color:var(--live)}
     <button class="cap on" data-cap="auto">Auto<span class="sub">stab to log — beep confirms</span></button>
     <button class="cap" data-cap="manual">Manual<span class="sub">tap to read, like before</span></button>
   </div>
+  <div class="lbl">Depth</div>
+  <div class="two">
+    <button class="prof on" data-prof="0">Reference<span class="sub">mid-bag only when it reads low</span></button>
+    <button class="prof" data-prof="1">Profile<span class="sub">mid-bag at every position</span></button>
+  </div>
   <div class="lbl">Options</div>
   <div id="toggles">
     <button id="demo">demo mode · off</button>
@@ -487,9 +492,12 @@ table.sched .sh{color:var(--live)}
   </div>
   <div class="lbl">Route</div>
   <div class="tiny">
-    Odd tables run front to header. Even tables run header to front.<br>
-    2-gallon rooms add a mid-bag stab.<br>
-    Long-press the big button for CAL mode.
+    The first table of an aisle runs front to header, the second header to
+    front. Which tables share an aisle depends on the side of the row.<br>
+    <b>Reference depth is the Bio365 sensor-jig line</b> — about two inches
+    off the bottom of the bag. Stab to the jig, not by eye.<br>
+    A 2-gallon reference below 25% asks for a mid-bag stab at the same spot.<br>
+    Long-press the big button for CAL mode. Long-press the version for settings.
   </div>
 
 </section>
@@ -532,7 +540,7 @@ table.sched .sh{color:var(--live)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v33</div>
+  <div class="v">stab v34</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -674,8 +682,8 @@ table.sched .sh{color:var(--live)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=33"></script>
-<script src="pure.js?v=33"></script>
-<script src="app.js?v=33"></script>
+<script src="rooms.js?v=34"></script>
+<script src="pure.js?v=34"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>

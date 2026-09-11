@@ -184,6 +184,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
   skipped:{}, access:null, alarmQueue:[], huntFails:0, shotMidSweep:false, probeFrames:0,
+  profile:false, spotTable:null,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
@@ -222,6 +223,7 @@ function saveSession(){
   if(DEMO) return;
   lsSet('stab_session',JSON.stringify({v:22,
     s:{room:S.room,side:S.side,dir:S.dir,mode:S.mode,op:S.op,i:S.i,probeFrames:S.probeFrames||0,
+       profile:!!S.profile,spotTable:S.spotTable,
        notes:S.notes,free:S.free||{},route:S.route,startedAt:S.startedAt,
        feedEC:S.feedEC,feedPH:S.feedPH,triage:S.triage||[],
        skips:S.skips||0,unstable:S.unstable||0,
@@ -234,7 +236,7 @@ function clearSession(){
 }
 function savePrefs(){
   lsSet('stab_setup',JSON.stringify({side:S.side,dir:S.dir,mode:S.mode,
-    cap:S.auto?'auto':'manual',lastDir:PREF.lastDir}));
+    cap:S.auto?'auto':'manual',lastDir:PREF.lastDir,profile:!!S.profile}));
   lsSet('stab_op',S.op);
 }
 
@@ -449,6 +451,18 @@ function histTs(h){
     }catch(e){}
   })();
 
+  /* §6.7 depth: reference-only by default, profile when the walk is about
+     drainage or confirming a schedule change. Per session, remembered. */
+  [].forEach.call(document.querySelectorAll('.prof'),function(b){
+    b.onclick=function(){
+      [].forEach.call(document.querySelectorAll('.prof'),function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      S.profile=(b.dataset.prof==='1');
+      savePrefs();
+      showRoomHistory();
+    };
+  });
+
   /* saved bag sizes / feed EC must be applied before the grid draws them */
   loadRoomCfgAll();
   /* coverage from history */
@@ -548,6 +562,7 @@ function histTs(h){
   S.mode=PREF.mode||'sweep';
   if(PREF.showHist===undefined) PREF.showHist=true;
   S.auto=(PREF.cap!=='manual');
+  S.profile=!!PREF.profile;
   function mark(cls,val,attr){
     [].forEach.call(document.querySelectorAll('.'+cls),function(x){
       x.classList.toggle('on',x.dataset[attr]===val);
@@ -555,6 +570,7 @@ function histTs(h){
   }
   mark('side',S.side,'side'); mark('dir',S.dir,'dir');
   mark('mode',S.mode,'mode'); syncModeUI(); mark('cap',S.auto?'auto':'manual','cap');
+  mark('prof',S.profile?'1':'0','prof');
 
   $('setup').addEventListener('click',function(e){
     var b=e.target.closest('.side,.dir,.mode,.cap'); if(!b) return;
@@ -703,6 +719,7 @@ function histTs(h){
     if(sess){
       S.room=sess.room; S.side=sess.side||S.side; S.dir=sess.dir||S.dir;
       S.mode=sess.mode||S.mode; S.op=sess.op||S.op; S.probeFrames=sess.probeFrames||0;
+      S.profile=!!sess.profile; S.spotTable=(sess.spotTable==null?null:sess.spotTable);
       S.notes=sess.notes||{}; S.free=sess.free||{}; S.route=sess.route||[]; S.i=sess.i||0;
       S.startedAt=sess.startedAt||Date.now();
       S.triage=sess.triage||[]; S.skips=sess.skips||0; S.unstable=sess.unstable||0;
@@ -746,7 +763,7 @@ $('startbtn').onclick=function(){
   S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
   S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false;
-  S.probeFrames=0; renderAlarm();
+  S.probeFrames=0; S.spotTable=null; renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
@@ -786,7 +803,17 @@ function drawRoute(){
     if(tv[t]){ var mv=med(tv[t]);
       col=mv<f?'var(--low)':(mv<f+6?'var(--warn)':'var(--ok)'); }
     d.dataset.t=t;
-    d.onclick=function(){ if(!S.finished) openPegs(+this.dataset.t); };
+    if(spot && t===S.spotTable) d.className+=' now';
+    /* §6.1: in a spot sweep the strip is the only thing that knows where the
+       operator is standing, so tapping it says which table this stab belongs
+       to. Without that, spot rows carry no table and cannot be aligned to a
+       workbook column at all. Notes stay reachable from the note button,
+       which starts working once a table is chosen. */
+    d.onclick=function(){
+      if(S.finished) return;
+      if(S.mode==='spot'){ S.spotTable=+this.dataset.t; saveSession(); render(); drawRoute(); return; }
+      openPegs(+this.dataset.t);
+    };
     d.style.cursor='pointer';
     d.innerHTML='<span class="bar"'+(col&&d.className.indexOf('now')<0?' style="background:'+col+'"':'')+
       '></span><span class="n">'+t+'</span>';
@@ -797,7 +824,9 @@ function drawRoute(){
 function render(){
   var s=S.route[S.i];
   if(!s){ finish(); return; }
-  $('pos').textContent=(s.spot?'Spot '+(S.i+1):'Table '+s.t);
+  $('pos').textContent=s.spot
+    ? 'Spot '+(S.i+1)+(S.spotTable!=null?' · T'+S.spotTable:' · pick a table')
+    : 'Table '+s.t;
   $('depth').innerHTML=s.pos+'<span class="d">'+(s.depth==='reference'?'REF':'MID')+'</span>';
   var rm=RMAP[S.room]||{}, info=rm[String(s.t)]||['',''];
   $('strain').onclick=null;
@@ -1456,7 +1485,8 @@ function doCommit(r, meta){
   var row={
     date:new Date().toLocaleDateString('en-US'),
     time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
-    room:S.room, table:stop.t, position:stop.pos, depth:stop.depth,
+    room:S.room, table:(stop.spot && S.spotTable!=null)?S.spotTable:stop.t,
+    position:stop.pos, depth:stop.depth,
     strain:((RMAP[S.room]||{})[String(stop.t)]||['',''])[0],
     flags:((RMAP[S.room]||{})[String(stop.t)]||['',''])[1],
     hrs:(function(){var h=hoursSinceShot(S.room,null,stop.t); return h===null?'':h.toFixed(1);})(),
@@ -1515,6 +1545,18 @@ function doCommit(r, meta){
   else beep('ok');
   step('logged '+(stop.spot?'spot':'T'+stop.t+' '+stop.pos+' '+(stop.depth==='reference'?'ref':'mid'))+
     ' '+r.vwc.toFixed(1)+'%');
+  /* §6.7: a reference that lands low earns a mid-bag stab at the same
+     position, inserted now rather than routed in advance — the route cannot
+     know which references will come back dry. Skipped when the next stop is
+     already that mid, which is what profile mode routes. */
+  if(!stop.spot && S.mode==='sweep' && wantsMid(S.room,stop.depth,r.vwc)){
+    var nx=S.route[S.i+1];
+    var already=nx && nx.t===stop.t && nx.pos===stop.pos && nx.depth==='mid-bag';
+    if(!already){
+      S.route.splice(S.i+1,0,{t:stop.t,pos:stop.pos,depth:'mid-bag',auto:true});
+      toast('below '+midTrigger(S.room)+' — mid-bag stab at the same spot');
+    }
+  }
   advance(stop);
 }
 function advance(stop){
@@ -1577,7 +1619,11 @@ $('undo').onclick=function(){
   var r=S.rows.pop();
   if(S.i>0) S.i--;
   var extraStop=null;
-  if(S.route[S.i] && S.route[S.i].extra){ extraStop=S.route.splice(S.i,1)[0]; }
+  /* an adjacent-plant stop, or the conditional mid-bag the undone reference
+     called for (§6.7) — either way it was created by the row coming off */
+  if(S.route[S.i] && (S.route[S.i].extra || S.route[S.i].auto)){
+    extraStop=S.route.splice(S.i,1)[0];
+  }
   S.redo.push({row:r, extraStop:extraStop});
   /* A1.4: undoing the reading that raised an alarm takes the alarm with it —
      leaving the banner up made the operator dismiss it a second time. */
@@ -1606,7 +1652,9 @@ $('redo').onclick=function(){
   step('redone T'+r.table+' '+r.position+' '+r.vwc.toFixed(1)+'%');
 };
 $('note').onclick=function(){
-  var s=S.route[S.i], t=s?s.t:(S.rows.length?S.rows[S.rows.length-1].table:null);
+  var s=S.route[S.i];
+  var t=(S.mode==='spot' && S.spotTable!=null) ? S.spotTable
+        : (s?s.t:(S.rows.length?S.rows[S.rows.length-1].table:null));
   if(t==null||t==='?'){ toast('notes are per table'); return; }
   openPegs(t);
 };
