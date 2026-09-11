@@ -3,10 +3,23 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v36';
+var VER='v37';
+/* The floor is one number, and it lives in room config.
+   Everything that used to key off bag size now keys off this instead — the
+   feel bands, the mid-bag trigger, and whether a hand can find the floor at
+   all. Bag size still picks the starting value in the weekly file, but it
+   is a default the operator overrides per room, not an input to anything
+   downstream. The 1.25-gallon floor is expected to move once the field
+   capacity reads are in, and when it does nothing else has to be touched. */
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
+  var o=rcfg(rm);
+  if(o.floor!=null && o.floor!=='' && !isNaN(+o.floor)) return +o.floor;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
+}
+function floorIsSet(rm){
+  var o=rcfg(rm);
+  return !!(o.floor!=null && o.floor!=='' && !isNaN(+o.floor));
 }
 var FLOOR={2:22, 1.25:30};
 var PEGS=[
@@ -348,6 +361,70 @@ function hoursToWindow(rm, nowDate){
   var t=new Date(now); t.setHours(+p[0],+p[1],0,0);
   return (t-now)/3600000;
 }
+/* ===== the walk order (backlog §5.5) =====
+   Pre-irrigation readings are the ones that decide anything: they show
+   dryback depth. A reading taken after the shot only confirms it landed. So
+   the order to walk in is the order the windows shut, soonest first.
+
+   One exception, and it inverts the rule: a room whose shot structure just
+   changed wants a reading 1 to 2 hours AFTER its next P1, to confirm the
+   front still reaches the bottom of the bag. For that room the window is
+   the post-shot one, and getting there early is as wrong as getting to the
+   others late. */
+function roomWindow(rm, nowDate){
+  var now=nowDate||new Date();
+  var imp=(typeof getSched==='function')?(getSched()||{}):{};
+  var changed=!!(imp[rm] && imp[rm].changed);
+  if(changed){
+    var since=hoursSinceShot(rm, now);
+    if(since!=null){
+      if(since<1)  return {kind:'post', state:'early', hrs:1-since};
+      if(since<=2.5) return {kind:'post', state:'open', hrs:2.5-since};
+    }
+    var nx=hoursToNextShot(rm, now);
+    return {kind:'post', state:'waiting', hrs:(nx==null?null:nx+1)};
+  }
+  var left=hoursToWindow(rm, now);
+  if(left==null) return {kind:'pre', state:'open', hrs:null};
+  return {kind:'pre', state:left>0?'open':'closed', hrs:left};
+}
+/* Rooms still to read, in the order to walk them. Soonest deadline first;
+   a room whose window has already shut drops behind the ones that can still
+   be read properly, and a post-change room that is not due yet goes last
+   because walking it now would waste the trip. */
+function walkOrder(nowDate){
+  var now=nowDate||new Date();
+  return dayCoverage(now)
+    .filter(function(r){ return !r.swept || r.handOnly || r.postShotDue; })
+    .map(function(r){ r.window=roomWindow(r.room, now); return r; })
+    .sort(function(a,b){
+      var rank=function(r){
+        if(r.window.state==='open')    return 0;
+        if(r.window.state==='early')   return 1;
+        if(r.window.state==='closed')  return 2;
+        return 3;                                  /* waiting on a shot */
+      };
+      var ra=rank(a), rb=rank(b);
+      if(ra!==rb) return ra-rb;
+      var ha=(a.window.hrs==null?999:a.window.hrs), hb=(b.window.hrs==null?999:b.window.hrs);
+      if(ha!==hb) return ha-hb;
+      return a.room<b.room?-1:1;
+    });
+}
+/* Said at Start, when it can still change what he does. */
+function windowWarning(rm, nowDate){
+  var w=roomWindow(rm, nowDate);
+  if(w.kind==='post'){
+    if(w.state==='open') return '';
+    if(w.state==='early') return rm+' is waiting on a post-change read — it is due about '+
+      w.hrs.toFixed(1)+'h from now, 1 to 2h after the shot';
+    return rm+' is waiting on a post-change read, after its next shot'+
+      (w.hrs!=null?' — about '+w.hrs.toFixed(1)+'h from now':'');
+  }
+  if(w.state==='closed') return rm+'\u2019s pre-irrigation window shut '+
+    Math.abs(w.hrs).toFixed(1)+'h ago — this reads dryback after the shot, not before it';
+  return '';
+}
 function dayCoverage(nowDate){
   var now=nowDate||new Date(), t0=new Date(now); t0.setHours(0,0,0,0);
   var hist=(typeof getHist==='function')?getHist():[];
@@ -359,7 +436,8 @@ function dayCoverage(nowDate){
     if(!today[x.room] || ts>(today[x.room].ts||0)) today[x.room]=x;
   });
   var imp=(typeof getSched==='function')?(getSched()||{}):{};
-  var rows=Object.keys(ROOMS).filter(function(k){ return !ROOMS[k].kind; }).map(function(rm){
+  var rows=Object.keys(ROOMS).filter(function(k){
+    return !ROOMS[k].kind && roomActive(k); }).map(function(rm){
     var x=today[rm]||null, cfg=ROOMS[rm];
     var cov=(x && x.swept!=null && cfg.t) ? Math.round(100*x.swept/cfg.t) : null;
     var rec=imp[rm];
@@ -392,6 +470,19 @@ function tankFor(rm){
   var c=rcfg(rm);
   if(c.tank) return c.tank;
   return (FEEDEC[rm]===0) ? 'water' : '';
+}
+/* Room state (spec §5.7, and A3 went harvest -> empty -> move-in in 48
+   hours this week with no way to say so). Only an active room is on the
+   sweep rotation; the rest stay visible but out of the count, because a
+   room missing from a list reads as an oversight. */
+var ROOM_STATES=['active','harvest','empty','movein'];
+function roomState(rm){
+  var c=rcfg(rm);
+  return (c.state && ROOM_STATES.indexOf(c.state)>=0) ? c.state : 'active';
+}
+function roomActive(rm){ return roomState(rm)==='active'; }
+function activeRooms(){
+  return Object.keys(ROOMS).filter(function(k){ return !ROOMS[k].kind && roomActive(k); });
 }
 function plantsFor(rm){
   var c=rcfg(rm);
@@ -837,12 +928,17 @@ function coverageLine(){
    Detection is the absence of probe frames, not an operator declaration:
    there is no hand-feel entry mode to opt into, and a sweep that lost its
    probe partway is exactly as blind as one that never had it. */
-var NO_PROBE_FLAG='NO_PROBE_1.25GAL';
+/* The hand goes blind below about 25% VWC. That is a fact about fingers and
+   peat, not about bag size, so the test is whether this room's floor sits
+   above it — a room whose floor drops to 24 can be checked by hand again
+   without anyone editing this rule. */
+var HAND_LIMIT=25;
+var NO_PROBE_FLAG='NO_PROBE_BLIND_FLOOR';
 function probeFrames(){ return S.probeFrames||0; }
 function handOnly(){ return probeFrames()===0; }
 function handOnlyBlind(){
-  var cfg=ROOMS[S.room];
-  return handOnly() && !!cfg && cfg.bag<2;
+  if(!S.room || !ROOMS[S.room]) return false;
+  return handOnly() && floorFor(S.room) > HAND_LIMIT;
 }
 function sweepFlags(){
   return handOnlyBlind() ? [NO_PROBE_FLAG] : [];

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v36</title>
+<title>Stab v37</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -359,6 +359,8 @@ table.sched .sh{color:var(--live)}
 .dayr.done{border-left-color:var(--ok)}
 .dayr.hand{border-left-color:var(--warn)}
 .dayr.todo{border-left-color:var(--line)}
+.dayr.wk b{color:var(--live)}
+.dayr.shut{opacity:.62}
 .dayr b{font-size:16px;margin-right:8px}
 .dayr .dw{font-family:var(--mono);font-size:11px;color:var(--dim)}
 .dayr .dch{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);margin-top:4px}
@@ -398,6 +400,10 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 #cfgbtn{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);
   border-radius:9px;padding:11px;font-family:var(--mono);font-size:12px;margin:0 0 4px}
 #cfgbtn.stale{border-style:solid;border-color:var(--warn);color:var(--warn)}
+#cfg_state button.rst{font-size:15px}
+#cfg_floornote{margin:6px 0 0}
+.rm.off{opacity:.42}
+.rm.off .cov{background:var(--line)!important}
 
 /* ---------- settings, behind a long-press on the version (backlog §4) ---------- */
 #setsheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
@@ -465,7 +471,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v36</b></div>
+  <div class="brand">Substrate sweep · <b>v37</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -597,7 +603,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v36</div>
+  <div class="v">stab v37</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -714,17 +720,27 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     Set at move-in. Anything left blank falls back to the weekly file, and the
     screen says which is which.</div>
 
+  <div class="lbl">State</div>
+  <div id="cfg_state" class="two four">
+    <button class="rst on" data-st="active">Active<span class="sub">in flower, swept</span></button>
+    <button class="rst" data-st="harvest">Harvest<span class="sub">coming down</span></button>
+    <button class="rst" data-st="empty">Empty<span class="sub">stripped</span></button>
+    <button class="rst" data-st="movein">Move-in<span class="sub">filling — confirm this screen</span></button>
+  </div>
+
   <div class="lbl">Room</div>
   <div class="cfg2">
     <div><label>flower start</label><input id="cfg_fs" placeholder="YYYY-MM-DD"></div>
     <div><label>bag gal</label>
       <select id="cfg_bag2"><option value="2">2</option><option value="1.25">1.25</option></select></div>
+    <div><label>floor % VWC</label><input id="cfg_floor" inputmode="decimal" placeholder="—"></div>
     <div><label>plants/table</label><input id="cfg_plants" inputmode="numeric" placeholder="—"></div>
     <div><label>tank</label>
       <select id="cfg_tank"><option value="">—</option><option value="A">A</option>
         <option value="B">B</option><option value="C">C</option>
         <option value="water">water</option></select></div>
   </div>
+  <div id="cfg_floornote" class="tiny"></div>
   <div id="cfg_dof" class="tiny"></div>
 
   <div class="lbl">Tables</div>
@@ -778,8 +794,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=36"></script>
-<script src="pure.js?v=36"></script>
-<script src="app.js?v=36"></script>
+<script src="rooms.js?v=37"></script>
+<script src="pure.js?v=37"></script>
+<script src="app.js?v=37"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v31** — v30 and v31 shipped 9/10.
+**Live on main: v36** — v30–v34 shipped 9/10, v35–v36 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -35,15 +35,17 @@ interrupted by a reload. This is the list to execute against.
 | v36 | the flush list assembles itself | backlog §6.2 |
 | v36 | day coverage screen — the 3 PM question | backlog §6.3 |
 | v36 | a changed schedule earns a post-change read | backlog §6.4 |
+| v37 | the floor is one number, in room config | field note 9/11 |
+| v37 | room state — active / harvest / empty / move-in | spec §5.7 |
+| v37 | walk order by window, and a warning at Start | backlog §5.5 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
-10. §5.5 sweep-window room ordering (§5.3 display shipped in v27)
 11. §6.5 rename tool
 12. §5.6 Growlink device log
 
-Also open, from §5.7: the room state toggle (active / harvest / empty) and
-greying the median line when the prior sweep is over four days old.
+Also open, from §5.7: greying the median line when the prior sweep is over
+four days old.
 
 Items through 6 are the second-operator gate.
 
@@ -583,3 +585,66 @@ sweep outside that window does not clear it, and neither does one with no
 probe frames.
 
 A first import is not a change.
+
+### 22. The floor is one number now → v37
+
+Field note, 9/11: the 1.25-gallon floor may move after today's field capacity
+reads, so nothing downstream may derive itself from bag size.
+
+`floorFor()` reads room config first. Bag size still supplies the starting
+value out of the weekly file, but it is a default the operator overrides per
+room and it is an input to nothing else. Three things follow the floor and
+none of them know what a bag is:
+
+- the feel bands, already offsets from the floor since v32
+- the mid-bag trigger, `max(25, floor)`
+- **whether a hand can find the floor at all** — this used to test
+  `bag < 2`, which is the wrong question. The hand goes blind below about
+  25% VWC; that is a fact about fingers and peat. The test is now whether
+  the room's floor sits above 25, so a room whose floor drops to 24 can be
+  checked by hand again and nobody edits a rule. The export flag is renamed
+  `NO_PROBE_BLIND_FLOOR` for the same reason — it was called
+  `NO_PROBE_1.25GAL`, which bakes in the thing that is about to change.
+
+The room setup screen has a floor field that shows where the feel words would
+break before you save: at 24 it prints `20 / 24 / 28 / 32 · mid-bag stab
+under 25 · bag feel can reach it`. Change the number, see what moves.
+
+### 23. Room state → v37
+
+A3 went harvest → empty → move-in in 48 hours this week and the app had no
+way to say so. Four states on the room setup screen: active, harvest, empty,
+move-in. Only active rooms are on the rotation — they are what the weekly
+denominator counts and what the day screen asks for.
+
+**A room off the rotation stays on the grid, greyed and labelled.** A room
+missing from a list reads as an oversight; a room that says `empty` reads as
+a decision.
+
+Move-in is its own state rather than a flavour of empty because it is the
+moment room setup needs confirming, and its tile says so.
+
+### 24. The walk order → v37
+
+Backlog §5.5. Pre-irrigation readings are the ones that decide anything —
+they show dryback depth. A reading after the shot only confirms it landed. So
+the order to walk is the order the windows shut: AM rooms 11:00, PM 13:15,
+A7 09:15, soonest first.
+
+**The exception inverts the rule.** A room whose shot structure just changed
+wants a reading 1 to 2 hours *after* its next P1, and for that room arriving
+early is as wrong as arriving late. So a post-change room that is due now
+leads the walk, and one that is not due yet drops to the back — walking it
+early would waste the trip.
+
+A room whose window has already shut falls behind the rooms that can still be
+read properly, rather than disappearing.
+
+The warning lands at Start, where it can still change what he does, not on
+the done screen where it would only be an excuse for the numbers.
+
+**I did not re-sort the room grid**, which is what §5.5 literally asks. The
+grid is laid out by wing because that is how the rooms are laid out on the
+floor, and re-ordering it would cost more in navigation than it buys. The
+sequence lives at the top of the day screen instead — which is where the
+field note pointed anyway.

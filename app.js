@@ -489,7 +489,7 @@ function histTs(h){
     }
   });
   var wr=Object.keys(wkRooms).length;
-  var nRooms=Object.keys(ROOMS).filter(function(k){return !ROOMS[k].kind;}).length;
+  var nRooms=activeRooms().length;
   $('weekly').textContent=wr?('this week '+wr+'/'+nRooms+' rooms · '+wkN+' stabs'):'no sweeps logged this week';
 
   /* rooms grid. A test fixture (ROOMS[k].kind) belongs to no wing and gets
@@ -507,17 +507,28 @@ function histTs(h){
        own badge — a mark reads faster than a shade while walking. */
     var cls=(days===null)?'':(days===0?'t':(days<=3?'g':(days<=7?'a':'r')));
     /* no coverage bar on a fixture — it is not on anybody's rotation */
-    var sub=cfg.kind?(k+' · '+cfg.kind):(cfg.bag+' gal · '+age);
+    var st=roomState(k), off=(st!=='active');
+    var sub=cfg.kind?(k+' · '+cfg.kind)
+           :off?(st==='movein'?'move-in · confirm room setup':st)
+           :(cfg.bag+' gal · '+age);
     if(blind[k]) sub=cfg.bag+' gal · hand-only';
     /* §6.2: an open fault is a reason to walk into the room differently, so
        it belongs on the tile he reads before he walks, not only in the brief */
     var nf=flagCount(k);
     if(nf) sub+=' · '+nf+' flag'+(nf>1?'s':'');
-    b.innerHTML=k+(blind[k]?'<span class="tb hb">hand</span>'
-                 :(nf?'<span class="tb fb">'+nf+'</span>'
-                 :(days===0&&!cfg.kind?'<span class="tb">today</span>':'')))+
+    if(off) b.className+=' off';
+    /* One badge, and these are in priority order: what is true of the room
+       beats what is true of its last sweep. A four-deep ternary was doing
+       this and had stopped being readable. */
+    var badge='';
+    if(off)             badge='<span class="tb hb">'+(st==='movein'?'move-in':st)+'</span>';
+    else if(blind[k])   badge='<span class="tb hb">hand</span>';
+    else if(nf)         badge='<span class="tb fb">'+nf+'</span>';
+    else if(days===0)   badge='<span class="tb">today</span>';
+    var bar=off?'':(blind[k]?'r':cls);
+    b.innerHTML=k+badge+
       '<span class="sub">'+sub+'</span>'+
-      '<span class="cov '+(cfg.kind?'':(blind[k]?'r':cls))+'"></span>';
+      '<span class="cov '+bar+'"></span>';
     return b;
   }
   function roomSection(label,keys){
@@ -765,6 +776,12 @@ $('startbtn').onclick=function(){
   if(!S.room) return;
   if(S.mode==='triage' && !(S.triage&&S.triage.length)){ toast('pick the tables to triage first'); return; }
   applyRoomCfg();
+  /* §5.5: said here, where it can still change what he does — not on the
+     done screen, where it is only an excuse for the numbers. */
+  if(S.mode==='sweep'){
+    var ww=windowWarning(S.room);
+    if(ww) setTimeout(function(){ toast(ww); }, 500);
+  }
   S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
   S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false;
@@ -2044,7 +2061,8 @@ function finish(){
     }
   }
   if(handOnlyBlind()) html+='<br><span class="low">'+NO_PROBE_FLAG+
-    ' — no probe reading in a 1.25 gal room. Bag feel cannot find a bag below the 30 floor.</span>';
+    ' — no probe reading, and this room\'s floor is '+floorFor(S.room)+
+    '. The hand goes blind below about '+HAND_LIMIT+', so bag feel cannot find a table under it.</span>';
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
@@ -2435,6 +2453,29 @@ function openDay(){
   $('daysub').textContent=done+' of '+rows.length+' rooms on the probe'+
     (hand?' · '+hand+' hand-only':'')+
     ' · '+rows.filter(function(r){ return r.postShotDue; }).length+' waiting on a post-change read';
+  /* §5.5: the sequence to walk, which is what the 3 PM question is really
+     asking. The wing sections below stay, because that is how the rooms are
+     laid out on the floor and he still navigates by them. */
+  var wo=walkOrder();
+  if(wo.length){
+    h+='<div class="lbl">Walk order · soonest window first</div><div class="dayg">';
+    wo.forEach(function(r,i){
+      var w=r.window, tag='';
+      if(w.kind==='post') tag=w.state==='open'
+        ? '<span class="dtag chg">post-change read, due now</span>'
+        : '<span class="dtag chg">post-change read · '+(w.hrs!=null?'in '+w.hrs.toFixed(1)+'h':'after the next shot')+'</span>';
+      else if(w.state==='closed') tag='<span class="dtag late">window shut '+Math.abs(w.hrs).toFixed(1)+'h ago</span>';
+      else if(w.hrs!=null) tag='<span class="dtag win">'+w.hrs.toFixed(1)+'h left</span>';
+      h+='<button class="dayr wk '+(w.state==='open'?'todo':'shut')+'" data-r="'+r.room+'">'+
+         '<b>'+(i+1)+'. '+r.room+'</b>'+
+         '<span class="dw">'+(r.handOnly?'hand-only so far · needs the probe'
+            :r.swept?'read, waiting on the change':'not read')+'</span>'+tag+'</button>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="lbl">Walk order</div><div class="dayg">'+
+       '<div class="dayr done"><b>nothing left</b><span class="dw">every active room has been read on the probe today</span></div></div>';
+  }
   ['AM','PM','other'].forEach(function(wing){
     var g=rows.filter(function(r){ return r.wing===wing; });
     if(!g.length) return;
@@ -2479,8 +2520,20 @@ function openRoomSetup(){
   $('cfg_fs').value=c.flowerStart||'';
   $('cfg_fs').placeholder=FLOWER_START[S.room]||'YYYY-MM-DD';
   $('cfg_bag2').value=String(c.bag||ROOMS[S.room].bag);
+  $('cfg_floor').value=(floorIsSet(S.room)?c.floor:'');
   $('cfg_plants').value=(c.plants!=null?c.plants:'');
   $('cfg_tank').value=c.tank||'';
+  var st=roomState(S.room);
+  [].forEach.call(document.querySelectorAll('#cfg_state .rst'),function(b){
+    b.classList.toggle('on', b.dataset.st===st);
+    b.onclick=function(){
+      [].forEach.call(document.querySelectorAll('#cfg_state .rst'),function(x){x.classList.remove('on');});
+      b.classList.add('on');
+    };
+  });
+  $('cfg_floor').oninput=drawCfgFloor;
+  $('cfg_bag2').onchange=drawCfgFloor;
+  drawCfgFloor();
   drawCfgDof();
   var h='<table class="cfgt"><tr><th>T</th><th>strain</th><th>drip</th><th>under</th></tr>';
   for(var t=1;t<=ROOMS[S.room].t;t++){
@@ -2503,6 +2556,23 @@ function openRoomSetup(){
   $('cfgsheet').classList.remove('hide');
 }
 function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+/* The floor is one number and everything downstream reads it: the feel
+   words, the mid-bag trigger, below-floor counts, and whether a hand can
+   find the floor at all. Bag size only supplies the starting value. */
+function drawCfgFloor(){
+  var el=$('cfg_floornote'); if(!el) return;
+  var bag=parseFloat($('cfg_bag2').value)||2;
+  var dflt=(FLOOR[bag]!=null?FLOOR[bag]:22);
+  $('cfg_floor').placeholder=String(dflt);
+  var v=($('cfg_floor').value||'').trim();
+  var f=v===''?dflt:parseFloat(v);
+  if(isNaN(f)||f<=0||f>60){ el.innerHTML='<span class="low">a floor wants a number between 1 and 60</span>'; return; }
+  el.innerHTML='floor <b>'+f+'%</b>'+(v===''?' · from the weekly file':'')+
+    ' · feel words break at '+FEEL_OFFSETS.map(function(o){ return f+o[0]; }).slice(0,4).join(' / ')+
+    ' · mid-bag stab under '+Math.max(25,f)+
+    (f>HAND_LIMIT?' · <span class="low">too high for bag feel — this room needs the probe</span>'
+               :' · bag feel can reach it');
+}
 function drawCfgDof(){
   var v=($('cfg_fs').value||'').trim() || FLOWER_START[S.room] || '';
   var el=$('cfg_dof');
@@ -2522,6 +2592,15 @@ function saveRoomSetup(){
   if(fs && !/^\d{4}-\d{2}-\d{2}$/.test(fs)){ toast('flower start wants YYYY-MM-DD'); return false; }
   if(fs) c.flowerStart=fs; else delete c.flowerStart;
   c.bag=parseFloat($('cfg_bag2').value)||ROOMS[S.room].bag;
+  var fv=($('cfg_floor').value||'').trim();
+  if(fv===''){ delete c.floor; }
+  else{
+    var fn=parseFloat(fv);
+    if(isNaN(fn)||fn<=0||fn>60){ toast('floor wants a number between 1 and 60'); return false; }
+    c.floor=fn;
+  }
+  var stb=document.querySelector('#cfg_state .rst.on');
+  c.state=stb?stb.dataset.st:'active';
   var pl=parseInt($('cfg_plants').value,10);
   if(!isNaN(pl) && pl>0) c.plants=pl; else delete c.plants;
   var tk=$('cfg_tank').value;

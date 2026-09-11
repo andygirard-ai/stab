@@ -347,6 +347,143 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the floor is one number, and it lives in config ============
+  // Field note 9/11: the 1.25-gallon floor may move after today's field
+  // capacity reads. Nothing downstream may derive itself from bag size.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.floorFor('C4')===30,'C4 starts on the weekly file\'s 1.25-gallon floor: '+w.floorFor('C4'));
+    ok(!w.floorIsSet('C4'),'…which is a default, not a setting');
+    w.saveRoomCfg('C4',{floor:26, savedAt:Date.now()});
+    ok(w.floorFor('C4')===26,'one number in config moves it: '+w.floorFor('C4'));
+    ok(w.floorIsSet('C4'),'and now it is set');
+    // everything downstream follows without being touched
+    ok(w.feelWord(25,w.floorFor('C4'))==='dry ok' && w.feelWord(21,w.floorFor('C4'))==='dry',
+       'the feel bands move with it — dry ok at 25, dry at 21, against a floor of 26');
+    ok(w.feelWord(27,w.floorFor('C4'))==='ok','27 becomes ok at a floor of 26: '+w.feelWord(27,w.floorFor('C4')));
+    ok(w.midTrigger('C4')===26,'wait — the mid trigger is max(25, floor): '+w.midTrigger('C4'));
+    w.saveRoomCfg('C4',{floor:23, savedAt:Date.now()});
+    ok(w.midTrigger('C4')===25,'…so below 25 the trigger holds at 25: '+w.midTrigger('C4'));
+    // and the hand-blind rule is about fingers, not bag size
+    w.S.room='C4'; w.S.probeFrames=0;
+    w.saveRoomCfg('C4',{floor:30, savedAt:Date.now()});
+    ok(w.handOnlyBlind(),'a floor of 30 is out of reach of the hand');
+    w.saveRoomCfg('C4',{floor:24, savedAt:Date.now()});
+    ok(!w.handOnlyBlind(),'a floor of 24 is not — and nobody had to edit the rule');
+    ok(w.ROOMS.C4.bag===1.25,'the bag size never changed through any of that: '+w.ROOMS.C4.bag);
+    w.close(); }
+
+  // the floor is editable on the room setup screen and says what it changes
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="C4"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    ok(d.getElementById('cfg_floor').value==='','unset until somebody sets it');
+    ok(d.getElementById('cfg_floor').placeholder==='30','with the weekly file shown as the placeholder');
+    ok(/too high for bag feel/.test(d.getElementById('cfg_floornote').textContent),
+       'and it says a floor of 30 needs the probe: '+d.getElementById('cfg_floornote').textContent);
+    d.getElementById('cfg_floor').value='24';
+    d.getElementById('cfg_floor').dispatchEvent(new w.Event('input',{bubbles:true}));
+    ok(/bag feel can reach it/.test(d.getElementById('cfg_floornote').textContent),
+       'at 24 it can be checked by hand: '+d.getElementById('cfg_floornote').textContent);
+    ok(/feel words break at 20 \/ 24 \/ 28 \/ 32/.test(d.getElementById('cfg_floornote').textContent),
+       'and it shows where the words break, so the change is visible before saving');
+    d.getElementById('cfgsave').click(); await sleep(30);
+    ok(w.floorFor('C4')===24,'saved: '+w.floorFor('C4'));
+    d.getElementById('cfg_floor').value='0';
+    d.getElementById('cfgbtn').click(); await sleep(20);
+    d.getElementById('cfg_floor').value='99';
+    ok(w.saveRoomSetup()===false,'a floor of 99 is refused');
+    ok(w.floorFor('C4')===24,'…and the stored one is untouched: '+w.floorFor('C4'));
+    w.close(); }
+
+  // ============ §5.7 room state ============
+  // A3 went harvest -> empty -> move-in in 48 hours this week and the app
+  // had no way to say so.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.roomState('A3')==='active','a room with nothing said about it is active');
+    ok(w.activeRooms().length===19,'all nineteen on the rotation: '+w.activeRooms().length);
+    w.saveRoomCfg('A3',{state:'harvest', savedAt:Date.now()});
+    ok(w.roomState('A3')==='harvest' && !w.roomActive('A3'),'harvest takes it off the rotation');
+    ok(w.activeRooms().length===18,'eighteen now: '+w.activeRooms().length);
+    ok(w.dayCoverage().filter(r=>r.room==='A3').length===0,'and the day screen stops asking for it');
+    w.saveRoomCfg('A3',{state:'movein', savedAt:Date.now()});
+    ok(!w.roomActive('A3'),'so does move-in — the room is filling, not producing');
+    w.saveRoomCfg('A3',{state:'active', savedAt:Date.now()});
+    ok(w.activeRooms().length===19,'and it comes back: '+w.activeRooms().length);
+    w.close(); }
+
+  { const ts=Date.now()-3600e3;
+    const {w,d,errors}=boot({
+      'stab_roomcfg':JSON.stringify({A3:{state:'empty',savedAt:Date.now()}}),
+      'stab_hist':JSON.stringify({v:1,items:[{room:'B1',ts:ts,when:new Date(ts).toLocaleString('en-US'),
+        n:33,mode:'sweep',med:32,swept:11}]})});
+    await sleep(50);
+    const tile=d.querySelector('#rooms .rm[data-room="A3"]');
+    ok(!!tile,'an empty room is still on the grid — a room missing from a list reads as an oversight');
+    ok(tile.classList.contains('off'),'…greyed');
+    ok(tile.querySelector('.tb').textContent==='empty','…and labelled: '+tile.querySelector('.tb').textContent);
+    ok(/1\/18 rooms/.test(d.getElementById('weekly').textContent),
+       'the weekly denominator follows the rotation: '+d.getElementById('weekly').textContent);
+    w.close(); }
+
+  // ============ §5.5 the walk order ============
+  // Pre-irrigation readings are the ones that decide anything. The order to
+  // walk is the order the windows shut.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const at=new Date(); at.setHours(8,0,0,0);
+    ok(w.roomWindow('B1',at).kind==='pre','an ordinary room is waiting on its pre-irrigation window');
+    ok(Math.abs(w.roomWindow('B1',at).hrs-3)<0.05,'B1 shuts at 11:00, so three hours left at 8: '+
+       w.roomWindow('B1',at).hrs.toFixed(1));
+    ok(Math.abs(w.roomWindow('A7',at).hrs-1.25)<0.05,'A7 shuts at 09:15: '+w.roomWindow('A7',at).hrs.toFixed(1));
+    ok(w.roomWindow('C4',at).hrs>5,'a PM room has all morning: '+w.roomWindow('C4',at).hrs.toFixed(1));
+    const order=w.walkOrder(at).map(r=>r.room);
+    ok(order.indexOf('A7')<order.indexOf('B1'),'A7 before B1 — its window shuts first');
+    ok(order.indexOf('B1')<order.indexOf('C4'),'B1 before C4 — AM before PM');
+    // after 11:00 the AM rooms have missed their window and drop behind
+    const late=new Date(); late.setHours(12,0,0,0);
+    const lateOrder=w.walkOrder(late).map(r=>r.room);
+    ok(w.roomWindow('B1',late).state==='closed','B1 is shut at noon');
+    ok(lateOrder.indexOf('C4')<lateOrder.indexOf('B1'),
+       'so a PM room that can still be read properly goes first: '+lateOrder.slice(0,4).join(' · '));
+    ok(/window shut/.test(w.windowWarning('B1',late)),
+       'and starting it says so: '+w.windowWarning('B1',late));
+    ok(w.windowWarning('C4',late)==='','while a room inside its window says nothing');
+    w.close(); }
+
+  // the post-change exception inverts the rule
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('B5',{savedAt:Date.now(), room:'B5', tables:[
+      {table:1, room:'B5', P1:{start:'01:15', duration:284, interval:7200, frequency:3}, P2:null, flush:null}]});
+    const a=w.getSched(); a.B5.changed={at:Date.now(), diffs:['T1 x2→x3']};
+    w.localStorage.setItem('stab_sched',JSON.stringify(a));
+    // 06:00 is 45 minutes past the 05:15 last shot — too early for the read
+    const early=new Date(); early.setHours(6,0,0,0);
+    ok(w.roomWindow('B5',early).kind==='post','a changed room waits on a post-shot read, not a pre one');
+    ok(w.roomWindow('B5',early).state==='early','and at 45 minutes it is early');
+    ok(/due about 0.3h from now/.test(w.windowWarning('B5',early)),
+       'starting it now says how long to wait: '+w.windowWarning('B5',early));
+    const due=new Date(); due.setHours(6,45,0,0);
+    ok(w.roomWindow('B5',due).state==='open','at 1.5h it is due');
+    ok(w.windowWarning('B5',due)==='','and starting it says nothing');
+    const order=w.walkOrder(due).map(r=>r.room);
+    ok(order[0]==='B5','a room due now leads the walk: '+order.slice(0,3).join(' · '));
+    const tooLate=new Date(); tooLate.setHours(9,0,0,0);
+    ok(w.roomWindow('B5',tooLate).state==='waiting','past the window it waits for the next shot');
+    ok(w.walkOrder(tooLate).map(r=>r.room).slice(-1)[0]==='B5',
+       'and drops to the back — walking it now would waste the trip');
+    w.close(); }
+
+  // the screen itself
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.getElementById('weekly').click(); await sleep(30);
+    ok(/Walk order/.test(d.getElementById('daybody').textContent),'the day screen leads with the walk order');
+    const first=d.querySelector('#daybody .dayr.wk');
+    ok(/^1\. /.test(first.querySelector('b').textContent),'numbered: '+first.querySelector('b').textContent);
+    first.click(); await sleep(20);
+    ok(w.S.room===first.dataset.r,'and tapping one picks that room');
+    ok(errors.length===0,'no runtime errors (§5.5): '+errors.join('|'));
+    w.close(); }
+
   // ============ §6.2 table flags that persist ============
   // C5 T5's header elbow is leaking. A5 T3 had two drippers repaired. B3
   // T4-T7 centers need a third dripper. None of it had anywhere to live
@@ -713,17 +850,17 @@ function rowsFor(w,room,spec){
     ok(w.handOnlyBlind(),'C4 is 1.25 gal, so with no probe it is blind');
     ok(/hand-only · cannot detect below floor/.test(w.coverageLine()),
        'the coverage line says so in words: "'+w.coverageLine()+'"');
-    ok(w.sweepFlags().join()==='NO_PROBE_1.25GAL','and the export carries the flag');
+    ok(w.sweepFlags().join()==='NO_PROBE_BLIND_FLOOR','and the export carries the flag');
     d.getElementById('exit').click(); await sleep(60);
     const csv=d.getElementById('csv').value.split('\n');
     const sfc=csv[0].split(',').indexOf('Sweep flags');
     ok(sfc>=0,'CSV gains a sweep-flags column');
     // a hand-only sweep logs nothing, so without a record row the whole walk
     // exports as a bare header and reads as "nothing happened"
-    ok(csv.length>1 && csv[1].split(',')[sfc]==='NO_PROBE_1.25GAL',
+    ok(csv.length>1 && csv[1].split(',')[sfc]==='NO_PROBE_BLIND_FLOOR',
        'a sweep with no readings still exports one row carrying the flag: '+csv[1].split(',')[sfc]);
     ok(csv[1].split(',')[2]==='C4','…naming the room it was');
-    ok(/NO_PROBE_1.25GAL/.test(d.getElementById('stats').textContent),
+    ok(/NO_PROBE_BLIND_FLOOR/.test(d.getElementById('stats').textContent),
        'and the done screen says it outright');
     ok(errors.length===0,'no runtime errors (§3): '+errors.join('|')); }
 
