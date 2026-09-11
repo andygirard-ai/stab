@@ -178,7 +178,7 @@ function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
 var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
-  dev:null, chr:null, svc:null, wchr:null,
+  dev:null, chr:null, svc:null, wchr:null, batt:null, battWait:0, battWarned:false,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
@@ -1301,6 +1301,51 @@ emitUnparsed=function(tag,txt){
    like a probe that had gone quiet — misses climbing, nothing on screen, no
    reason given. The held banner is right for all three: each of them means
    stop and fix something, not stab again. */
+/* The reply to "get -batt", which only counts when one was asked for. A bare
+   integer on this UART is unambiguous in practice, but "unambiguous in
+   practice" is how a wrong number gets into a CSV, so it is tied to a
+   request that is still outstanding. */
+var BATT_WARN=20, BATT_CRIT=10, BATT_WAIT=6000;
+emitBattery=function(pr){
+  if(!S.battWait || Date.now()-S.battWait>BATT_WAIT){
+    step('battery reply with nothing pending — ignored ('+pr.batt+')');
+    return;
+  }
+  S.battWait=0;
+  if(pr.batt<0 || pr.batt>100){
+    step('battery out of range — ignored ('+pr.batt+')');
+    return;
+  }
+  S.batt=pr.batt;
+  step('battery '+S.batt+'%');
+  battPaint(); battWarn();
+};
+function requestBattery(){
+  if(!S.wchr) return Promise.resolve();
+  var d=new Uint8Array(frameBytes(BATT_CMD));
+  S.battWait=Date.now();
+  var acked=!!(S.wchr.properties && S.wchr.properties.write);
+  return (acked?S.wchr.writeValue(d):S.wchr.writeValueWithoutResponse(d))
+    .catch(function(){ S.battWait=0; });
+}
+function battPaint(){
+  var b=$('batt'); if(!b) return;
+  if(S.batt==null){ b.className=''; b.textContent=''; return; }
+  /* shown whenever it is known: a pill that appears only near empty means a
+     healthy probe and a probe that never answered look identical */
+  b.className=S.batt<BATT_CRIT?'red':(S.batt<BATT_WARN?'amber':'ok');
+  b.textContent='batt '+S.batt+'%';
+}
+function battWarn(){
+  if(S.batt==null) return;
+  var low=S.batt<BATT_WARN;
+  if(low && !S.battWarned){
+    S.battWarned=true;
+    beep('supplyLow');
+    toast('probe battery '+S.batt+'% — bring two AA cells');
+  }
+  if(!low && S.batt>BATT_WARN+5) S.battWarned=false;
+}
 emitSensorError=function(pr){
   DBG.sensorErr=(DBG.sensorErr||0)+1;
   DBG.lastSensorErr=pr.err;
@@ -1366,7 +1411,7 @@ function onPacket(e){
   rxBytes(bytes);
 }
 function onDrop(){
-  S.chr=null; S.wchr=null; S.svc=null; S.batC=null;
+  S.chr=null; S.wchr=null; S.svc=null; S.battWait=0; S.batC=null;
   S.verifying=false; S.awaiting=false; clearTimeout(S.rt);
   $('dot').className='dot'; $('statxt').textContent='dropped';
   if(S.cal && CAL.released){ calPaint(); }
@@ -1518,6 +1563,10 @@ function huntFallback(){
 }
 function ready(){
   setBig();
+  /* Once per connect. Two AA alkalines do not move in an afternoon, and the
+     request rides the same UART the sweep uses, so asking more often would
+     only compete with the poll for the write characteristic. */
+  requestBattery();
   if(S.auto){ A.state='air'; A.buf=[]; }
   if(S.cal && CAL.stage==='saved'){ CAL.stage='live'; calPaint(); }
   step('ready');
@@ -1740,7 +1789,7 @@ function doCommit(r, meta){
     tries:S.auto?(A.samples||1):(S.tries||0),
     unstable:!!meta.unstable,
     implaus:isImplausible(S.room, r.vwc, !!S.postFlush),
-    lat:(S.lastLat==null?'':S.lastLat),
+    batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
     manualCommit:!!meta.manual,
     /* 1.4: a live per-stab alarm, distinct from the CHECK "no feed" rule —
        this fires on ONE reading, not two, because it means "delivery
@@ -2341,7 +2390,7 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
   var swx=sweepFlags();
   if(S.postFlush) swx.push('POST_FLUSH');
   if(DBG.sensorErr) swx.push('SENSOR_ERR:'+DBG.lastSensorErr+'x'+DBG.sensorErr);
@@ -2350,7 +2399,7 @@ function finish(){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
-      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
+      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
       (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
       tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):''),
       csvq(flagLine(S.room,r.table))].join(',');
@@ -2426,6 +2475,7 @@ function finish(){
   $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
     ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
     ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
+    ' · batt '+(S.batt==null?'no reply':S.batt+'%')+
     (DBG.sensorErr?' · sensor errors '+DBG.sensorErr+' (last '+DBG.lastSensorErr+')':'')+
     (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
   showHist();

@@ -1,0 +1,12 @@
+battery capture · 9/11/2026, 5:03:17 PM
+connecting…  (wake the probe: press its button, LED blinks)
+device: ZSC08328
+notify: DECA0003 subscribed by connect, before anything was sent
+
+framed "get -batt"  — the same framing sdicmd uses
+  sent  7C 61 00 0F 67 65 74 20 2D 62 61 74 74 BE 59
+  [1] +0ms  10 bytes
+      hex   7C 61 00 0A 37 37 0A 00 3E 54
+      ascii |a..77..>T
+
+— end of capture —

@@ -355,6 +355,94 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the battery packet, decoded ============
+  // Captured 9/11 from ZSC08328 (test/batt_capture_2026-09-11.txt):
+  //   sent  7C 61 00 0F 67 65 74 20 2D 62 61 74 74 BE 59
+  //   got   7C 61 00 0A 37 37 0A 00 3E 54     payload "77\n\0"
+  // The ordinary frame carrying an ASCII decimal, a newline and a NUL.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const f=[0x7C,0x61,0x00,0x0A,0x37,0x37,0x0A,0x00,0x3E,0x54];
+    ok(((f[2]<<8)|f[3])===f.length,'the length field covers the whole frame: '+((f[2]<<8)|f[3]));
+    ok(w.crc16(f.slice(0,f.length-2))===((f[f.length-2]<<8)|f[f.length-1]),
+       'the CRC checks out, so it is the same framing sdicmd uses');
+    const pay=f.slice(4,f.length-2).map(b=>String.fromCharCode(b)).join('');
+    ok(pay==='77\n\u0000','payload is an ASCII decimal, newline, NUL: '+JSON.stringify(pay));
+    // and that is what the parser reads
+    const pr=w.parseText(pay.replace(/[^\x20-\x7E]/g,' '));
+    ok(pr && pr.batt===77,'parsed as battery 77: '+(pr?pr.batt:'unparsed'));
+    ok(pr.counts===undefined,'and not as a reading');
+    w.close(); }
+
+  // a bare integer is a battery only when one was asked for
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const notify=bytes=>w.onPacket({target:{value:{byteLength:bytes.length,getUint8:i=>bytes[i]}}});
+    w.S.battWait=0; w.S.batt=null;
+    notify(w.frameBytes('77'));
+    await sleep(20);
+    ok(w.S.batt===null,'an unrequested reply is ignored — that is how a wrong number gets into a CSV');
+    w.S.battWait=Date.now();
+    notify(w.frameBytes('77'));
+    await sleep(20);
+    ok(w.S.batt===77,'a requested one is taken: '+w.S.batt);
+    ok(w.S.battWait===0,'and the request is closed, so a repeat is ignored');
+    // out of range never lands
+    w.S.battWait=Date.now(); w.S.batt=null;
+    notify(w.frameBytes('250'));
+    await sleep(20);
+    ok(w.S.batt===null,'250 is not a percentage and is refused');
+    // a stale request expires
+    w.S.battWait=Date.now()-20000; w.S.batt=null;
+    notify(w.frameBytes('64'));
+    await sleep(20);
+    ok(w.S.batt===null,'and a reply arriving long after the ask is ignored too'); }
+
+  // it reaches the screen, the warning and the export
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const notify=bytes=>w.onPacket({target:{value:{byteLength:bytes.length,getUint8:i=>bytes[i]}}});
+    w.S.battWait=Date.now();
+    notify(w.frameBytes('77')); await sleep(20);
+    ok(d.getElementById('batt').textContent==='batt 77%','the header shows it: '+d.getElementById('batt').textContent);
+    ok(d.getElementById('batt').className==='ok','quietly, at a healthy level');
+    ok(!w.S.battWarned,'and says nothing');
+    w.S.battWait=Date.now();
+    notify(w.frameBytes('18')); await sleep(20);
+    ok(d.getElementById('batt').className==='amber','under 20 it turns amber');
+    ok(w.S.battWarned,'…and warns once');
+    w.S.battWait=Date.now();
+    notify(w.frameBytes('7')); await sleep(20);
+    ok(d.getElementById('batt').className==='red','under 10 it goes red');
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].batt===7,'the row carries it: '+w.S.rows[0].batt);
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(col('Batt')>=0,'the Batt column is back');
+    ok(csv[1].split(',')[col('Batt')]==='7','carrying the value: '+csv[1].split(',')[col('Batt')]);
+    ok(/batt 7%/.test(d.getElementById('dbg').textContent),'and the diagnostics say it'); }
+
+  // the request is sent once per connect, framed like sdicmd
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const sent=[];
+    w.S.wchr={properties:{write:true}, writeValue:function(d2){ sent.push([].slice.call(d2)); return Promise.resolve(); }};
+    w.requestBattery(); await sleep(20);
+    ok(sent.length===1,'one write');
+    ok(sent[0].join()===w.frameBytes('get -batt').join(),'the framed command, byte for byte');
+    ok(w.S.battWait>0,'and the request is marked pending');
+    w.close(); }
+
+  // a reading is still a reading — the battery branch must not swallow one
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    w.S.battWait=Date.now();
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===1,'a normal frame still logs as a reading with a battery request open');
+    ok(w.S.batt==null,'and is not mistaken for a battery value'); }
+
   // ============ battery over the DECA UART ============
   // The SOLUS 1.2.6 release binary carries the literal "get -batt" beside
   // MeterBleUart, SolusDevice, batteryLevel and getBatteryIcon, and no 180F
@@ -567,7 +655,7 @@ function rowsFor(w,room,spec){
     const col=n=>csv[0].split(',').indexOf(n);
     ok(/SENSOR_ERR:-9991x1/.test(csv[1].split(',')[col('Sweep flags')]),
        'and the sweep carries it into the export: '+csv[1].split(',')[col('Sweep flags')]);
-    ok(col('Batt')<0,'the Batt column is gone — it never once returned a value');
+    ok(col('Batt')>=0,'the Batt column is back, now that the UART answers');
     ok(/sensor errors 1 \(last -9991\)/.test(d.getElementById('dbg').textContent),
        'with the count in the diagnostics'); }
 

@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v49';
+var VER='v50';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -798,6 +798,18 @@ function parseText(txt){
   var e=s.match(/(-999[129])[\s\S]{0,24}?[gh]\s*\d*\s*$/) || s.match(/(-999[129])\s/);
   if(e) return {err:e[1], msg:SENSOR_ERRS[e[1]]||'sensor error '+e[1],
                 raw:s.trim().slice(0,48), direct:true};
+  /* Battery reply to "get -batt", observed 9/11 from ZSC08328:
+
+       7C 61 00 0A 37 37 0A 00 3E 54        payload "77\n\0", CRC valid
+
+     — the ordinary frame, carrying an ASCII decimal, a newline and a NUL.
+     Non-printables are already spaces by the time this runs, so the test is
+     a payload that is nothing but digits. A sensor reply never looks like
+     that: it always carries a decimal point, three fields and a type letter.
+     Whether a bare integer is a battery is still the caller's decision —
+     it only counts when one was asked for. */
+  var b=s.match(/^\s*(\d{1,3})\s*$/);
+  if(b) return {batt:+b[1], raw:s.trim(), direct:true};
   var m=s.match(/(\d+\.\d+)\s+(-?\d+\.?\d*)\s+(-?\d+)\s*[gh]/);
   if(m) return {counts:+m[1], tC:+m[2], bulk:+m[3], raw:m[0].trim(), direct:true};
   var n=s.match(/(\d+)\s*:\s*(\d+)\s+(\d+)\s+(\d+)/);
@@ -817,6 +829,7 @@ function bytesToText(arr){
 var emitReading=function(pr){};
 var emitUnparsed=function(tag,txt){};
 var emitSensorError=function(pr){};
+var emitBattery=function(pr){};
 var RX={buf:[], lastAt:0, flushT:null};
 function rxBytes(bytes){
   for(var i=0;i<bytes.length;i++) RX.buf.push(bytes[i]);
@@ -828,6 +841,7 @@ function tryText(txt){
   var pr=parseText(txt);
   if(!pr) return false;
   if(pr.err){ emitSensorError(pr); return true; }
+  if(pr.batt!=null){ emitBattery(pr); return true; }
   emitReading(pr); return true;
 }
 function processRx(){

@@ -84,11 +84,25 @@ the second. **Do not go looking for a Battery Service again** — and do not
 conclude from its absence that there is no battery. It comes back over the
 same UART that answers `sdicmd 0XR3!!`, framed the same way.
 
-**Settings → Battery capture** sends `get -batt` through that transport and
-logs every notification as hex and ASCII without parsing any of it. The
-parser is to be written from an observed packet. Until one is captured, the
-CSV carries no battery column — that is a gap awaiting a packet, not a
-settled absence.
+**The packet, captured 9/11 from ZSC08328** (`test/batt_capture_2026-09-11.txt`):
+
+```
+sent  7C 61 00 0F 67 65 74 20 2D 62 61 74 74 BE 59
+got   7C 61 00 0A 37 37 0A 00 3E 54        payload "77\n\0", CRC valid
+```
+
+The ordinary frame, carrying an **ASCII decimal, a newline and a NUL**. 77 is
+the charge in percent — the range is 0–100 and the APK names it
+`batteryLevel` and draws it with `getBatteryIcon`.
+
+The app asks **once per connect** and stores the reply in the `Batt` column.
+A bare integer on this UART only counts as a battery while a request is
+outstanding, and a value outside 0–100 is refused: "unambiguous in practice"
+is how a wrong number gets into a CSV.
+
+**Settings → Battery capture** re-runs the exchange and logs every
+notification as raw hex and ASCII, for the next time the protocol surprises
+us.
 
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 

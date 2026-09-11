@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v49** — v30–v34 shipped 9/10, v35–v49 on 9/11.
+**Live on main: v50** — v30–v34 shipped 9/10, v35–v50 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -54,6 +54,7 @@ interrupted by a reload. This is the list to execute against.
 | v47 | GATT dump settles the battery question · the scan reports rejections properly | 9/11 scan |
 | v48 | plants are per table · A3's real drippers and plant counts | 9/11 config |
 | v49 | battery capture over the DECA UART · A3 is Bio365 | SOLUS 1.2.6 APK |
+| v50 | the battery packet, decoded — Batt reads 77% | 9/11 capture |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1315,3 +1316,49 @@ differed from the fitted 2.90 — the concern I raised in v48 is moot rather
 than answered. Every production room is now on one substrate, which the test
 asserts directly so that a future coco room fails the suite instead of
 quietly using the wrong offset.
+
+### 45. The packet. Battery is back. → v50
+
+```
+sent  7C 61 00 0F 67 65 74 20 2D 62 61 74 74 BE 59
+got   7C 61 00 0A 37 37 0A 00 3E 54
+```
+
+Frame marker, length field covering the whole frame, **CRC-16/XMODEM valid** —
+the same envelope `sdicmd` uses. Payload `37 37 0A 00` is `"77\n\0"`:
+**an ASCII decimal, a newline and a NUL.**
+
+**Battery 77%.** The range is 0–100 and the APK names it `batteryLevel` and
+draws it with `getBatteryIcon`, so percent is what it is.
+
+Three exchanges on this: a manual, a GATT dump and an APK. The manual said
+nothing either way, the dump said what the device is *not*, and only the APK
+said where to look. The packet took ten seconds once the app could ask.
+
+**Shipped.** The app asks once per connect — two AA alkalines do not move in
+an afternoon, and the request shares the write characteristic with the poll,
+so asking more often would only compete with the sweep. The reply paints the
+header pill (amber under 20, red under 10, warned once per crossing) and
+lands in the restored `Batt` column.
+
+**Two guards, because this is exactly where a wrong number gets into a CSV.**
+A bare integer on this UART is only a battery while a request is
+outstanding — an unprompted one is logged and ignored — and anything outside
+0–100 is refused. A reply arriving more than six seconds after the ask is
+treated as unrelated. Tests cover all three, plus the case that matters most:
+a normal reading arriving while a battery request is open is still a reading.
+
+**Settings → Battery capture** stays, now as the tool for the next time the
+protocol surprises us rather than the tool for this question.
+
+**What I got wrong, in order.** I read the manual's silence as evidence, then
+the GATT dump's true-but-narrow finding as an answer, and deleted a working
+feature on the strength of it. The dump was correct that there is no Battery
+Service; it was never capable of telling us there is no battery. Three
+separate times I let a confirmed absence in one place stand for absence
+everywhere, and the correction each time came from someone else bringing
+evidence of a different kind.
+
+**The probe scan also improved off the back of it.** It now reports
+`180f by UUID: number 2` — Bluefy rejects with a bare number rather than a
+DOMException, which the old reporter rendered as `2`.
