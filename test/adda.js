@@ -350,6 +350,119 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ 9/11 schedule paste, second round ============
+  // Four things a wider set of real screens showed. Written from the
+  // operator's notes on the paste rather than the paste itself, so the
+  // header variants are exactly the eight he listed and no more.
+
+  // 1. the first field names a room and table numbers; nothing else in it
+  //    means anything
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const want={
+      'A1 Table 1':['A1',[1]], 'A3 table 2':['A3',[2]], 'B2 table 1':['B2',[1]],
+      'C3 table 1':['C3',[1]], 'A1 table 11+12':['A1',[11,12]],
+      'A6 Tables 11 + 12':['A6',[11,12]],          // plural, spaces round the plus
+      'A7 Table 2 manual':['A7',[2]],              // trailing word
+      'A7 Table 11+12 manual':['A7',[11,12]]
+    };
+    const bad=Object.keys(want).filter(k=>{
+      const g=w.schedHeader(k);
+      return !g || g.room!==want[k][0] || g.tables.join()!==want[k][1].join();
+    });
+    ok(bad.length===0,'every header variant parses'+(bad.length?': '+bad.join(' | '):''));
+    ok(w.schedHeader('Simple Timer')===null && w.schedHeader('P1 timers')===null &&
+       w.schedHeader('18m 56s')===null,'and the lines that are not headers still are not');
+    w.close(); }
+
+  // 2. a number can arrive with its unit missing
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.schedSeconds(['45','0','Secs'])===2700,
+       'A3 T11+12 flush prints 45 then 0 Secs with no Mins label: '+w.schedSeconds(['45','0','Secs'])+'s');
+    ok(w.schedSeconds(['1','Hrs','5','30','Secs'])===3930,
+       'a bare number between Hrs and Secs is minutes: '+w.schedSeconds(['1','Hrs','5','30','Secs']));
+    ok(w.schedSeconds(['4','Mins','44','Secs'])===284,'labelled pairs are unchanged');
+    ok(w.schedSeconds(['0','Mins','1','Secs'])===1,'and so is the parked P2');
+    ok(w.schedSeconds(['45'])===null,'a bare number with nothing to anchor it stays unread');
+    ok(w.schedSeconds(['Recycle Timer','01:15:00 AM'])===null,'as does a line with no units at all');
+    w.close(); }
+
+  // 3. a 0s total is a timer switched off, not a block that was misread
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const off=['B5 Table 4\tB5 4 moisture\t','Simple Timer','0s\t','Recycle Timer','',
+               '01:15:00 AM','Start Time','4','Mins','44','Secs','Duration',
+               '2','Hrs','30','Mins','Interval','4','Frequency','Create new timer'].join('\n');
+    const r=w.parseSchedule(off);
+    ok(r.tables.length===1,'the table is kept, not dropped as a paste that missed it');
+    ok(r.tables[0].inactive===true,'and marked off: '+r.tables[0].inactive);
+    ok(r.tables[0].reconciles===null,'reconciliation does not apply, so it is not flagged as an error');
+    ok(r.warnings.filter(x=>/T4[^0-9]/.test(x)).length===0,
+       'and nothing warns about the table itself: '+(r.warnings.join(' | ')||'no warnings'));
+    // and it contributes no shots, which is the part that would mislead
+    w.saveSched('B5',{savedAt:Date.now(), room:'B5', tables:r.tables});
+    const at=new Date(); at.setHours(10,52,0,0);
+    ok(w.hoursSinceShot('B5',at,4)===null,
+       'an off table reports no last shot rather than the weekly file\'s: '+w.hoursSinceShot('B5',at,4));
+    ok(w.schedSeries('B5',4).length===0,'no series at all');
+    w.close(); }
+
+  // an off table must not stand in for the tables a paste missed
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('B5',{savedAt:Date.now(), room:'B5', tables:[
+      {table:4, room:'B5', inactive:true, P1:{start:'01:15',duration:284,interval:7200,frequency:4}, P2:null, flush:null},
+      {table:5, room:'B5', inactive:false, P1:{start:'01:15',duration:284,interval:7200,frequency:3}, P2:null, flush:null}]});
+    const at=new Date(); at.setHours(10,52,0,0);
+    ok(w.hoursSinceShot('B5',at,4)===null,'the off table itself still reports nothing');
+    ok(Math.abs(w.hoursSinceShot('B5',at,9)-5.6)<0.1,
+       'but T9, which the paste missed, reads off the running table, not the off one: '+
+       w.hoursSinceShot('B5',at,9));
+    w.close(); }
+
+  // 4. the sensor column is the sensor pull's table key
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const rec=(head,sensor)=>[head+'\t'+sensor+'\t','Simple Timer','26m 35s\t','Recycle Timer','','',
+      '01:15:00 PM','Start Time','5','Mins','19','Secs','Duration','1','Hrs','30','Mins','Interval',
+      '5','Frequency','Create new timer'].join('\n');
+    const r=w.parseSchedule([
+      rec('C4 Table 1','C4 Table 1 moisture'),
+      rec('C4 Table 6','Substrate Moisture #20004907'),
+      rec('C4 Table 11','---')
+    ].join('\n'));
+    const by={}; r.tables.forEach(t=>by[t.table]=t);
+    ok(by[1].sensor==='C4 Table 1 moisture','a named sensor is stored verbatim: '+by[1].sensor);
+    ok(by[6].sensor==='Substrate Moisture #20004907','so is an orphan reading as a raw id');
+    ok(by[6].sensorId==='20004907','with the id pulled out for the lookup: '+by[6].sensorId);
+    ok(by[1].sensorId===null,'a named one has no id, which is fine');
+    ok(by[11].sensor===null,'--- means unassigned, and is stored as nothing rather than as "---"');
+    // the sensor column still decides no table identity
+    const odd=w.parseSchedule(rec('C4 Table 7','C4 Table table 7 moisture'));
+    ok(odd.tables[0].table===7,'a sensor name that says "table" twice moves nothing: T'+odd.tables[0].table);
+    w.close(); }
+
+  // a shared valve prints one sensor for the pair
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(['A1 table 11+12\tA1 11 Back Moisture\t','Copilot','16m 14s\t',
+      'P1 timers','','','01:15:00 AM','Start Time','8','Mins','7','Secs','Duration',
+      '2','Hrs','0','Mins','Interval','2','Frequency'].join('\n'));
+    ok(r.tables.length===2,'two records');
+    ok(r.tables.every(t=>t.sensor==='A1 11 Back Moisture'),'both carry the one sensor the screen printed');
+    ok(r.tables.every(t=>t.sharedSensor===true),
+       'flagged as shared, so neither is taken for a sensor of its own');
+    w.close(); }
+
+  // the two real pastes still parse, with their sensors now kept
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_C4_2026-09-10.txt'),'utf8'));
+    ok(r.tables.length===11 && r.warnings.length===0,'C4 unchanged: '+r.tables.length+' tables');
+    const by={}; r.tables.forEach(t=>by[t.table]=t);
+    ok(by[6].sensorId==='20004907','and C4 T6\'s orphan id is now captured: '+by[6].sensorId);
+    ok(by[11].sensor==='C4 Table 11','T11\'s bare name too');
+    ok(r.tables.every(t=>!t.inactive),'nothing in C4 is switched off');
+    const a=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_A1_2026-09-10.txt'),'utf8'));
+    ok(a.tables.length===12 && a.warnings.length===0,'A1 unchanged: '+a.tables.length+' records');
+    ok(a.tables.filter(t=>t.table===11)[0].sharedSensor===true,'A1 T11+12 shares its sensor');
+    w.close(); }
+
   // ============ 9/11 bugs ============
 
   // 1. the depth control was inert — real buttons with no styling at all,

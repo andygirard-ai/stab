@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v39** — v30–v34 shipped 9/10, v35–v39 on 9/11.
+**Live on main: v40** — v30–v34 shipped 9/10, v35–v40 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -44,6 +44,7 @@ interrupted by a reload. This is the list to execute against.
 | v39 | undo restores the cursor the row was taken at | 9/11 |
 | v39 | the outlier banner has an Undo beside the OK | 9/11 |
 | v39 | the wet ceiling is field capacity, with a post-flush tag | 9/11 |
+| v40 | header variants, missing units, 0s = off, sensor column kept | 9/11 paste |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -801,3 +802,52 @@ round were written and then silently lost: they were in one script with a
 fourth edit that failed its anchor assertion, and the script aborted before
 writing the file. The outlier and implausible changes looked applied and were
 not. The test caught it. Smaller edits, or verify after each.
+
+### 32. The schedule parser against a wider set of screens → v40
+
+Four findings off a paste, each of which the parser got wrong.
+
+**A 0s total is a timer switched off, not a block that was misread.** It was
+being reconciled against P1 and failing, so every inactive table would have
+been flagged as an error and buried the real ones. Worse, it would have been
+given the weekly file's schedule as a fallback and reported as watered on
+time. An inactive table is now kept and marked, reconciliation does not apply
+to it, and it yields no shots at all — `hoursSinceShot` returns nothing
+rather than a number.
+
+**The first field names a room and table numbers, and nothing else in it
+means anything.** Eight variants in the wild:
+
+    A1 Table 1          A3 table 2            B2 table 1
+    A1 table 11+12      A6 Tables 11 + 12     A7 Table 2 manual
+    A7 Table 11+12 manual                     C3 table 1
+
+Singular or plural, spaces around the plus, any trailing word. The old
+pattern took `11` out of `Tables 11 + 12` and dropped the `+ 12` — a
+shared-valve record silently becoming one table. It matches the room and the
+numbers now and discards the rest, rather than trying to anticipate what else
+Growlink will append.
+
+**A number can arrive with no unit.** A3 T11+12's flush prints `45` and then
+`0 Secs` with no Mins label. The old reader walked number/unit pairs and
+scored that as 0 seconds. The units always descend — Hrs, Mins, Secs — so an
+unlabelled number takes the unit one step above whichever labelled unit comes
+next: 45 ahead of `0 Secs` is 45 minutes. **Guessing it as seconds would have
+read a 45-minute flush as 45 seconds** and reported a room as barely watered.
+
+**The sensor column is the sensor pull's table key.** `---` is unassigned; a
+name or `Substrate Moisture #NNNNNNNN` is the mapping. Stored verbatim with
+the numeric id pulled out where there is one — the two known orphans, C1 T10
+`#20004922` and C4 T6 `#20004907`, are exactly the rows that read as a raw
+id. It decides nothing in the parser: table identity still comes from the
+first field alone, which is why `C4 Table table 7 moisture` moves nothing.
+
+A shared valve prints one sensor for the pair, so both records carry it and
+carry `sharedSensor`, and neither is mistaken for having its own.
+
+**One thing the tests turned up that the notes did not.** The short-paste
+fallback — uncovered tables read off another table in the same import — could
+land on an inactive one, which would report the whole room as never watered.
+That is a worse lie than the stale schedule the fallback exists to avoid. It
+picks a running table now, and only reports nothing when every table in the
+room is off.

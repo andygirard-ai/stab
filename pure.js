@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v39';
+var VER='v40';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -56,9 +56,17 @@ function schedSeries(room, table){
        never to the weekly file: mixing a current schedule with a stale one
        inside one room is the exact failure §4 exists to end, and it would be
        invisible in the rows. The paste screen warns when tables are missing,
-       which is the moment to fix it. */
-    if(!t) t=rec.tables[0];
+       which is the moment to fix it.
+
+       It falls back to a table that is actually running. Standing in for an
+       uncovered table with a switched-off one would report the whole room as
+       never watered, which is a worse lie than the stale schedule this is
+       avoiding. */
+    if(!t) t=schedFallback(rec);
     if(t){
+      /* An inactive table gets no shots at all — not the weekly file's, which
+         would be worse than none: it would read as watered on schedule. */
+      if(t.inactive) return [];
       var out=[];
       [t.P1,t.P2].forEach(function(ph){
         if(schedPhaseOn(ph))
@@ -69,6 +77,11 @@ function schedSeries(room, table){
   }
   var c=SCHED[room];
   return c ? [{start:c[0], intervalMin:c[1], count:c[2]}] : [];
+}
+function schedFallback(rec){
+  var ts=rec.tables;
+  for(var i=0;i<ts.length;i++) if(!ts[i].inactive) return ts[i];
+  return ts[0];            /* every table is off — then the room really is */
 }
 function shotTimes(room, table, nowDate){
   var now=nowDate||new Date(), all=[];
@@ -118,17 +131,41 @@ function hoursToNextShot(room, nowDate, table){
    convenience, not an authority. */
 var SCHED_LABELS={'start time':'start','duration':'duration','interval':'interval',
                   'frequency':'frequency','total runtime':'runtime'};
+/* Number/unit pairs: 4 Mins 44 Secs -> 284.
+   A3 T11+12's flush prints "45" and then "0 Secs" with no Mins label at all,
+   so a number can arrive with its unit missing. The units always descend —
+   Hrs, then Mins, then Secs — so an unlabelled number takes the unit one step
+   above whichever labelled unit comes next. 45 ahead of "0 Secs" is 45
+   minutes. Guessing it as seconds would have read a 45-minute flush as
+   45 seconds and quietly reported a room as barely watered. */
+var SCHED_UNITS=[['hr',3600],['min',60],['sec',1]];
+function schedUnitIndex(u){
+  u=String(u||'').toLowerCase();
+  if(/^hr|^hour/.test(u)) return 0;
+  if(/^min/.test(u)) return 1;
+  if(/^sec/.test(u)) return 2;
+  return -1;
+}
 function schedSeconds(pend){
-  /* number/unit pairs: 4 Mins 44 Secs -> 284 */
-  var s=0, saw=false;
-  for(var i=0;i<pend.length-1;i++){
+  /* tokenize into numbers, each with its unit index or none */
+  var toks=[];
+  for(var i=0;i<pend.length;i++){
     var n=parseFloat(pend[i]);
     if(isNaN(n)) continue;
-    var u=String(pend[i+1]||'').toLowerCase();
-    if(/^hr|^hour/.test(u)){ s+=n*3600; saw=true; }
-    else if(/^min/.test(u)){ s+=n*60; saw=true; }
-    else if(/^sec/.test(u)){ s+=n; saw=true; }
+    var ui=schedUnitIndex(pend[i+1]);
+    toks.push({n:n, u:ui});
+    if(ui>=0) i++;                       /* the unit belongs to this number */
   }
+  /* fill a missing unit from the next labelled one, one step larger */
+  for(var j=toks.length-1, next=-1; j>=0; j--){
+    if(toks[j].u>=0){ next=toks[j].u; continue; }
+    if(next>0){ toks[j].u=next-1; next=toks[j].u; }
+  }
+  var s=0, saw=false;
+  toks.forEach(function(t){
+    if(t.u<0) return;
+    s+=t.n*SCHED_UNITS[t.u][1]; saw=true;
+  });
   return saw?s:null;
 }
 function schedClock(pend){
@@ -151,14 +188,20 @@ function schedRuntime(line){
 }
 /* "B5 Table 1", "A1 Table 11+12" — the A-wing shared-valve convention means a
    header can name more than one table, and both get the same schedule. */
+/* The first field names a room and one or more tables, and nothing else in
+   it means anything. Real headers seen so far:
+
+     A1 Table 1          A3 table 2          B2 table 1
+     A1 table 11+12      A6 Tables 11 + 12   A7 Table 2 manual
+     A7 Table 11+12 manual
+
+   so: case-insensitive, singular or plural, spaces allowed around the plus,
+   and any trailing word ignored. Match the room and the numbers; discard
+   the rest rather than trying to anticipate what else Growlink will append.
+   The line reaching here has already been cut at its first tab, so the
+   sensor column never takes part. */
 function schedHeader(line){
-  /* Case-insensitive on 'Table': ten of the eleven A1 records read
-     "A1 Table N" and the last reads "A1 table 11+12". Matching case would
-     drop exactly the shared-valve record, which is the worst one to lose.
-     The line reaching here has already been cut at its first tab, so the
-     sensor-name column never takes part — it is free text and says things
-     like "C4 Table table 7 moisture" and "Substrate Moisture #20004907". */
-  var m=/^([A-Za-z]-?\d+)\s+table\s+([\d+\s]+?)(?:\s|\t|$)/i.exec(String(line));
+  var m=/^([A-Za-z]-?\d+)\s+tables?\s+([\d\s+]*\d)/i.exec(String(line));
   if(!m) return null;
   var tables=m[2].split('+').map(function(x){ return parseInt(x,10); })
                  .filter(function(x){ return !isNaN(x); });
@@ -173,16 +216,44 @@ function schedHeader(line){
 function schedPhaseOn(ph){
   return !!(ph && ph.start && ph.frequency && ph.duration!=null && ph.duration>1);
 }
+/* The second tab-separated field on a header line is the sensor mapping —
+   "C4 Table 1 moisture", "A1 11 Back Moisture", "Substrate Moisture
+   #20004907", or "---" for a table with no sensor assigned. It is the key
+   the sensor pull needs to tie a Growlink reading back to a table, and the
+   two known orphans (C1 T10 #20004922, C4 T6 #20004907) are exactly the
+   rows that read as a raw id. Stored, never parsed for meaning: it decides
+   nothing here, and the table identity comes from the first field alone. */
+function schedSensor(rawLine){
+  var parts=String(rawLine||'').split('\t');
+  if(parts.length<2) return null;
+  var v=parts[1].trim();
+  if(!v || /^-+$/.test(v)) return null;
+  return v;
+}
+function sensorId(name){
+  var m=/#(\d{4,})/.exec(String(name||''));
+  return m?m[1]:null;
+}
 function parseSchedule(text){
-  var lines=String(text||'').split(/\r?\n/).map(function(l){ return l.replace(/\t.*$/,'').trim(); });
+  var raws=String(text||'').split(/\r?\n/);
+  var lines=raws.map(function(l){ return l.replace(/\t.*$/,'').trim(); });
   var blocks=[], cur=null, pend=[], section='P1', warn=[];
-  function close(){ if(cur && (cur.P1.start||cur.P1.duration!=null)) blocks.push(cur); cur=null; }
+  /* A block is worth keeping if it carries a schedule — or if it carries a
+     control type and a zero total, which is a table that exists and is
+     switched off. Dropping those would make an inactive table look like a
+     table the paste missed. */
+  function close(){
+    if(cur && (cur.P1.start || cur.P1.duration!=null || (cur.control && cur.runtime===0)))
+      blocks.push(cur);
+    cur=null;
+  }
   for(var i=0;i<lines.length;i++){
     var ln=lines[i];
     if(!ln) continue;
     var hd=schedHeader(ln);
     if(hd){ close(); cur={room:hd.room, tables:hd.tables, control:null, runtime:null,
-                          P1:{}, P2:{}, flush:{}}; pend=[]; section='P1'; continue; }
+                          sensor:schedSensor(raws[i]), P1:{}, P2:{}, flush:{}};
+            pend=[]; section='P1'; continue; }
     if(!cur){ continue; }                      /* preamble before the first table */
     var low=ln.toLowerCase();
     if(/^p1\s+timers?$/.test(low)){ section='P1'; pend=[]; continue; }
@@ -225,12 +296,24 @@ function parseSchedule(text){
          while the flush alone is 28 minutes. Summing the phases would flag
          every correct A-wing table. On a Simple Timer room there is only
          P1, so it is the same rule. */
+      /* A printed total of 0s is a timer that is switched off, not a block
+         that was misread. Reconciling it against P1 would flag every
+         inactive table as an error and bury the real ones, and computing a
+         shot series from it would tell the operator a room is being watered
+         when it is not. */
+      var inactive=(b.runtime===0);
       var calc=(b.P1.duration!=null&&b.P1.frequency)?b.P1.duration*b.P1.frequency:null;
       tables.push({table:t, room:b.room, control:b.control, runtimeSec:b.runtime,
+                   sensor:b.sensor||null, sensorId:sensorId(b.sensor),
+                   /* a shared valve prints one sensor for the pair, so both
+                      records carry it and neither pretends to its own */
+                   sharedSensor:(b.tables.length>1 && !!b.sensor),
                    shared:b.tables.length>1?b.tables.slice():null,
                    P1:b.P1, P2:schedPhaseOn(b.P2)?b.P2:null,
                    flush:(b.flush&&(b.flush.duration!=null))?b.flush:null,
-                   reconciles:(calc!=null&&b.runtime!=null)?(Math.abs(calc-b.runtime)<=60):null});
+                   inactive:inactive,
+                   reconciles:inactive?null
+                     :((calc!=null&&b.runtime!=null)?(Math.abs(calc-b.runtime)<=60):null)});
     });
   });
   tables.sort(function(a,b){ return a.table-b.table; });
@@ -242,8 +325,12 @@ function parseSchedule(text){
     var have={}, miss=[];
     tables.forEach(function(t){ have[t.table]=1; });
     for(var n=1;n<=ROOMS[rm].t;n++) if(!have[n]) miss.push(n);
-    if(miss.length) warn.push('no schedule for T'+miss.join(', T')+
-      ' — those tables will read off T'+(tables[0]?tables[0].table:'?'));
+    if(miss.length){
+      var fb=null;
+      for(var k=0;k<tables.length;k++) if(!tables[k].inactive){ fb=tables[k]; break; }
+      warn.push('no schedule for T'+miss.join(', T')+
+        ' — those tables will read off T'+(fb?fb.table:(tables[0]?tables[0].table:'?')));
+    }
   }
   return {room:rm, tables:tables, warnings:warn};
 }

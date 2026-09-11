@@ -2498,6 +2498,11 @@ function drawSchedParse(){
   r.tables.forEach(function(t){
     var p=t.P1||{};
     var bad=(t.reconciles===false);
+    if(t.inactive){
+      h+='<tr class="off"><td>'+t.table+(t.shared?'<span class="sh">+</span>':'')+'</td>'+
+         '<td colspan="5">off — 0s total runtime</td></tr>';
+      return;
+    }
     h+='<tr'+(bad?' class="bad"':'')+'><td>'+t.table+(t.shared?'<span class="sh">+</span>':'')+'</td>'+
        '<td>'+(p.start?fmt12(+p.start.split(':')[0],p.start.split(':')[1]):'—')+'</td>'+
        '<td>'+schedFmt(p.duration)+'</td>'+
@@ -2508,6 +2513,11 @@ function drawSchedParse(){
        '</td><td>'+(t.P2.interval?(t.P2.interval/3600).toFixed(1)+'h':'—')+'</td><td>'+(t.P2.frequency||'—')+'</td><td></td></tr>';
   });
   h+='</table>';
+  var nOff=r.tables.filter(function(t){ return t.inactive; }).length;
+  if(nOff) h+='<div class="sn">'+nOff+' table'+(nOff>1?'s are':' is')+
+    ' switched off — no shots, and nothing computed from the weekly file either</div>';
+  var nSen=r.tables.filter(function(t){ return t.sensor; }).length;
+  h+='<div class="sn">'+nSen+' of '+r.tables.length+' tables carry a sensor name</div>';
   var bad=r.tables.filter(function(t){ return t.reconciles===false; });
   if(bad.length) h+='<div class="sn bad">⚠ T'+bad.map(function(t){return t.table;}).join(', T')+
     ': shot x frequency does not match the total runtime, so something was misread</div>';
