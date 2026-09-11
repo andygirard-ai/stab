@@ -353,6 +353,74 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the scan had no way to be run ============
+  // Field report 9/11: "when I'm in settings and I tap scan probe, I'm not
+  // connected. But then when I go to a room and connect, the only way to get
+  // out of there is to end. And when you hit end, it disconnects." A
+  // diagnostic that cannot be run is not a diagnostic.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    // no probe, no Web Bluetooth in jsdom: it says so rather than refusing
+    d.getElementById('scango').click(); await sleep(40);
+    const t=d.getElementById('scanout').textContent;
+    ok(/probe scan · /.test(t),'the scan always starts and reports');
+    ok(!/wake the probe and connect first/.test(t),
+       'it no longer tells him to do the thing he has no way of doing');
+    ok(/open this in Bluefy/.test(t),'…it says what is actually wrong here: '+t.split('\n').pop());
+    w.close(); }
+
+  // with a probe already connected it scans it, without reconnecting
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    let connects=0;
+    w.connect=function(){ connects++; return Promise.resolve(); };
+    const nf=new Error('x'); nf.name='NotFoundError';
+    w.S.dev={name:'ZSC', gatt:{connected:true,
+      getPrimaryService:()=>Promise.reject(nf),
+      getPrimaryServices:()=>Promise.resolve([])}};
+    d.getElementById('scango').click(); await sleep(80);
+    ok(connects===0,'an already-connected probe is not reconnected');
+    ok(/device: ZSC/.test(d.getElementById('scanout').textContent),'and it is scanned');
+    w.close(); }
+
+  // ============ START was one-way ============
+  // Opening a room by mistake could only be ended, which recorded an empty
+  // sweep and marked the tile swept today.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.confirm=()=>false;                       // "discard it"
+    start(w,d,'B2',2); await sleep(20);
+    ok(w.S.roomStarted,'a sweep is running');
+    d.getElementById('exit').click(); await sleep(40);
+    ok(!w.S.roomStarted,'END with nothing logged can back out');
+    ok(d.getElementById('done').classList.contains('hide'),'no done screen');
+    ok(!d.getElementById('setup').classList.contains('hide'),'back on the setup screen');
+    ok(w.getHist().length===0,'and nothing is written to history: '+w.getHist().length);
+    ok(!w.localStorage.getItem('stab_session'),'no interrupted sweep left behind either');
+    w.close(); }
+
+  // …while a deliberate bag-feel sweep is still recorded and still flagged
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.confirm=()=>true;                        // "record it as hand-only"
+    start(w,d,'C4',1.25); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    ok(!d.getElementById('done').classList.contains('hide'),'the done screen appears');
+    ok(/NO_PROBE_BLIND_FLOOR/.test(d.getElementById('stats').textContent),
+       'and it is flagged hand-only, which §3 requires'); }
+
+  // a sweep with skips is a record even with no readings
+  { const {w,d,errors}=boot(null); await sleep(50);
+    let asked=0; w.confirm=()=>{ asked++; return false; };
+    start(w,d,'B2',2); await sleep(20);
+    w.S.skipped={1:'crew',2:'crew'};
+    d.getElementById('exit').click(); await sleep(60);
+    ok(asked===0,'no question asked — skips are already a record of the walk');
+    ok(!d.getElementById('done').classList.contains('hide'),'it ends normally'); }
+
   // ============ the TEROS guide: sensor error codes ============
   // The TEROS 12 is a passive 4.0-15 VDC sensor whose SDI-12 command set
   // carries no power telemetry, and the ZSC bridge runs on two AA cells and
@@ -758,9 +826,8 @@ function rowsFor(w,room,spec){
     await sleep(800);
     ok(!d.getElementById('setsheet').classList.contains('hide'),'settings opens');
     d.getElementById('scango').click(); await sleep(30);
-    ok(/not connected/.test(d.getElementById('scanout').textContent),
-       'with no probe it says so rather than reporting a false absence: '+
-       d.getElementById('scanout').textContent);
+    ok(!/2a19 =/.test(d.getElementById('scanout').textContent),
+       'with no probe it reports nothing rather than a false absence or a false reading');
     // a bridge that does carry it
     w.S.dev={name:'ZSC-1234', gatt:{connected:true,
       getPrimaryService:()=>Promise.resolve({

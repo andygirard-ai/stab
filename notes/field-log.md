@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v45** — v30–v34 shipped 9/10, v35–v45 on 9/11.
+**Live on main: v46** — v30–v34 shipped 9/10, v35–v46 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -50,6 +50,7 @@ interrupted by a reload. This is the list to execute against.
 | v43 | the Batt column is deleted — it never once returned a value | ZSC guide |
 | v44 | probe scan — ask the bridge instead of arguing about it | 9/11 |
 | v45 | -9991 is not a battery gauge · the scan dumps 180f's characteristics | 9/11 |
+| v46 | the scan connects itself · START is no longer one-way | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1117,3 +1118,43 @@ puts it back.
 
 **One ten-second test settles it. Connect the probe, Settings → Probe scan,
 copy, send.**
+
+### 38. The scan could not be run → v46
+
+**Observed.** "When I'm in settings for the probe scan and I tap scan probe,
+I'm not connected. But then when I go to a room and connect, the only way to
+get out of there is to end. And when you hit end, it disconnects the probe.
+So I don't have a way to connect so you can scan the probe."
+
+**What it was.** A deadlock I built and never walked. The scan refused unless
+a probe was already connected. Connecting only happens inside a sweep.
+Settings is reachable only from the setup screen, and the only way back to
+the setup screen is END. Every path to the scan went through the one action
+that ends the connection.
+
+I wrote "connect the probe first, then scan" in the instructions and never
+asked whether that sentence was possible to follow. **A diagnostic that
+cannot be run is not a diagnostic** — and I had spent two days arguing about
+what it would prove.
+
+**Shipped.** The scan connects on its own. It reuses the real connect path,
+so the output also reports whether the trigger verified, and an
+already-connected probe is not reconnected.
+
+### 39. START was one-way → v46
+
+The second half of the same report, and a defect in its own right. Opening a
+room by mistake could only be ended, and END recorded the sweep — an empty
+session in the history and a tile reading "swept today".
+
+That could not simply be made to discard, because an empty sweep is also a
+real thing: a bag-feel walk of a room, which §3 says must be recorded and
+flagged. The two are indistinguishable from the data.
+
+**So END asks, once, only when there is nothing logged:** record it as a
+hand-only sweep of this room, or discard it as if the room was never opened.
+A sweep that logged readings ends as before. A sweep with skips ends without
+asking, because skips are already a record of the walk.
+
+Discarding leaves nothing behind: no history entry, no CSV, no coverage, no
+interrupted-sweep marker, and the room's tile untouched.

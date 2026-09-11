@@ -682,64 +682,78 @@ function histTs(h){
      back in and the deletion was wrong. */
   $('scango').onclick=function(){
     var out=[], el=$('scanout');
-    function done(){ el.textContent=out.join('\n'); }
-    function line(x){ out.push(x); done(); }
-    if(!S.dev || !S.dev.gatt || !S.dev.gatt.connected){
-      line('not connected — wake the probe and connect first, then scan');
-      return;
-    }
-    var g=S.dev.gatt;
+    function line(x){ out.push(x); el.textContent=out.join('\n'); }
     line('probe scan · '+new Date().toLocaleString('en-US'));
-    line('device: '+(S.dev.name||'(unnamed)'));
-    /* the SIG UUID and the Web Bluetooth alias resolve to the same service;
-       both are tried so a naming mistake cannot be confused with absence */
-    function chars(svc, indent){
-      if(!svc.getCharacteristics) return Promise.resolve();
-      return svc.getCharacteristics().then(function(cs){
-        cs.forEach(function(c){
-          var p=c.properties||{}, f=[];
-          ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
-          line(indent+c.uuid+'  ['+f.join(',')+']');
-        });
-      }).catch(function(e){ line(indent+'(characteristics unreadable — '+((e&&e.name)||e)+')'); });
+    /* The scan connects on its own. It used to refuse unless a probe was
+       already connected, and there was no way to get one: connecting happens
+       inside a sweep, the only way out of a sweep is END, and by the time
+       you are back on the setup screen to reach settings the link is gone.
+       A diagnostic that cannot be run is not a diagnostic. */
+    function withGatt(){
+      if(S.dev && S.dev.gatt && S.dev.gatt.connected) return Promise.resolve(S.dev.gatt);
+      if(!navigator.bluetooth){ line('no Web Bluetooth — open this in Bluefy'); return Promise.resolve(null); }
+      line('not connected — connecting…  (wake the probe: press its button, LED blinks)');
+      return connect().then(function(){
+        if(S.dev && S.dev.gatt && S.dev.gatt.connected) return S.dev.gatt;
+        line('could not connect — is the probe awake and in range?');
+        return null;
+      }).catch(function(e){ line('connect failed: '+((e&&e.message)||e)); return null; });
     }
-    /* Dump the service's characteristics before reading, so "180f present
-       but non-conforming" is distinguishable from "180f absent". The Battery
-       Service spec makes 2A19 mandatory and readable; if 180f is here and
-       2A19 is not, that is the interesting answer and it should be visible
-       rather than collapsed into one error name. */
-    function attempt(label, id){
-      return g.getPrimaryService(id).then(function(svc){
-        line(label+': service FOUND — characteristics:');
-        return chars(svc,'    ').then(function(){
-          return svc.getCharacteristic(BAT_CHR);
-        }).then(function(c){
-          return c.readValue().then(function(v){
-            if(!v || v.byteLength<1){ line(label+': 2a19 read returned no bytes'); return; }
-            var pct=v.getUint8(0);
-            line(label+': 2a19 = '+pct+(pct>100?'  (out of range — not a percentage)':'%'));
-            line('*** BATTERY READS. Send this to me and the column goes back in. ***');
+    withGatt().then(function(g){
+      if(!g) { line('— end of scan —'); return; }
+      line('device: '+(S.dev.name||'(unnamed)'));
+      line('trigger: '+(S.trigger?('confirmed · '+S.trigger.n):'not confirmed'));
+      function chars(svc, indent){
+        if(!svc.getCharacteristics) return Promise.resolve();
+        return svc.getCharacteristics().then(function(cs){
+          cs.forEach(function(c){
+            var p=c.properties||{}, f=[];
+            ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
+            line(indent+c.uuid+'  ['+f.join(',')+']');
           });
-        }).catch(function(e){ line(label+': 180f found but 2a19 failed — '+((e&&e.name)||e)); });
-      }).catch(function(e){ line(label+': '+((e&&e.name)||e)); });
-    }
-    attempt('180f by UUID', BAT_SVC)
-      .then(function(){ return attempt('battery_service by alias','battery_service'); })
-      .then(function(){
-        if(!g.getPrimaryServices) return;
-        return g.getPrimaryServices().then(function(ss){
-          line('services granted and present: '+(ss.map(function(x){return x.uuid;}).join(' ')||'none'));
-          /* every one of them, not only DECA: a readable characteristic we
-             do not already use is the last place a reading could hide */
-          return ss.reduce(function(ch,svc){
-            return ch.then(function(){
-              line('  service '+svc.uuid);
-              return chars(svc,'    ');
+        }).catch(function(e){ line(indent+'(characteristics unreadable — '+((e&&e.name)||e)+')'); });
+      }
+      /* Dump the service's characteristics before reading, so "180f present
+         but non-conforming" is distinguishable from "180f absent". The
+         Battery Service spec makes 2A19 mandatory and readable; if 180f is
+         here and 2A19 is not, that is the interesting answer and it should
+         be visible rather than collapsed into one error name.
+         The SIG UUID and the Web Bluetooth alias resolve to the same
+         service; both are tried so a naming mistake cannot pass for
+         absence. */
+      function attempt(label, id){
+        return g.getPrimaryService(id).then(function(svc){
+          line(label+': service FOUND — characteristics:');
+          return chars(svc,'    ').then(function(){
+            return svc.getCharacteristic(BAT_CHR);
+          }).then(function(c){
+            return c.readValue().then(function(v){
+              if(!v || v.byteLength<1){ line(label+': 2a19 read returned no bytes'); return; }
+              var pct=v.getUint8(0);
+              line(label+': 2a19 = '+pct+(pct>100?'  (out of range — not a percentage)':'%'));
+              line('*** BATTERY READS. Send this to me and the column goes back in. ***');
             });
-          }, Promise.resolve());
-        }).catch(function(e){ line('service enumeration: '+((e&&e.name)||e)); });
-      })
-      .then(function(){ line('— end of scan —'); });
+          }).catch(function(e){ line(label+': 180f found but 2a19 failed — '+((e&&e.name)||e)); });
+        }).catch(function(e){ line(label+': '+((e&&e.name)||e)); });
+      }
+      return attempt('180f by UUID', BAT_SVC)
+        .then(function(){ return attempt('battery_service by alias','battery_service'); })
+        .then(function(){
+          if(!g.getPrimaryServices) return;
+          return g.getPrimaryServices().then(function(ss){
+            line('services granted and present: '+(ss.map(function(x){return x.uuid;}).join(' ')||'none'));
+            /* every one of them, not only DECA: a readable characteristic we
+               do not already use is the last place a reading could hide */
+            return ss.reduce(function(ch,svc){
+              return ch.then(function(){
+                line('  service '+svc.uuid);
+                return chars(svc,'    ');
+              });
+            }, Promise.resolve());
+          }).catch(function(e){ line('service enumeration: '+((e&&e.name)||e)); });
+        })
+        .then(function(){ line('— end of scan —'); });
+    });
   };
   $('scancopy').onclick=function(){
     var t=$('scanout').textContent||'';
@@ -1841,9 +1855,42 @@ $('schedok').onclick=function(){
 $('schedclose').onclick=function(){ $('schedsheet').classList.add('hide'); SCHEDPARSE=null; };
 $('targetcancel').onclick=function(){ $('targetsheet').classList.add('hide'); TP.forRow=null; };
 $('exit').onclick=function(){
-  if(S.rows.length && !confirm('End sweep with '+S.rows.length+' readings?')) return;
-  finish();
+  if(S.rows.length){
+    if(!confirm('End sweep with '+S.rows.length+' readings?')) return;
+    finish();
+    return;
+  }
+  /* Nothing was logged, and that is two different situations: a bag-feel
+     sweep of a room, which must be recorded and flagged (§3), or a room
+     opened by mistake, which should leave no trace. START was one-way — the
+     only exit recorded a sweep either way — so an accidental tap put an
+     empty session in the history and a room's tile went to "swept today". */
+  if(skippedList().length){ finish(); return; }   /* skips are a record */
+  if(confirm('No readings logged.\n\nOK — record this as a hand-only sweep of '+S.room+'.\n\n'+
+             'Cancel — discard it, as if the room was never opened.')){
+    finish();
+    return;
+  }
+  abandonSweep();
 };
+/* Back out of a sweep with nothing recorded: no history entry, no CSV, no
+   coverage, and the room's tile untouched. */
+function abandonSweep(){
+  S.roomStarted=false; S.finished=false;
+  S.rows=[]; S.notes={}; S.free={}; S.skipped={}; S.redo=[];
+  S.route=[]; S.i=0; S.alarmQueue=[]; renderAlarm();
+  S.awaiting=false; clearTimeout(S.rt);
+  releaseAwake();
+  clearSession();
+  ['hdr','route','main','pad'].forEach(function(id){$(id).classList.add('hide');});
+  ['pegsheet','calsheet','logsheet','targetsheet'].forEach(function(id){$(id).classList.add('hide');});
+  S.pegsOpen=false; S.logOpen=false;
+  $('done').classList.add('hide');
+  $('setup').classList.remove('hide');
+  $('startbar').classList.add('up');
+  step('sweep discarded — nothing recorded');
+  toast('discarded — nothing recorded');
+}
 $('hstat').onclick=function(){
   if(isConn()){ toast('connected'); return; }
   connect();
