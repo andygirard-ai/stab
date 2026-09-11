@@ -348,6 +348,88 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the Batt column ============
+  // Field report 9/11: "the CSV already has a Batt column and it's empty."
+  // The read was already here and already correct. Its only failure path was
+  // a bare catch that set null and said nothing, so after weeks of sweeps
+  // nobody could tell whether the ZSC exposes the standard Battery Service
+  // or the read was failing some other way.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    // a bridge that exposes battery_service
+    let notify=null;
+    const gatt={getPrimaryService:n=>n==='battery_service'?Promise.resolve({
+      getCharacteristic:()=>Promise.resolve({
+        readValue:()=>Promise.resolve({getUint8:()=>72}),
+        addEventListener:(ev,fn)=>{ notify=fn; },
+        startNotifications:()=>Promise.resolve()
+      })}):Promise.reject(new Error('nope'))};
+    await w.readBattery(gatt); await sleep(20);
+    ok(w.S.batt===72,'a bridge that exposes it fills the field: '+w.S.batt);
+    ok(w.S.battWhy==='ok','and records that it worked');
+    ok(d.getElementById('batt').textContent==='batt 72%','the stab screen shows it: '+d.getElementById('batt').textContent);
+    ok(d.getElementById('batt').className==='ok','at a healthy level, quietly: "'+d.getElementById('batt').className+'"');
+    // it reaches the row, which is the whole point
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].batt===72,'and the row carries it: '+w.S.rows[0].batt);
+    // a notification updates it without a reconnect
+    notify({target:{value:{getUint8:()=>19}}});
+    ok(w.S.batt===19,'a notification moves it: '+w.S.batt);
+    ok(d.getElementById('batt').className==='amber','under 20 it turns amber');
+    ok(w.S.battWarned,'and the warning fires');
+    notify({target:{value:{getUint8:()=>8}}});
+    ok(d.getElementById('batt').className==='red','under 10 it goes red'); }
+
+  // the warning is said once per crossing, not on every notification
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); await sleep(20);
+    w.S.batt=18; w.S.battWarned=false; w.battWarn();
+    ok(w.S.battWarned,'first crossing warns');
+    w.S.batt=17; w.battWarn();
+    ok(w.S.battWarned,'…and a further drop does not re-arm it');
+    w.S.batt=30; w.battWarn();
+    ok(!w.S.battWarned,'a swapped pack well clear of the line re-arms it');
+    w.S.batt=22; w.S.battWarned=false; w.battWarn();
+    ok(!w.S.battWarned,'22% does not warn'); }
+
+  // a bridge with no battery service says so instead of going quiet
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const err=new Error('no such service'); err.name='NotFoundError';
+    const gatt={
+      getPrimaryService:()=>Promise.reject(err),
+      getPrimaryServices:()=>Promise.resolve([{uuid:'deca0001-10c7-43a8-8c9f-42b70e03808d'}])
+    };
+    await w.readBattery(gatt); await sleep(20);
+    ok(w.S.batt===null,'no reading');
+    ok(w.S.battWhy==='NotFoundError','but the reason is recorded: '+w.S.battWhy);
+    ok(d.getElementById('batt').textContent==='','and the pill stays empty rather than lying');
+    ok(w.DBG.services && /deca0001/.test(w.DBG.services.join(' ')),
+       'the services it does expose are enumerated: '+w.DBG.services.join(' '));
+    ok(!/180f/i.test(w.DBG.services.join(' ')),'…and battery_service is not among them');
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(csv[1].split(',')[col('Batt')]==='','the column stays empty, which is honest');
+    ok(/batt none — NotFoundError/.test(d.getElementById('dbg').textContent),
+       'and the diagnostics say why, so one connect settles it: '+
+       (d.getElementById('dbg').textContent.match(/batt [^·\n]*/)||[''])[0]);
+    ok(/services: deca0001/.test(d.getElementById('dbg').textContent),'listing what was found'); }
+
+  // ============ the pad, in the order the buttons are actually used =======
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const order=[].map.call(d.querySelectorAll('#pad .row.pad4 button'),b=>b.id);
+    ok(order.join(' ')==='redo skip undo extra',
+       '+ plant is at the thumb end and redo at the far one: '+order.join(' '));
+    ok(order[3]==='extra','the most-tapped of the four is last, which is nearest');
+    ok(order[0]==='redo','and the rarest is first, which is furthest');
+    ok(order.indexOf('undo')===2,'undo is beside + plant, with redo still on the row to cover a mis-tap');
+    w.close(); }
+
   // ============ the floor is one number, and it lives in config ============
   // Field note 9/11: the 1.25-gallon floor may move after today's field
   // capacity reads. Nothing downstream may derive itself from bag size.

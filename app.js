@@ -178,7 +178,7 @@ function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
 var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
-  dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null,
+  dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null, battWhy:null, battWarned:false,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
@@ -188,7 +188,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
-var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[]};
+var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[], services:null};
 /* assigned inside buildSetup; settings calls it to open the practice room */
 var pickRoom=function(){};
 var WAIT=[];
@@ -1018,10 +1018,14 @@ function paint(){
   battPaint();
   setBig();
 }
+var BATT_WARN=20, BATT_CRIT=10;
 function battPaint(){
   var b=$('batt');
-  if(S.batt==null||S.batt>30){ b.className=''; b.textContent=''; return; }
-  b.className=S.batt<=15?'red':'amber';
+  if(S.batt==null){ b.className=''; b.textContent=''; return; }
+  /* Shown whenever it is known. A pill that only appears near empty means
+     the operator cannot tell a healthy probe from a probe that never
+     reported, which is the state this has been in all along. */
+  b.className=S.batt<BATT_CRIT?'red':(S.batt<BATT_WARN?'amber':'ok');
   b.textContent='batt '+S.batt+'%';
 }
 function isConn(){ if(DEMO) return true;
@@ -1286,23 +1290,69 @@ function huntFallback(){
 function ready(){
   setBig();
   if(S.auto){ A.state='air'; A.buf=[]; }
-  if(S.batt!=null && S.batt<=15){ beep('battLow'); toast('probe battery '+S.batt+'% — bring spares'); }
+  battWarn();
   if(S.cal && CAL.stage==='saved'){ CAL.stage='live'; calPaint(); }
   step('ready');
 }
+/* The Batt column has been empty since it was added, and the reason was
+   never knowable: this read was already here and already correct, and its
+   only failure path was a bare catch that set null and said nothing. Either
+   the ZSC does not expose the standard Battery Service or the read fails
+   for some other reason, and after weeks of sweeps nobody could tell which.
+   A diagnostic that fails silently teaches nothing.
+
+   So the failure is recorded and surfaced now, and on failure the services
+   the device does expose are enumerated into the diagnostics. One connect
+   in Bluefy answers the question for good.
+
+   What this deliberately does NOT do is guess. Nothing here reads an
+   unidentified characteristic and calls the byte a percentage — a wrong
+   battery number in the CSV is worse than an empty column, because an empty
+   one is obviously empty. */
 function readBattery(g){
-  g.getPrimaryService('battery_service').then(function(s){
+  S.battWhy='reading…';
+  return g.getPrimaryService('battery_service').then(function(s){
     return s.getCharacteristic('battery_level');
   }).then(function(c){
     S.batC=c;
     return c.readValue().then(function(v){
-      S.batt=v.getUint8(0); battPaint();
+      S.batt=v.getUint8(0); S.battWhy='ok'; battPaint(); battWarn();
       c.addEventListener('characteristicvaluechanged',function(e){
-        S.batt=e.target.value.getUint8(0); battPaint();
+        S.batt=e.target.value.getUint8(0); battPaint(); battWarn();
       });
       return c.startNotifications().catch(function(){});
     });
-  }).catch(function(){ S.batt=null; });
+  }).catch(function(e){
+    S.batt=null; S.batC=null;
+    S.battWhy=(e&&(e.name||e.message))?String(e.name||e.message):'unavailable';
+    battPaint();
+    step('battery unavailable — '+S.battWhy);
+    return listGattServices(g);
+  });
+}
+/* What the device actually exposes, once, into the diagnostics. Web
+   Bluetooth only returns services that were granted at requestDevice, so
+   this is a floor on what is there, not a census — but it is enough to
+   settle whether battery_service is among them. */
+function listGattServices(g){
+  if(!g || !g.getPrimaryServices) return Promise.resolve();
+  return g.getPrimaryServices().then(function(ss){
+    DBG.services=ss.map(function(s){ return s.uuid; });
+    step('services: '+(DBG.services.join(' ')||'none readable'));
+  }).catch(function(e){
+    DBG.services=['enumeration refused: '+((e&&e.name)||e)];
+  });
+}
+/* Under 20%, said once per crossing rather than on every notification. */
+function battWarn(){
+  if(S.batt==null) return;
+  var low=S.batt<BATT_WARN;
+  if(low && !S.battWarned){
+    S.battWarned=true;
+    beep('battLow');
+    toast('probe battery '+S.batt+'% — bring a spare');
+  }
+  if(!low && S.batt>BATT_WARN+5) S.battWarned=false;   /* hysteresis on a swapped pack */
 }
 setInterval(function(){
   if(S.batC && isConn()){
@@ -2148,6 +2198,8 @@ function finish(){
   $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
     ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
     ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
+    ' · batt '+(S.batt==null?('none — '+(S.battWhy||'never read')):S.batt+'%')+
+    (DBG.services?('\nservices: '+DBG.services.join(' ')):'')+
     (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
   showHist();
   beep('sweepDone');

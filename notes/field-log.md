@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v36** — v30–v34 shipped 9/10, v35–v36 on 9/11.
+**Live on main: v38** — v30–v34 shipped 9/10, v35–v38 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -38,6 +38,8 @@ interrupted by a reload. This is the list to execute against.
 | v37 | the floor is one number, in room config | field note 9/11 |
 | v37 | room state — active / harvest / empty / move-in | spec §5.7 |
 | v37 | walk order by window, and a warning at Start | backlog §5.5 |
+| v38 | the battery read says why it failed, and shows when it works | 9/11 |
+| v38 | + plant moved to the thumb end of the pad | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -648,3 +650,59 @@ grid is laid out by wing because that is how the rooms are laid out on the
 floor, and re-ordering it would cost more in navigation than it buys. The
 sequence lives at the top of the day screen instead — which is where the
 field note pointed anyway.
+
+### 25. The Batt column → v38
+
+**Observed.** "The CSV already has a Batt column and it's empty. The field
+exists; nothing fills it."
+
+**What it was.** Not a missing feature. `readBattery()` was already there,
+already correct, already called on every connect — it asks for the standard
+Battery Service, reads `battery_level`, subscribes to notifications and
+paints a pill. Its only failure path was
+
+    .catch(function(){ S.batt=null; });
+
+a bare catch that set null and said nothing. So either the ZSC does not
+expose 0x180F or the read fails some other way, and after weeks of sweeps
+there was no way to tell which. **A diagnostic that fails silently teaches
+nothing** — it is worse than no diagnostic, because it looks like one.
+
+I said out loud while looking at this that the function had no caller. It
+does, at `app.js:1210`; my grep was for the wrong names.
+
+**Shipped.** The failure is recorded and surfaced: the step line says
+`battery unavailable — NotFoundError`, the done screen's diagnostics carry
+`batt none — NotFoundError`, and on failure the services the device does
+expose are enumerated beside it. One connect in Bluefy settles the question
+for good.
+
+The pill shows the level **whenever it is known**, not only when nearly flat
+— a pill that only appears near empty means a healthy probe and a probe that
+never reported look identical, which is the state this has been in all along.
+Amber under 20, red under 10, warned once per crossing with hysteresis so a
+swapped pack re-arms it.
+
+**What it deliberately does not do is guess.** Nothing reads an unidentified
+characteristic and calls the byte a percentage. A wrong battery number in the
+CSV is worse than an empty column, because an empty one is obviously empty.
+
+If the enumeration comes back without `180f`, the ZSC does not carry a
+standard battery service and the next move is the vendor's own command set —
+worth a look at the DECA characteristics' properties, which the same
+diagnostic now prints.
+
+### 26. The pad, in the order the buttons are used → v38
+
+**Observed.** "+ plant is a high-frequency tap sitting where a low-frequency
+one should be."
+
+**What it was.** The four pad buttons were `+ plant · skip · undo · redo`,
+equal width, in almost exactly the wrong order. `+ plant` is hit many times a
+room; `redo` is the rarest control on the screen. `+ plant` had the far-left
+slot, the hardest to reach with a thumb, and `redo` had the near-right one.
+
+**Shipped.** `redo · skip · undo · + plant`, and `+ plant` gets a wider
+target to match how often it is hit. `undo` sits beside it because that is
+the mis-tap that costs a reading — and `redo` stays on the same row, one tap
+away, to cover it.

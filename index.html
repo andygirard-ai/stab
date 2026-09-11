@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v37</title>
+<title>Stab v38</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -133,6 +133,16 @@ body.demo{padding-top:34px}
   font-size:23px;font-weight:700;letter-spacing:.05em;box-shadow:0 6px 18px rgba(74,222,128,.25)}
 #startbtn:active{transform:translateY(1px)}
 
+/* The four pad buttons are not equally used. + plant is tapped many times a
+   room — every adjacent plant, every second reading at a position — while
+   redo is the rarest thing on the screen, and they were sitting in the
+   opposite order: + plant on the far left, hardest to reach, redo on the
+   thumb-natural right. Reversed, and + plant gets a wider target to match
+   how often it is hit. Undo sits beside it and is the one mis-tap that
+   costs a reading, so it keeps its own width and redo is one tap away. */
+.row.pad4{grid-template-columns:1fr 1fr 1fr 1.55fr}
+#extra{font-weight:700}
+
 /* ---------- header ---------- */
 #hdr{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}
 #hroom{font-size:21px;font-weight:700;letter-spacing:.04em}
@@ -140,6 +150,7 @@ body.demo{padding-top:34px}
 #batt{display:none;font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:8px;margin-left:auto}
 #batt.amber{display:block;background:rgba(251,191,36,.12);color:var(--warn)}
 #batt.red{display:block;background:rgba(248,113,113,.14);color:var(--low)}
+#batt.ok{display:block;background:var(--surface);color:var(--dimmer)}
 #hstat{padding:6px 8px;border-radius:8px;background:var(--surface);display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
 #batt.amber ~ #hstat, #batt.red ~ #hstat{margin-left:0}
 #batt:not(.amber):not(.red) + #hstat{margin-left:auto}
@@ -471,7 +482,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v37</b></div>
+  <div class="brand">Substrate sweep · <b>v38</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -589,11 +600,11 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 </main>
 <div id="pad" class="hide">
   <button id="log" disabled>CONNECT</button>
-  <div class="row">
-    <button id="extra" disabled>+ plant</button>
+  <div class="row pad4">
+    <button id="redo" disabled>redo</button>
     <button id="skip" disabled>skip</button>
     <button id="undo" disabled>undo</button>
-    <button id="redo" disabled>redo</button>
+    <button id="extra" disabled>+ plant</button>
   </div>
   <div class="row" style="grid-template-columns:1fr;margin-top:7px">
     <button id="logbtn">log a shot · fault · bulb</button>
@@ -603,7 +614,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v37</div>
+  <div class="v">stab v38</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -794,8 +805,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=37"></script>
-<script src="pure.js?v=37"></script>
-<script src="app.js?v=37"></script>
+<script src="rooms.js?v=38"></script>
+<script src="pure.js?v=38"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
