@@ -115,6 +115,7 @@ var MTASK={flush:{A:28,B:21,C:21}, rescue:12,
 var DRIPPERS={
  A1:{1:4,2:4,3:4,4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4,12:4},
  A2:{1:4,2:4,3:2,4:2,5:2,6:2,7:2,8:2,9:2,10:2,11:2,12:2},
+ A3:{1:2,2:2,3:2,4:2,5:2,6:2,7:2,8:2,9:2,10:2,11:2,12:2},
  A4:{1:4,2:4,3:4,4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4,12:4},
  C3:{1:2,2:2,3:2,4:3,5:3,6:3,7:3,8:3,9:3,10:3,11:3}
 };
@@ -123,6 +124,15 @@ var DRIPPERS={
    A2 and C3 both turned out to differ table by table, so an unverified room
    is a guess, not a fact. Room config is where it stops being a guess. */
 var DRIP_DEFAULT={A:4, B:3, C:3};
+
+/* Plants per TABLE, counted in the field. A3's two short tables at the end
+   of the room hold 40 on two rows where the rest hold 60, and C3 differs
+   the same way — a room-wide figure is wrong in two rooms this week, which
+   is enough to say it was never a room-level property. A room absent here
+   has no count; nothing guesses one. */
+var PLANTS={
+ A3:{1:40,2:40,3:40,4:40,5:60,6:60,7:60,8:60,9:60,10:60,11:60,12:60}
+};
 /* mL per minute per EMITTER, by wing. B/C is a half-gallon-per-hour emitter:
    0.5 x 3785.41 mL/gal / 60 = 31.54. Three of them is 94.6 mL/min/plant,
    which is where the 95 figure comes from — so 95 describes a 3-emitter

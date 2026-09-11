@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v47';
+var VER='v48';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -596,9 +596,32 @@ function roomActive(rm){ return roomState(rm)==='active'; }
 function activeRooms(){
   return Object.keys(ROOMS).filter(function(k){ return !ROOMS[k].kind && roomActive(k); });
 }
-function plantsFor(rm){
-  var c=rcfg(rm);
+/* Plants per table, not per room. It was room-wide, and two rooms break
+   that this week: A3 T1-T4 hold 40 on two rows where T5-T12 hold 60, and C3
+   differs the same way. The lookup mirrors drippersFor exactly — per-table
+   override, then the weekly file, then a room-level default if one was
+   typed, then nothing. Nothing guesses a plant count. */
+function plantsFor(rm, t){
+  var c=rcfg(rm), k=String(t);
+  if(c.plantsT && c.plantsT[k]!=null && !isNaN(+c.plantsT[k])) return +c.plantsT[k];
+  var p=PLANTS[rm];
+  if(p && t!=null){
+    if(p[t]!=null) return p[t];
+    if(p[k]!=null) return p[k];
+  }
   return (c.plants!=null && !isNaN(+c.plants)) ? +c.plants : null;
+}
+function plantsKnown(rm, t){
+  var c=rcfg(rm), k=String(t);
+  if(c.plantsT && c.plantsT[k]!=null) return true;
+  var p=PLANTS[rm];
+  return !!(p && t!=null && (p[t]!=null || p[k]!=null));
+}
+/* What a whole table gets, which is the number the volume conversation is
+   actually about. Null rather than a guess when either half is unknown. */
+function mlTableToday(rm, t){
+  var per=mlPlantToday(rm,t), n=plantsFor(rm,t);
+  return (per==null||n==null) ? null : per*n;
 }
 /* Dripper count, and whether anybody has actually counted it. Identical
    runtimes deliver different volumes when the count differs — A2 T1/T2 get
@@ -1358,7 +1381,10 @@ function roomHead(){
     ? ', was '+prevMed.toFixed(1)+' ('+(curMed-prevMed>=0?'+':'')+(curMed-prevMed).toFixed(1)+')' : '';
   var dof=dofNow(S.room);
   return S.room+' · DOF '+(dof===''?'—':dof)+' · '+bag+' gal'+
-    (vol?' · '+vol+' mL'+(volC!=null?'':' (weekly file)'):'')+
+    /* 0 is a real answer — a switched-off room gets nothing — and it was
+       being swallowed by a falsy test, so an off room showed no volume at
+       all rather than saying so */
+    (vol!=null?' · '+vol+' mL'+(volC==null?' (weekly file)':(vol===0?' — room is off':'')):'')+
     (tankFor(S.room)?' · tank '+tankFor(S.room):'')+
     (hrs?' · '+hrs+'h':'')+
     ' · median '+(curMed==null?'--':curMed.toFixed(1))+delta+

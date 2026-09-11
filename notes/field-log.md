@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v47** — v30–v34 shipped 9/10, v35–v47 on 9/11.
+**Live on main: v48** — v30–v34 shipped 9/10, v35–v48 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -52,6 +52,7 @@ interrupted by a reload. This is the list to execute against.
 | v45 | -9991 is not a battery gauge · the scan dumps 180f's characteristics | 9/11 |
 | v46 | the scan connects itself · START is no longer one-way | 9/11 |
 | v47 | GATT dump settles the battery question · the scan reports rejections properly | 9/11 scan |
+| v48 | plants are per table · A3's real drippers and plant counts | 9/11 config |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1206,3 +1207,55 @@ a test that rejects with `{code:2}` and asserts it reads as `code 2`.
 sweep to the probe that took it — useful when two probes disagree about the
 same bag, and the prerequisite for per-probe calibration offsets if they ever
 diverge. Not built; offered.
+
+### 41. Plants are per table → v48
+
+**Observed.** "Plants-per-table is locked to the room; it needs to be per
+table, same as dripper count. C3 T1–T3 and A3 T5–T12 both break the
+room-wide assumption this week."
+
+Right, and it was stored as a single room number. It now mirrors
+`drippersFor` exactly: per-table override, then the weekly file, then a
+room-level default if one was typed, then nothing. **Nothing guesses a plant
+count** — a room nobody has counted reads empty rather than inheriting a
+neighbour's figure.
+
+The room field is still there, relabelled "plants — blanks only", because a
+room that genuinely is uniform should not need twelve identical entries.
+
+The config screen has a plants column beside drippers, and both follow the
+same convention: **bold means somebody counted it.** An unbolded dripper
+count is the wing's usual number and a guess; an empty plant count is not
+known at all.
+
+### 42. A3 was about to compute double the water → v48
+
+A3's numbers went in: **T1–T4 hold 40 on two rows, T5–T12 hold 60, and every
+table runs 2 drippers per plant.**
+
+The dripper figure is the one that mattered. **A3 had no entry at all**, so
+it was falling through to `DRIP_DEFAULT.A`, which is 4 — the A-wing usual. It
+runs 2. Any volume computed for A3 would have been exactly double.
+
+It has not bitten yet only because A3 is switched off in this week's
+schedule, so there is no runtime to multiply. It would have bitten the day
+the room came back on, which is soon — A3 went harvest → empty → move-in this
+week.
+
+**And fixing that exposed another.** With A3 off, `mlPlantToday` correctly
+returns **0** — the room gets nothing — but `roomHead` tested the value for
+truthiness, so 0 was swallowed and the room fell back to showing the weekly
+file's 1890 mL. An off room was reporting the volume it would get if it were
+on. It now prints `0 mL — room is off`.
+
+Also added `mlTableToday()`: millilitres per plant × plants on that table,
+which is the number the volume conversation is actually about. Null rather
+than a guess when either half is unknown.
+
+**One thing I noticed and did not touch.** `ROOMS.A3` carries
+`media:'Mother Earth coco'`, and the Hilhorst offset of 2.90 in CLAUDE.md is
+fitted to the peat-and-biochar mix. Coco has a different bulk permittivity,
+so A3's pore EC may be computed on the wrong offset. There is a per-media
+offset table in CAL mode already. Worth a paired reading against the Aroya
+app when A3 comes back on — say the word and I will check what offset A3 is
+actually using.

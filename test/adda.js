@@ -1206,6 +1206,74 @@ function rowsFor(w,room,spec){
     d.getElementById('exit').click(); await sleep(60);
     ok(!w.getSched().B2.changed,'one taken 1.6 h after the shot does — that is the confirmation'); }
 
+
+  // ============ plants are per table, not per room ============
+  // Field report 9/11: "plants-per-table is locked to the room; it needs to
+  // be per table, same as dripper count. C3 T1–T3 and A3 T5–T12 both break
+  // the room-wide assumption this week."
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.plantsFor('A3',1)===40 && w.plantsFor('A3',4)===40,'A3 T1–T4 hold 40 on two rows');
+    ok(w.plantsFor('A3',5)===60 && w.plantsFor('A3',12)===60,'T5–T12 hold 60');
+    ok(w.plantsFor('A3',1)!==w.plantsFor('A3',5),'which a room-wide number cannot express');
+    ok(w.plantsKnown('A3',1),'and those were counted, not assumed');
+    ok(w.plantsFor('B1',1)===null && !w.plantsKnown('B1',1),
+       'a room nobody has counted has no plant count — nothing is guessed: '+w.plantsFor('B1',1));
+    // a room-level figure still fills tables the weekly file does not cover
+    w.saveRoomCfg('B1',{plants:52, savedAt:Date.now()});
+    ok(w.plantsFor('B1',3)===52,'a typed room default covers a room with no per-table data');
+    // …and a per-table override beats both
+    w.saveRoomCfg('A3',{plantsT:{5:58}, savedAt:Date.now()});
+    ok(w.plantsFor('A3',5)===58,'a per-table override wins: '+w.plantsFor('A3',5));
+    ok(w.plantsFor('A3',6)===60,'…for that table only');
+    w.close(); }
+
+  // A3's drippers: two per plant on every table, not the A-wing default of 4
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.DRIP_DEFAULT.A===4,'the A wing usually runs 4');
+    ok(w.drippersFor('A3',1)===2 && w.drippersFor('A3',12)===2,
+       'but A3 runs 2 on every table: '+w.drippersFor('A3',1));
+    ok(w.drippersKnown('A3',7),'and that is counted, so volume is not doubled');
+    w.close(); }
+
+  // the table total is the number the volume conversation is about
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.mlTableToday('A3',1)===null,'no imported schedule, no table total');
+    const r=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_ALL_2026-09-11.txt'),'utf8'));
+    const a3=r.rooms.filter(g=>g.room==='A3')[0];
+    w.saveSched('A3',{savedAt:Date.now(),room:'A3',tables:a3.tables});
+    ok(w.mlPlantToday('A3',1)===0,'A3 is switched off, so it gets 0 mL — a real answer, not a missing one');
+    w.S.room='A3';
+    ok(/0 mL — room is off/.test(w.roomHead()),'and the header says so rather than falling back to the weekly file');
+    ok(!/1890/.test(w.roomHead()),'the stale 1890 mL from rooms.js does not appear: '+w.roomHead().slice(0,90));
+    // a running room: C4, three drippers, no plant count on file
+    const c4=r.rooms.filter(g=>g.room==='C4')[0];
+    w.saveSched('C4',{savedAt:Date.now(),room:'C4',tables:c4.tables});
+    ok(w.mlPlantToday('C4',1)>0,'C4 has a per-plant figure: '+w.mlPlantToday('C4',1)+' mL');
+    ok(w.mlTableToday('C4',1)===null,'but no table total without a plant count');
+    ok(w.mlTableToday('A3',1)===0,'and an off table totals 0 across its 40 plants');
+    w.saveRoomCfg('C4',{plantsT:{1:60}, savedAt:Date.now()});
+    ok(w.mlTableToday('C4',1)===w.mlPlantToday('C4',1)*60,
+       'given one, the table total follows: '+w.mlTableToday('C4',1)+' mL');
+    w.close(); }
+
+  // the config screen edits them per table
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="A3"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    const pl=t=>d.querySelector('#cfgtables .pl[data-t="'+t+'"]');
+    ok(pl(1).value==='40' && pl(5).value==='60','the rows carry their own counts: T1 '+
+       pl(1).value+', T5 '+pl(5).value);
+    ok(pl(1).classList.contains('known'),'shown as counted');
+    ok(d.querySelector('#cfgtables .dr[data-t="1"]').value==='2','with A3\'s 2 drippers beside them');
+    pl(5).value='58';
+    pl(5).dispatchEvent(new w.Event('input',{bubbles:true}));
+    d.getElementById('cfgsave').click(); await sleep(30);
+    ok(w.plantsFor('A3',5)===58,'an edit saves per table: '+w.plantsFor('A3',5));
+    ok(w.plantsFor('A3',6)===60,'and leaves its neighbours alone');
+    ok(w.plantsFor('A3',1)===40,'…including the short tables');
+    ok(errors.length===0,'no runtime errors (plants): '+errors.join('|'));
+    w.close(); }
+
   // ============ §5.4 room setup ============
   // Two wrong calls on 9/10 came from this being uneditable: C3 showed the
   // previous grow's strain map and produced a wrong tiering recommendation,

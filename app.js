@@ -2773,11 +2773,14 @@ function openRoomSetup(){
   $('cfg_bag2').onchange=drawCfgFloor;
   drawCfgFloor();
   drawCfgDof();
-  var h='<table class="cfgt"><tr><th>T</th><th>strain</th><th>drip</th><th>under</th></tr>';
+  var h='<table class="cfgt"><tr><th>T</th><th>strain</th><th>plants</th><th>drip</th><th>under</th></tr>';
   for(var t=1;t<=ROOMS[S.room].t;t++){
     var si=strainFor(S.room,t), under=(si[1]||'').indexOf('U')>=0;
+    var pn=plantsFor(S.room,t);
     h+='<tr><td>'+t+'</td>'+
        '<td><input type="text" class="st" data-t="'+t+'" value="'+esc(si[0]||'')+'"></td>'+
+       '<td><input type="text" class="pl'+(plantsKnown(S.room,t)?' known':'')+'" inputmode="numeric" '+
+         'data-t="'+t+'" value="'+(pn==null?'':pn)+'"></td>'+
        '<td><input type="text" class="dr'+(drippersKnown(S.room,t)?' known':'')+'" inputmode="numeric" '+
          'data-t="'+t+'" value="'+drippersFor(S.room,t)+'"></td>'+
        '<td><button class="ul'+(under?' on':'')+'" data-t="'+t+'">U</button></td></tr>';
@@ -2787,7 +2790,7 @@ function openRoomSetup(){
     b.onclick=function(){ b.classList.toggle('on'); };
   });
   /* a hand-entered count is a counted one from the moment it is typed */
-  [].forEach.call(document.querySelectorAll('#cfgtables .dr'),function(i){
+  [].forEach.call(document.querySelectorAll('#cfgtables .dr, #cfgtables .pl'),function(i){
     i.oninput=function(){ i.classList.add('known'); };
   });
   $('cfg_fs').oninput=drawCfgDof;
@@ -2856,8 +2859,14 @@ function saveRoomSetup(){
     var n=parseInt(i.value,10);
     if(!isNaN(n) && n>0 && i.classList.contains('known')){ drip[i.dataset.t]=n; anyD=true; }
   });
+  var plantsT={}, anyP=false;
+  [].forEach.call(document.querySelectorAll('#cfgtables .pl'),function(i){
+    var n=parseInt(i.value,10);
+    if(!isNaN(n) && n>0 && i.classList.contains('known')){ plantsT[i.dataset.t]=n; anyP=true; }
+  });
   if(anyS || (c.strains&&Object.keys(c.strains).length)) c.strains=strains;
   if(anyD) c.drippers=drip;
+  if(anyP) c.plantsT=plantsT;
   c.savedAt=Date.now();
   saveRoomCfg(S.room, c);
   ROOMS[S.room].bag=c.bag;

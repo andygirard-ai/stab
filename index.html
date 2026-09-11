@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v47</title>
+<title>Stab v48</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -395,9 +395,9 @@ table.cfgt th{text-align:left;color:var(--dimmer);font-weight:400;font-size:10px
 table.cfgt td{padding:4px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.cfgt input[type=text]{width:100%;background:var(--surface);border:1px solid var(--line);
   border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;color:var(--ink)}
-table.cfgt input.dr{width:46px;text-align:center;background:var(--surface);border:1px solid var(--line);
+table.cfgt input.dr,table.cfgt input.pl{width:46px;text-align:center;background:var(--surface);border:1px solid var(--line);
   border-radius:7px;padding:8px 2px;font-family:var(--mono);font-size:12px;color:var(--ink)}
-table.cfgt input.dr.known{font-weight:700;border-color:var(--live);color:var(--live)}
+table.cfgt input.dr.known,table.cfgt input.pl.known{font-weight:700;border-color:var(--live);color:var(--live)}
 table.cfgt .ul{background:var(--surface);border:1px solid var(--line);border-radius:7px;
   padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--dimmer)}
 table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
@@ -483,7 +483,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v47</b></div>
+  <div class="brand">Substrate sweep · <b>v48</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -620,7 +620,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v47</div>
+  <div class="v">stab v48</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -751,7 +751,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     <div><label>bag gal</label>
       <select id="cfg_bag2"><option value="2">2</option><option value="1.25">1.25</option></select></div>
     <div><label>floor % VWC</label><input id="cfg_floor" inputmode="decimal" placeholder="—"></div>
-    <div><label>plants/table</label><input id="cfg_plants" inputmode="numeric" placeholder="—"></div>
+    <div><label>plants — blanks only</label><input id="cfg_plants" inputmode="numeric" placeholder="—"></div>
     <div><label>tank</label>
       <select id="cfg_tank"><option value="">—</option><option value="A">A</option>
         <option value="B">B</option><option value="C">C</option>
@@ -761,8 +761,11 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <div id="cfg_dof" class="tiny"></div>
 
   <div class="lbl">Tables</div>
-  <div class="tiny">Drippers in <b>bold</b> have been counted. The rest are the
-    wing's usual number and are a guess until somebody walks the room.</div>
+  <div class="tiny">Plants and drippers in <b>bold</b> have been counted. An
+    unbolded dripper count is the wing's usual number and a guess until
+    somebody walks the room; an empty plant count is not known at all. Both
+    are per table — A3 T1–T4 hold 40 where T5–T12 hold 60, and C3 differs the
+    same way, so neither is a property of the room.</div>
   <div id="cfgtables"></div>
 
   <div class="lgact">
@@ -819,8 +822,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=47"></script>
-<script src="pure.js?v=47"></script>
-<script src="app.js?v=47"></script>
+<script src="rooms.js?v=48"></script>
+<script src="pure.js?v=48"></script>
+<script src="app.js?v=48"></script>
 </body>
 </html>
