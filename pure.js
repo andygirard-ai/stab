@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v50';
+var VER='v51';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at

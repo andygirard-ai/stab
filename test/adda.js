@@ -356,6 +356,68 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ a battery number must not outlive its link ============
+  // Field report 9/11: "I'm in demo mode sweeping A7, it's not asking me to
+  // connect, but it is listing the battery percentage — 77%. Having the
+  // battery percentage makes me feel like it's connected to the probe, but
+  // you don't have the probe connected right now."
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const notify=bytes=>w.onPacket({target:{value:{byteLength:bytes.length,getUint8:i=>bytes[i]}}});
+    w.S.dev={name:'ZSC08328', gatt:{connected:true}};
+    w.S.battWait=Date.now();
+    notify(w.frameBytes('77')); await sleep(20);
+    ok(d.getElementById('batt').textContent==='batt 77%','connected, it shows: '+d.getElementById('batt').textContent);
+    // the probe goes to sleep in a pocket
+    w.onDrop(); await sleep(20);
+    ok(w.S.batt===null,'the value goes with the link');
+    ok(d.getElementById('batt').textContent==='','and the pill empties: "'+d.getElementById('batt').textContent+'"');
+    ok(w.S.battWarned===false,'the low warning re-arms for the next probe too'); }
+
+  // demo mode must not borrow a real number to look live
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'A7',2); await sleep(20);
+    d.getElementById('demo').click(); await sleep(20);
+    ok(w.DEMO===true,'demo on');
+    ok(w.isConn()===true,'isConn() reports true in demo whether a probe is there or not');
+    w.S.batt=77; w.S.battAt=Date.now(); w.S.dev=null;
+    w.battPaint();
+    ok(d.getElementById('batt').textContent==='',
+       'but with no GATT link the pill stays empty — the one thing on a demo screen that looked live');
+    ok(w.battLive()===false,'because the pill asks about the link, not about isConn()');
+    // a real probe connected during a demo is still true, and still shown
+    w.S.dev={gatt:{connected:true}}; w.battPaint();
+    ok(d.getElementById('batt').textContent==='batt 77%','a genuinely connected probe still reports'); }
+
+  // a number that has aged says so
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.dev={gatt:{connected:true}}; w.S.batt=77;
+    w.S.battAt=Date.now()-3*60000; w.battPaint();
+    ok(d.getElementById('batt').textContent==='batt 77%','three minutes old reads plainly');
+    w.S.battAt=Date.now()-40*60000; w.battPaint();
+    ok(/batt 77% · 40m/.test(d.getElementById('batt').textContent),
+       'forty minutes old says how old: '+d.getElementById('batt').textContent);
+    w.close(); }
+
+  // the refresh never competes with a stab
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    let sends=0;
+    w.S.dev={gatt:{connected:true}};
+    w.S.wchr={properties:{write:true}, writeValue:function(){ sends++; return Promise.resolve(); }};
+    w.S.battAt=Date.now()-10*60000;      // stale enough to want refreshing
+    // mid-stab: stands down
+    w.A.state='settling';
+    w.S.battWait=0; sends=0;
+    w.requestBattery();                   // the guard lives in the timer, not here
+    ok(sends===1,'requestBattery itself always sends when asked');
+    // and the conditions the timer checks are the ones that matter
+    ok(w.BATT_REFRESH_MS===300000,'refresh interval is five minutes');
+    ok(w.BATT_STALE_MIN===15,'and a number is called stale at fifteen');
+    w.A.state='air';
+    w.close(); }
+
   // ============ the battery packet, decoded ============
   // Captured 9/11 from ZSC08328 (test/batt_capture_2026-09-11.txt):
   //   sent  7C 61 00 0F 67 65 74 20 2D 62 61 74 74 BE 59

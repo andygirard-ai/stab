@@ -95,10 +95,16 @@ The ordinary frame, carrying an **ASCII decimal, a newline and a NUL**. 77 is
 the charge in percent — the range is 0–100 and the APK names it
 `batteryLevel` and draws it with `getBatteryIcon`.
 
-The app asks **once per connect** and stores the reply in the `Batt` column.
-A bare integer on this UART only counts as a battery while a request is
-outstanding, and a value outside 0–100 is refused: "unambiguous in practice"
-is how a wrong number gets into a CSV.
+The app asks **on connect and every five minutes after**, and stores the
+reply in the `Batt` column. A bare integer on this UART only counts as a
+battery while a request is outstanding, and a value outside 0–100 is refused:
+"unambiguous in practice" is how a wrong number gets into a CSV.
+
+**The pill is gated on the live GATT link, not on `isConn()`** — which
+returns true in demo mode whether a probe is present or not. A battery number
+is a claim that a device is there, so it is cleared on disconnect and shows
+its age past fifteen minutes. A stale percentage on screen is worse than
+none: it is the one thing on a demo screen that looks live.
 
 **Settings → Battery capture** re-runs the exchange and logs every
 notification as raw hex and ASCII, for the next time the protocol surprises

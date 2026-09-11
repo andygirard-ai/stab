@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v50** — v30–v34 shipped 9/10, v35–v50 on 9/11.
+**Live on main: v51** — v30–v34 shipped 9/10, v35–v51 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -55,6 +55,7 @@ interrupted by a reload. This is the list to execute against.
 | v48 | plants are per table · A3's real drippers and plant counts | 9/11 config |
 | v49 | battery capture over the DECA UART · A3 is Bio365 | SOLUS 1.2.6 APK |
 | v50 | the battery packet, decoded — Batt reads 77% | 9/11 capture |
+| v51 | the battery pill dies with its link, and refreshes while alive | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1362,3 +1363,48 @@ evidence of a different kind.
 **The probe scan also improved off the back of it.** It now reports
 `180f by UUID: number 2` — Bluefy rejects with a bare number rather than a
 DOMException, which the old reporter rendered as `2`.
+
+### 46. A battery number outliving its link → v51
+
+**Observed.** "I'm in demo mode sweeping A7, it's not asking me to connect,
+but it is listing the battery percentage. It's 77%. Having the battery
+percentage makes me feel like it's connected to the probe, but you don't have
+the probe connected right now."
+
+**What it was.** `onDrop` cleared the characteristics and the pending
+request, and left `S.batt` sitting there. `battPaint` never asked whether
+there was a link at all. So a probe asleep in a pocket still read 77% on
+screen — a number I had shipped four hours earlier, presented as current.
+
+Demo made it worse rather than caused it. In demo `isConn()` returns true
+whether a probe is present or not, so nothing asks to connect; everything on
+that screen is synthetic and marked DEMO **except** the battery, which was a
+real number from a real device that was no longer there. It was the one thing
+on the screen that looked live, which is exactly why it misled.
+
+**Shipped.** The pill is gated on the live GATT link rather than `isConn()`,
+the value and its warning state are cleared on disconnect, and the reading
+carries a timestamp so anything older than fifteen minutes shows its age. A
+genuinely connected probe during a demo still reports, because that is true.
+
+### 47. Does asking cost battery? Not measurably. → v51
+
+His question, and it deserves a real answer rather than a guess.
+
+The exchange is a **15-byte write and a 10-byte notification** on a radio
+that is already up and connected. Against what the device is already doing —
+maintaining the BLE link, and driving the TEROS at 3–16 mA for 25 ms every
+time it measures — the command itself does not register. The expensive thing
+is the connection, and that is paid for whether the app asks or not.
+
+What it does cost is the **write characteristic**, which the sdicmd poll also
+uses. So the refresh now runs every five minutes and stands down whenever
+anything is in flight: a reading awaited, a settle in progress, the trigger
+verifying, CAL open, or a battery request already pending. It tries again a
+minute later. A number from breakfast is no longer on the screen at four in
+the afternoon.
+
+**Still worth watching:** the request goes out at `ready()`, immediately
+after the trigger verifies. If a stab is ever dropped right after connecting,
+that is the one place two writes could collide, and the fix is to move the
+first request behind the first successful reading.

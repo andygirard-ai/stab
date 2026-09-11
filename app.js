@@ -178,7 +178,7 @@ function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
 var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
-  dev:null, chr:null, svc:null, wchr:null, batt:null, battWait:0, battWarned:false,
+  dev:null, chr:null, svc:null, wchr:null, batt:null, battAt:0, battWait:0, battWarned:false,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
@@ -1306,6 +1306,13 @@ emitUnparsed=function(tag,txt){
    practice" is how a wrong number gets into a CSV, so it is tied to a
    request that is still outstanding. */
 var BATT_WARN=20, BATT_CRIT=10, BATT_WAIT=6000;
+/* Refreshed while the probe is in hand, so an all-day sweep is not reading a
+   number from breakfast. The command is a 15-byte write and a 10-byte
+   notification on a radio that is already up; against maintaining the BLE
+   link and driving the TEROS at 3-16 mA for 25 ms a measurement, its own
+   draw is not worth counting. What it does cost is the write characteristic,
+   which the poll also uses — so it only goes out when nothing is in flight. */
+var BATT_REFRESH_MS=300000, BATT_STALE_MIN=15;
 emitBattery=function(pr){
   if(!S.battWait || Date.now()-S.battWait>BATT_WAIT){
     step('battery reply with nothing pending — ignored ('+pr.batt+')');
@@ -1317,9 +1324,21 @@ emitBattery=function(pr){
     return;
   }
   S.batt=pr.batt;
+  S.battAt=Date.now();
   step('battery '+S.batt+'%');
   battPaint(); battWarn();
 };
+/* Keep it current while the probe is in hand, without ever competing with a
+   stab. The write characteristic carries both the sdicmd poll and this, so
+   the refresh stands down whenever anything is in flight and simply tries
+   again a minute later. */
+setInterval(function(){
+  if(!battLive() || !S.wchr) return;
+  if(S.battWait || S.awaiting || S.verifying || S.connecting || S.cal) return;
+  if(A.state==='settling') return;
+  if(S.battAt && Date.now()-S.battAt < BATT_REFRESH_MS) return;
+  requestBattery();
+},60000);
 function requestBattery(){
   if(!S.wchr) return Promise.resolve();
   var d=new Uint8Array(frameBytes(BATT_CMD));
@@ -1328,13 +1347,24 @@ function requestBattery(){
   return (acked?S.wchr.writeValue(d):S.wchr.writeValueWithoutResponse(d))
     .catch(function(){ S.battWait=0; });
 }
+/* A battery number is a claim about a device that is present. It must not
+   outlive the link: the pill was surviving a disconnect, so a probe asleep
+   in a pocket still read 77% on screen, and in demo — where everything else
+   is synthetic — that was the one thing that looked live.
+   Gated on the real GATT link rather than isConn(), which returns true in
+   demo whether a probe is there or not. */
+function battLive(){
+  return !!(S.dev && S.dev.gatt && S.dev.gatt.connected);
+}
 function battPaint(){
   var b=$('batt'); if(!b) return;
-  if(S.batt==null){ b.className=''; b.textContent=''; return; }
+  if(S.batt==null || !battLive()){ b.className=''; b.textContent=''; return; }
   /* shown whenever it is known: a pill that appears only near empty means a
      healthy probe and a probe that never answered look identical */
   b.className=S.batt<BATT_CRIT?'red':(S.batt<BATT_WARN?'amber':'ok');
-  b.textContent='batt '+S.batt+'%';
+  /* and an old number says how old, so a stale one is visibly stale */
+  var age=S.battAt?Math.floor((Date.now()-S.battAt)/60000):0;
+  b.textContent='batt '+S.batt+'%'+(age>=BATT_STALE_MIN?' · '+age+'m':'');
 }
 function battWarn(){
   if(S.batt==null) return;
@@ -1411,7 +1441,9 @@ function onPacket(e){
   rxBytes(bytes);
 }
 function onDrop(){
-  S.chr=null; S.wchr=null; S.svc=null; S.battWait=0; S.batC=null;
+  S.chr=null; S.wchr=null; S.svc=null; S.battWait=0;
+  /* the battery belonged to that link and goes with it */
+  S.batt=null; S.battAt=0; S.battWarned=false; battPaint();
   S.verifying=false; S.awaiting=false; clearTimeout(S.rt);
   $('dot').className='dot'; $('statxt').textContent='dropped';
   if(S.cal && CAL.released){ calPaint(); }
