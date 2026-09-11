@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v42** — v30–v34 shipped 9/10, v35–v42 on 9/11.
+**Live on main: v43** — v30–v34 shipped 9/10, v35–v43 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -47,6 +47,7 @@ interrupted by a reload. This is the list to execute against.
 | v40 | header variants, missing units, 0s = off, sensor column kept | 9/11 paste |
 | v41 | the weekly blob is the whole facility — one paste, 19 rooms | 9/11 blob |
 | v42 | sensor error codes are faults, not silence — -9991 is the low-supply one | TEROS guide |
+| v43 | the Batt column is deleted — the hardware cannot fill it | ZSC guide |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -949,3 +950,50 @@ left empty. An empty column that will never fill is worse than no column.
 Also confirmed against the guide, unchanged: the `aXR3!` response format is
 exactly what the app parses — `a<TAB><counts> <temp> <EC><CR><type><checksum>
 <CRC>`, EC in µS/cm, temperature in °C.
+
+### 35. The Batt column is deleted → v43
+
+The ZSC manual — the bridge, not the sensor — closes it:
+
+- **Power: two AA alkaline batteries.** 2–3 months at normal use, up to 6
+  months with daily use.
+- **LED states**: off is asleep, blinking is advertising, solid blue is
+  connected, **blinking red is "the batteries are too low to take a
+  measurement"**, red and purple is a firmware update.
+- The manual contains **zero** occurrences of battery level, battery status,
+  state of charge, fuel gauge or remaining. There is no percentage anywhere,
+  because a two-AA primary-cell device has no fuel gauge to read one from.
+
+So the ZSC's low-battery indication is **a red LED on the case**, which is no
+use to an app that lives in the operator's other hand.
+
+**The Batt column existed from v18 to v43 and was never once filled.** It is
+gone, along with the Battery Service read, the pill, the two thresholds, the
+five-minute re-read, the service enumeration built to hunt for it, and
+`battery_service` in `optionalServices`. CLAUDE.md carries a line saying not
+to add it back.
+
+**What replaces it is already shipped.** v42's `-9991` handling is the
+battery warning: when the AAs sag far enough that the sensor cannot get its
+supply, the sensor says so, in the frame we already read, and the app now
+raises a held banner for it. The wording is corrected here — "charge or swap
+the bridge" was wrong, they are alkaline cells: it reads **"ZSC batteries too
+low to measure — change the two AA cells."**
+
+The `battLow` tone was about to be deleted with everything else. It is a
+descending three-tone, which is exactly right for this, so it is repurposed
+as `supplyLow` and now fires only on `-9991` — a different sound from the
+other two error codes, because it is the one with a fix the operator carries
+in his pocket.
+
+**Two guides, two answers, and the second one changed the first.** Reading
+only the TEROS guide, I concluded the battery belonged to the bridge and kept
+hunting for it over Bluetooth. The bridge guide says there is nothing to
+hunt. Worth remembering that "it's in the other component" is a hypothesis,
+not a finding.
+
+**And a process note, third time running.** Another multi-edit script aborted
+on its second assertion and wrote nothing, so a message correction I had
+reported as applied was not. I caught it by grepping for the new string
+rather than trusting the `ok`. One edit per script from here, verified by
+reading the file back.

@@ -153,7 +153,7 @@
    rolls back "last here" · S10 hygiene.
    New: acked writes + frame reassembly (CRC-verified RX) · auto
    capture (stab-to-log) with stability detection + beeps · long-press
-   CAL mode with per-media Hilhorst offsets · battery pill (30/15%) ·
+   CAL mode with per-media Hilhorst offsets ·
    wake lock + video fallback · coverage board · operator column ·
    navigator.share · debug ring.
    CSV: original 22 columns unchanged, appended: Operator, Frame,
@@ -178,7 +178,7 @@ function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
 var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   op:'APG', notes:{}, route:[], i:0, rows:[], last:null, lastAt:0,
-  dev:null, chr:null, svc:null, wchr:null, batC:null, batt:null, battWhy:null, battWarned:false,
+  dev:null, chr:null, svc:null, wchr:null,
   trigger:null, verifying:false, connecting:false, everConn:false,
   awaiting:false, tries:0, rt:null, tWrite:0, lastLat:null, lastPoll:0,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
@@ -189,7 +189,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
 var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[],
-         services:null, chars:null, sensorErr:0, lastSensorErr:null};
+         sensorErr:0, lastSensorErr:null};
 /* assigned inside buildSetup; settings calls it to open the practice room */
 var pickRoom=function(){};
 var WAIT=[];
@@ -251,7 +251,10 @@ function audio(){
 var TONES={ok:[[880,80]], warn:[[660,80],[660,80]], floor:[[440,90],[440,90],[440,90]],
   out:[[660,70],[330,150]], tick:[[1320,35]], tableDone:[[523,70],[659,70],[784,120]],
   sweepDone:[[523,80],[659,80],[784,80],[1047,180]], cal:[[988,70],[1319,80]],
-  battLow:[[494,120],[392,120],[330,220]], drop:[[330,170],[262,220]],
+  /* descending, and distinct from the outlier beep: the ZSC runs on two AA
+     alkalines with no fuel gauge, so -9991 from the sensor is the only
+     warning the operator gets that they need changing. */
+  supplyLow:[[494,120],[392,120],[330,220]], drop:[[330,170],[262,220]],
   /* zero-EC alarm (1.4): lower and longer than 'out' so it does not read as
      just another outlier beep — rooms are loud, so this costs nothing to add
      even though the operator is told not to rely on it. */
@@ -1036,19 +1039,9 @@ function paint(){
       }else cd.textContent='';
     }
   }
-  battPaint();
   setBig();
 }
-var BATT_WARN=20, BATT_CRIT=10;
-function battPaint(){
-  var b=$('batt');
-  if(S.batt==null){ b.className=''; b.textContent=''; return; }
-  /* Shown whenever it is known. A pill that only appears near empty means
-     the operator cannot tell a healthy probe from a probe that never
-     reported, which is the state this has been in all along. */
-  b.className=S.batt<BATT_CRIT?'red':(S.batt<BATT_WARN?'amber':'ok');
-  b.textContent='batt '+S.batt+'%';
-}
+
 function isConn(){ if(DEMO) return true;
   return !!(S.dev && S.dev.gatt && S.dev.gatt.connected && S.chr); }
 /* Three probe states, one colour each (Addendum B §2). GREEN pulsing: clear
@@ -1146,7 +1139,7 @@ emitSensorError=function(pr){
   step('sensor error '+pr.err+' — '+pr.msg);
   A.state='air'; A.buf=[];
   S.awaiting=false; clearTimeout(S.rt);
-  beep('alarm');
+  beep(pr.err==='-9991'?'supplyLow':'alarm');
   if(S.alarmQueue.length<2) showAlarm('probe '+pr.err+' · '+pr.msg);
   setBig();
 };
@@ -1261,7 +1254,6 @@ function connect(){
     S.everConn=true; S.connecting=false;
     ['log','extra','skip','undo','redo'].forEach(function(id){$(id).disabled=false;});
     $('statxt').textContent='waiting';
-    readBattery(S.dev.gatt);
     setBig();
     return verifyTrigger();
   }).catch(function(err){
@@ -1273,10 +1265,10 @@ function connect(){
 }
 function pickAndConnect(){
   step('requesting device');
-  return navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC,'battery_service']})
+  return navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]})
     .catch(function(){
       step('retry with all devices');
-      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,'battery_service']});
+      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});
     })
     .then(function(dev){
       S.dev=dev;
@@ -1338,98 +1330,9 @@ function huntFallback(){
 function ready(){
   setBig();
   if(S.auto){ A.state='air'; A.buf=[]; }
-  battWarn();
   if(S.cal && CAL.stage==='saved'){ CAL.stage='live'; calPaint(); }
   step('ready');
 }
-/* The Batt column has been empty since it was added, and the reason was
-   never knowable: this read was already here and already correct, and its
-   only failure path was a bare catch that set null and said nothing. Either
-   the ZSC does not expose the standard Battery Service or the read fails
-   for some other reason, and after weeks of sweeps nobody could tell which.
-   A diagnostic that fails silently teaches nothing.
-
-   So the failure is recorded and surfaced now, and on failure the services
-   the device does expose are enumerated into the diagnostics. One connect
-   in Bluefy answers the question for good.
-
-   What this deliberately does NOT do is guess. Nothing here reads an
-   unidentified characteristic and calls the byte a percentage — a wrong
-   battery number in the CSV is worse than an empty column, because an empty
-   one is obviously empty. */
-function readBattery(g){
-  S.battWhy='reading…';
-  return g.getPrimaryService('battery_service').then(function(s){
-    return s.getCharacteristic('battery_level');
-  }).then(function(c){
-    S.batC=c;
-    return c.readValue().then(function(v){
-      S.batt=v.getUint8(0); S.battWhy='ok'; battPaint(); battWarn();
-      listGattServices(g);
-      c.addEventListener('characteristicvaluechanged',function(e){
-        S.batt=e.target.value.getUint8(0); battPaint(); battWarn();
-      });
-      return c.startNotifications().catch(function(){});
-    });
-  }).catch(function(e){
-    S.batt=null; S.batC=null;
-    S.battWhy=(e&&(e.name||e.message))?String(e.name||e.message):'unavailable';
-    battPaint();
-    step('battery unavailable — '+S.battWhy);
-    return listGattServices(g);
-  });
-}
-/* What the device actually exposes, once, into the diagnostics. Web
-   Bluetooth only returns services that were granted at requestDevice, so
-   this is a floor on what is there, not a census — but it is enough to
-   settle whether battery_service is among them. */
-/* What the bridge actually exposes. Web Bluetooth only hands back services
-   granted at requestDevice, so this is not a census — but the DECA service
-   is granted, and its characteristics are where a vendor battery reading
-   would live if one exists. The TEROS itself has none: it is a passive
-   4.0-15 VDC sensor whose whole SDI-12 command set carries no power
-   telemetry, so anything battery-shaped belongs to the ZSC bridge. */
-function listGattServices(g){
-  if(!g || !g.getPrimaryServices) return Promise.resolve();
-  return g.getPrimaryServices().then(function(ss){
-    DBG.services=ss.map(function(s){ return s.uuid; });
-    step('services: '+(DBG.services.join(' ')||'none readable'));
-    /* the DECA characteristics, with their properties — a readable one we
-       do not already use is the only place a vendor battery could hide */
-    var svc=null;
-    ss.forEach(function(x){ if(String(x.uuid).indexOf('deca')===0) svc=x; });
-    if(!svc || !svc.getCharacteristics) return;
-    return svc.getCharacteristics().then(function(cs){
-      DBG.chars=cs.map(function(c){
-        var p=c.properties||{}, f=[];
-        if(p.read) f.push('read');
-        if(p.notify) f.push('notify');
-        if(p.write) f.push('write');
-        if(p.writeWithoutResponse) f.push('writeNR');
-        return c.uuid.slice(0,8)+'['+f.join(',')+']';
-      });
-      step('deca chars: '+DBG.chars.join(' '));
-    }).catch(function(){});
-  }).catch(function(e){
-    DBG.services=['enumeration refused: '+((e&&e.name)||e)];
-  });
-}
-/* Under 20%, said once per crossing rather than on every notification. */
-function battWarn(){
-  if(S.batt==null) return;
-  var low=S.batt<BATT_WARN;
-  if(low && !S.battWarned){
-    S.battWarned=true;
-    beep('battLow');
-    toast('probe battery '+S.batt+'% — bring a spare');
-  }
-  if(!low && S.batt>BATT_WARN+5) S.battWarned=false;   /* hysteresis on a swapped pack */
-}
-setInterval(function(){
-  if(S.batC && isConn()){
-    S.batC.readValue().then(function(v){ S.batt=v.getUint8(0); battPaint(); }).catch(function(){});
-  }
-},300000);
 
 /* ---------------- manual capture ---------------- */
 function bigTap(){
@@ -1648,7 +1551,7 @@ function doCommit(r, meta){
     tries:S.auto?(A.samples||1):(S.tries||0),
     unstable:!!meta.unstable,
     implaus:isImplausible(S.room, r.vwc, !!S.postFlush),
-    batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
+    lat:(S.lastLat==null?'':S.lastLat),
     manualCommit:!!meta.manual,
     /* 1.4: a live per-stab alarm, distinct from the CHECK "no feed" rule —
        this fires on ONE reading, not two, because it means "delivery
@@ -2216,17 +2119,16 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
   var swx=sweepFlags();
   if(S.postFlush) swx.push('POST_FLUSH');
-  if(S.batt==null && S.battWhy) swx.push('BATT:'+String(S.battWhy).replace(/[ ,]/g,'_'));
   if(DBG.sensorErr) swx.push('SENSOR_ERR:'+DBG.lastSensorErr+'x'+DBG.sensorErr);
   var swFlags=swx.join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
-      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
+      (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
       (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
       tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):''),
       csvq(flagLine(S.room,r.table))].join(',');
@@ -2302,10 +2204,7 @@ function finish(){
   $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
     ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
     ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
-    ' · batt '+(S.batt==null?('none — '+(S.battWhy||'never read')):S.batt+'%')+
     (DBG.sensorErr?' · sensor errors '+DBG.sensorErr+' (last '+DBG.lastSensorErr+')':'')+
-    (DBG.services?('\nservices: '+DBG.services.join(' ')):'')+
-    (DBG.chars?('\ndeca chars: '+DBG.chars.join(' ')):'')+
     (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
   showHist();
   beep('sweepDone');

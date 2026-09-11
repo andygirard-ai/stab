@@ -49,10 +49,17 @@ same frame shape as a reading:
 -9991   supply voltage too low to measure
 ```
 
-`-9991` is the **only low-supply signal this hardware gives**. The TEROS 12 is
-a passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per measurement; it has
-no battery and its SDI-12 command set carries no power telemetry. Anything
-battery-shaped belongs to the ZSC bridge, not the sensor.
+`-9991` is the **only battery warning the app can give.** The TEROS 12 is a
+passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per measurement — no
+battery, no power telemetry in its SDI-12 command set. The **ZSC bridge runs
+on two AA alkaline cells** (2–3 months normal use, up to 6 with daily use)
+with no fuel gauge, and its manual documents no level readout of any kind:
+its own low-battery indication is a **red blinking LED on the case**.
+
+So there is nothing to read over Bluetooth. **The CSV had a Batt column from
+v18 to v42 and it was never once filled.** It is gone. Do not add it back —
+the hardware cannot fill it, and an empty column that will never fill reads
+as a bug in the app rather than a fact about the probe.
 
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 

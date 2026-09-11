@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v42';
+var VER='v43';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -745,14 +745,18 @@ function poreEC(counts, bulk_uS, tC, off){
    probe in any of these states looked to the operator like a probe that had
    simply gone quiet: misses climbing, no reading, no reason.
 
-   -9991 is the one that matters most here. The TEROS 12 has no battery — it
-   is a passive 4.0-15 VDC sensor and its whole SDI-12 command set carries no
-   power telemetry — so this is the only low-supply signal the hardware
-   gives, and it comes down the wire we already read. */
+   -9991 is the one that matters most, and it is the whole of the battery
+   story. The TEROS 12 is a passive 4.0-15 VDC sensor with no battery and no
+   power telemetry. The ZSC bridge it plugs into runs on two AA alkaline
+   cells with no fuel gauge, and its manual documents no level readout of any
+   kind — the ZSC's own low-battery indication is a red blinking LED on the
+   case, which is no use to an app. So this frame is the only battery warning
+   the app can give, and it arrives on the wire we already read.
+   */
 var SENSOR_ERRS={
   '-9999':'measurement compromised — the values would mean nothing',
   '-9992':'sensor calibration lost or corrupt — needs METER support',
-  '-9991':'supply voltage too low to measure — charge or swap the bridge'
+  '-9991':'ZSC batteries too low to measure — change the two AA cells'
 };
 function parseText(txt){
   var s=String(txt).replace(/[^\x20-\x7E]/g,' ');

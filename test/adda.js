@@ -354,15 +354,16 @@ function rowsFor(w,room,spec){
 
 
   // ============ the TEROS guide: sensor error codes ============
-  // The Integrator Guide settles the battery question by exclusion. The
-  // TEROS 12 is a passive 4.0-15 VDC sensor and its whole SDI-12 command set
-  // carries no power telemetry, so it has no battery to report. What it does
-  // have is three error codes printed in place of the measured value, and
-  // -9991 is "insufficient voltage to perform the measurement" — the only
-  // low-supply signal this hardware gives, arriving on the wire we already
-  // read. All three were falling through to the unparsed bucket.
+  // Two guides settle the battery question. The TEROS 12 is a passive
+  // 4.0-15 VDC sensor whose SDI-12 command set carries no power telemetry;
+  // the ZSC bridge runs on two AA alkaline cells with no fuel gauge and
+  // documents no level readout anywhere — its low-battery signal is a red
+  // blinking LED on the case. So there is nothing to read, and the Batt
+  // column is gone. What remains is -9991, "insufficient voltage to perform
+  // the measurement", which arrives on the wire we already read. All three
+  // error codes were falling through to the unparsed bucket.
   { const {w,d,errors}=boot(null); await sleep(50);
-    const cases=[['-9991',/supply voltage too low/],['-9992',/calibration lost/],
+    const cases=[['-9991',/ZSC batteries too low/],['-9992',/calibration lost/],
                  ['-9999',/measurement compromised/]];
     cases.forEach(([code,re])=>{
       const pr=w.parseText('0\t'+code+' 24.9 308\rg8');
@@ -384,8 +385,9 @@ function rowsFor(w,room,spec){
     ok(w.S.i===i0,'the cursor does not move');
     ok(!d.getElementById('alarm').classList.contains('hide'),'the operator gets a held banner');
     ok(/-9991/.test(d.getElementById('alarmtxt').textContent) &&
-       /supply voltage too low/.test(d.getElementById('alarmtxt').textContent),
-       'naming the fault: '+d.getElementById('alarmtxt').textContent);
+       /change the two AA cells/.test(d.getElementById('alarmtxt').textContent),
+       'and says what to do about it, which is not "charge" — they are alkaline: '+
+       d.getElementById('alarmtxt').textContent);
     ok(d.getElementById('alarmundo').classList.contains('hide'),
        'with no Undo, because no reading was taken');
     ok(w.DBG.sensorErr===1 && w.DBG.lastSensorErr==='-9991','and it is counted: '+w.DBG.sensorErr);
@@ -401,32 +403,9 @@ function rowsFor(w,room,spec){
     const col=n=>csv[0].split(',').indexOf(n);
     ok(/SENSOR_ERR:-9991x1/.test(csv[1].split(',')[col('Sweep flags')]),
        'and the sweep carries it into the export: '+csv[1].split(',')[col('Sweep flags')]);
+    ok(col('Batt')<0,'the Batt column is gone — nothing in this hardware can fill it');
     ok(/sensor errors 1 \(last -9991\)/.test(d.getElementById('dbg').textContent),
        'with the count in the diagnostics'); }
-
-  // the bridge scan reports its characteristics, which is where a vendor
-  // battery would have to live if one exists
-  { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'B2',2); await sleep(20);
-    const err=new Error('x'); err.name='NotFoundError';
-    await w.readBattery({
-      getPrimaryService:()=>Promise.reject(err),
-      getPrimaryServices:()=>Promise.resolve([{
-        uuid:'deca0001-10c7-43a8-8c9f-42b70e03808d',
-        getCharacteristics:()=>Promise.resolve([
-          {uuid:'deca0002-10c7-43a8-8c9f-42b70e03808d',properties:{write:true}},
-          {uuid:'deca0003-10c7-43a8-8c9f-42b70e03808d',properties:{notify:true}},
-          {uuid:'deca0004-10c7-43a8-8c9f-42b70e03808d',properties:{read:true}}
-        ])}])
-    });
-    await sleep(30);
-    ok(w.DBG.chars && w.DBG.chars.length===3,'the DECA characteristics are enumerated: '+
-       (w.DBG.chars||[]).join(' '));
-    ok(/deca0004\[read\]/.test(w.DBG.chars.join(' ')),
-       'a readable one we do not already use would show up here');
-    d.getElementById('exit').click(); await sleep(60);
-    ok(/deca chars: /.test(d.getElementById('dbg').textContent),
-       'and it lands in the export diagnostics, not just a screen'); }
 
   // ============ the weekly blob — the whole facility in one paste =========
   // What he actually copies each week: nineteen rooms, 209 records, one
@@ -766,94 +745,6 @@ function rowsFor(w,room,spec){
        'and the export says so, which is what explains the numbers: '+csv[1].split(',')[col('Sweep flags')]);
     ok(!JSON.parse(w.localStorage.getItem('stab_setup')||'{}').postFlush,
        'it is not remembered — Monday must not inherit a lifted ceiling'); }
-
-  // 5. the battery reason rides along in the export he already sends
-  { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
-    const err=new Error('x'); err.name='NotFoundError';
-    await w.readBattery({getPrimaryService:()=>Promise.reject(err),
-                         getPrimaryServices:()=>Promise.resolve([])});
-    await sleep(20);
-    enterSettling(w,33.0,900); await sleep(20);
-    d.getElementById('log').click(); await sleep(20);
-    d.getElementById('exit').click(); await sleep(60);
-    const csv=d.getElementById('csv').value.split('\n');
-    const col=n=>csv[0].split(',').indexOf(n);
-    ok(/BATT:NotFoundError/.test(csv[1].split(',')[col('Sweep flags')]),
-       'the reason is in the CSV, not only on a screen nobody screenshots: '+
-       csv[1].split(',')[col('Sweep flags')]);
-    ok(csv[1].split(',')[col('Batt')]==='','and the Batt column stays honestly empty'); }
-
-  // ============ the Batt column ============
-  // Field report 9/11: "the CSV already has a Batt column and it's empty."
-  // The read was already here and already correct. Its only failure path was
-  // a bare catch that set null and said nothing, so after weeks of sweeps
-  // nobody could tell whether the ZSC exposes the standard Battery Service
-  // or the read was failing some other way.
-  { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
-    // a bridge that exposes battery_service
-    let notify=null;
-    const gatt={getPrimaryService:n=>n==='battery_service'?Promise.resolve({
-      getCharacteristic:()=>Promise.resolve({
-        readValue:()=>Promise.resolve({getUint8:()=>72}),
-        addEventListener:(ev,fn)=>{ notify=fn; },
-        startNotifications:()=>Promise.resolve()
-      })}):Promise.reject(new Error('nope'))};
-    await w.readBattery(gatt); await sleep(20);
-    ok(w.S.batt===72,'a bridge that exposes it fills the field: '+w.S.batt);
-    ok(w.S.battWhy==='ok','and records that it worked');
-    ok(d.getElementById('batt').textContent==='batt 72%','the stab screen shows it: '+d.getElementById('batt').textContent);
-    ok(d.getElementById('batt').className==='ok','at a healthy level, quietly: "'+d.getElementById('batt').className+'"');
-    // it reaches the row, which is the whole point
-    enterSettling(w,33.0,900); await sleep(20);
-    d.getElementById('log').click(); await sleep(20);
-    ok(w.S.rows[0].batt===72,'and the row carries it: '+w.S.rows[0].batt);
-    // a notification updates it without a reconnect
-    notify({target:{value:{getUint8:()=>19}}});
-    ok(w.S.batt===19,'a notification moves it: '+w.S.batt);
-    ok(d.getElementById('batt').className==='amber','under 20 it turns amber');
-    ok(w.S.battWarned,'and the warning fires');
-    notify({target:{value:{getUint8:()=>8}}});
-    ok(d.getElementById('batt').className==='red','under 10 it goes red'); }
-
-  // the warning is said once per crossing, not on every notification
-  { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'B2',2); await sleep(20);
-    w.S.batt=18; w.S.battWarned=false; w.battWarn();
-    ok(w.S.battWarned,'first crossing warns');
-    w.S.batt=17; w.battWarn();
-    ok(w.S.battWarned,'…and a further drop does not re-arm it');
-    w.S.batt=30; w.battWarn();
-    ok(!w.S.battWarned,'a swapped pack well clear of the line re-arms it');
-    w.S.batt=22; w.S.battWarned=false; w.battWarn();
-    ok(!w.S.battWarned,'22% does not warn'); }
-
-  // a bridge with no battery service says so instead of going quiet
-  { const {w,d,errors}=boot(null); await sleep(50);
-    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
-    const err=new Error('no such service'); err.name='NotFoundError';
-    const gatt={
-      getPrimaryService:()=>Promise.reject(err),
-      getPrimaryServices:()=>Promise.resolve([{uuid:'deca0001-10c7-43a8-8c9f-42b70e03808d'}])
-    };
-    await w.readBattery(gatt); await sleep(20);
-    ok(w.S.batt===null,'no reading');
-    ok(w.S.battWhy==='NotFoundError','but the reason is recorded: '+w.S.battWhy);
-    ok(d.getElementById('batt').textContent==='','and the pill stays empty rather than lying');
-    ok(w.DBG.services && /deca0001/.test(w.DBG.services.join(' ')),
-       'the services it does expose are enumerated: '+w.DBG.services.join(' '));
-    ok(!/180f/i.test(w.DBG.services.join(' ')),'…and battery_service is not among them');
-    enterSettling(w,33.0,900); await sleep(20);
-    d.getElementById('log').click(); await sleep(20);
-    d.getElementById('exit').click(); await sleep(60);
-    const csv=d.getElementById('csv').value.split('\n');
-    const col=n=>csv[0].split(',').indexOf(n);
-    ok(csv[1].split(',')[col('Batt')]==='','the column stays empty, which is honest');
-    ok(/batt none — NotFoundError/.test(d.getElementById('dbg').textContent),
-       'and the diagnostics say why, so one connect settles it: '+
-       (d.getElementById('dbg').textContent.match(/batt [^·\n]*/)||[''])[0]);
-    ok(/services: deca0001/.test(d.getElementById('dbg').textContent),'listing what was found'); }
 
   // ============ the pad, in the order the buttons are actually used =======
   { const {w,d,errors}=boot(null); await sleep(50);

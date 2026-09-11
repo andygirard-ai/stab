@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v42</title>
+<title>Stab v43</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -147,13 +147,7 @@ body.demo{padding-top:34px}
 #hdr{display:flex;align-items:center;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}
 #hroom{font-size:21px;font-weight:700;letter-spacing:.04em}
 #hside{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
-#batt{display:none;font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:8px;margin-left:auto}
-#batt.amber{display:block;background:rgba(251,191,36,.12);color:var(--warn)}
-#batt.red{display:block;background:rgba(248,113,113,.14);color:var(--low)}
-#batt.ok{display:block;background:var(--surface);color:var(--dimmer)}
 #hstat{padding:6px 8px;border-radius:8px;background:var(--surface);display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
-#batt.amber ~ #hstat, #batt.red ~ #hstat{margin-left:0}
-#batt:not(.amber):not(.red) + #hstat{margin-left:auto}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--dimmer)}
 .dot.live{background:var(--live);box-shadow:0 0 0 3px rgba(96,165,250,.18)}
 .dot.stale{background:var(--warn)}
@@ -485,7 +479,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v42</b></div>
+  <div class="brand">Substrate sweep · <b>v43</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -588,7 +582,6 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ SWEEP ============ -->
 <header id="hdr" class="hide">
   <span id="hroom"></span><span id="hside"></span>
-  <span id="batt"></span>
   <button id="hstat"><span class="dot" id="dot"></span><span id="statxt">off</span></button>
   <button id="note">NOTE</button>
   <button id="exit">END</button>
@@ -623,7 +616,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v42</div>
+  <div class="v">stab v43</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -814,8 +807,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=42"></script>
-<script src="pure.js?v=42"></script>
-<script src="app.js?v=42"></script>
+<script src="rooms.js?v=43"></script>
+<script src="pure.js?v=43"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>
