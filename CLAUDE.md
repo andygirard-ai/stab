@@ -50,11 +50,13 @@ same frame shape as a reading:
 -9991   supply voltage too low to measure
 ```
 
-**`-9991` is not a battery gauge.** It says the sensor's supply was
-inadequate at the moment of measurement — a bad stereo connection, contact
-resistance or a regulation fault can cause it as readily as exhausted cells —
-and it is an end-stage fault: by the time it fires the measurement is already
-lost. It is no substitute for a graded 73 / 42 / 18 reading.
+**`-9991` is not a battery gauge and is not a substitute for one.** It says
+the sensor's supply was inadequate at the moment of measurement — a bad
+stereo connection, contact resistance or a regulation fault can cause it as
+readily as exhausted cells — and it is an end-stage fault: by the time it
+fires the measurement is already lost. It stands on its own as the TEROS
+insufficient-supply error. The battery reading is a separate thing, obtained
+with `get -batt` over the DECA UART.
 
 The TEROS 12 is a passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per
 measurement — no battery, no power telemetry in its SDI-12 command set. The
@@ -63,32 +65,30 @@ with daily use); its manual documents no level readout, but that manual is
 user-facing and has no GATT section at all, so it says nothing either way
 about the firmware's services.
 
-**The CSV had a Batt column from v18 to v42 and it was never once filled.**
-It is gone. It was read exactly the way the Bluetooth SIG specifies —
-service `0x180F`, characteristic `0x2A19`, `getUint8(0)`, 0–100, with
-`battery_service` in `optionalServices` — and that implementation returned
-nothing across weeks of sweeps.
-
-**Settled by GATT dump, 9/11/2026, probe ZSC08328** (`test/probe_scan_2026-09-11.txt`):
+**The battery is on the DECA UART, not on a standard service.** The SOLUS
+1.2.6 release binary carries the literal command
 
 ```
-services granted and present: DECA0001-10C7-43A8-8C9F-42B70E03808D
-  service DECA0001-10C7-43A8-8C9F-42B70E03808D
-    DECA0002-…  [write,writeWithoutResponse]
-    DECA0003-…  [notify]
+get -batt
 ```
 
-`battery_service` **was** in `optionalServices` on that build, so the
-enumeration was authoritative: had the device carried `0x180F`, it would be
-in that list. It is not. **One service, two characteristics, and neither is
-readable** — so there is no vendor battery reading hiding in the DECA service
-either. Both `0x180F` attempts rejected.
+beside `MeterBleUart`, `BLEUart`, the DECA UUIDs, `SolusDevice`,
+`batteryLevel` and `getBatteryIcon` — and contains **no `180F` and no
+`2A19`**. The GATT dump of probe ZSC08328 on 9/11
+(`test/probe_scan_2026-09-11.txt`) agrees on the second half: one service,
+DECA0001, carrying only DECA0002 `[write,writeWithoutResponse]` and DECA0003
+`[notify]`, nothing readable.
 
-This is a fact about the device now, not a judgement on evidence. Do not add
-the column back, and do not re-open the question from documentation: the SIG
-numbers, the manuals and the fuel-gauge argument are all beside the point
-next to the dump. **Settings → Probe scan** re-runs it in ten seconds if a
-different bridge ever needs checking.
+Both facts are true, and the mistake was treating the first as an answer to
+the second. **Do not go looking for a Battery Service again** — and do not
+conclude from its absence that there is no battery. It comes back over the
+same UART that answers `sdicmd 0XR3!!`, framed the same way.
+
+**Settings → Battery capture** sends `get -batt` through that transport and
+logs every notification as hex and ASCII without parsing any of it. The
+parser is to be written from an observed packet. Until one is captured, the
+CSV carries no battery column — that is a gap awaiting a packet, not a
+settled absence.
 
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 

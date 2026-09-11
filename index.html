@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v48</title>
+<title>Stab v49</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -416,7 +416,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
 #settop{font-size:28px;font-weight:700;margin-bottom:2px}
 #setsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:6px;line-height:1.5}
-#scanout{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+#batout,#scanout{background:var(--surface);border:1px solid var(--line);border-radius:9px;
   padding:10px;font-family:var(--mono);font-size:11px;color:var(--ink);line-height:1.5;
   white-space:pre-wrap;word-break:break-all;margin:8px 0;min-height:18px;
   -webkit-user-select:text;user-select:text}
@@ -483,7 +483,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v48</b></div>
+  <div class="brand">Substrate sweep · <b>v49</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -620,7 +620,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v48</div>
+  <div class="v">stab v49</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -790,6 +790,16 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     <textarea id="imppaste" class="hide" rows="3" placeholder="or paste the exported text here, then tap Import again"></textarea>
   </div>
 
+  <div class="lbl">Battery capture</div>
+  <div class="tiny">Sends <b>get -batt</b> over the DECA UART — the command
+    found in the SOLUS 1.2.6 binary — using the same framing and write as
+    sdicmd, and records every notification raw. Nothing is parsed: the
+    parser gets written from the packet, not from a guess. Connects on its
+    own; wake the probe first.</div>
+  <button class="dbtn" id="batgo">Capture get -batt</button>
+  <pre id="batout"></pre>
+  <button class="dbtn" id="batcopy">Copy the capture</button>
+
   <div class="lbl">Probe scan</div>
   <div class="tiny">Asks the bridge directly whether it carries the standard
     Battery Service. It connects on its own — wake the probe first, then tap.
@@ -822,8 +832,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=48"></script>
-<script src="pure.js?v=48"></script>
-<script src="app.js?v=48"></script>
+<script src="rooms.js?v=49"></script>
+<script src="pure.js?v=49"></script>
+<script src="app.js?v=49"></script>
 </body>
 </html>

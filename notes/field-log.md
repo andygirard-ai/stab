@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v48** — v30–v34 shipped 9/10, v35–v48 on 9/11.
+**Live on main: v49** — v30–v34 shipped 9/10, v35–v49 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -53,6 +53,7 @@ interrupted by a reload. This is the list to execute against.
 | v46 | the scan connects itself · START is no longer one-way | 9/11 |
 | v47 | GATT dump settles the battery question · the scan reports rejections properly | 9/11 scan |
 | v48 | plants are per table · A3's real drippers and plant counts | 9/11 config |
+| v49 | battery capture over the DECA UART · A3 is Bio365 | SOLUS 1.2.6 APK |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1259,3 +1260,58 @@ so A3's pore EC may be computed on the wrong offset. There is a per-media
 offset table in CAL mode already. Worth a paired reading against the Aroya
 app when A3 comes back on — say the word and I will check what offset A3 is
 actually using.
+
+### 43. The battery is on the UART. I was wrong to delete it. → v49
+
+The SOLUS 1.2.6 APK settles it. The release AOT binary contains the literal
+command
+
+    get -batt
+
+alongside `MeterBleUart`, `BLEUart`, the DECA UUIDs, `SolusDevice`,
+`batteryLevel` and `getBatteryIcon` — and **no `180F`, no `2A19`**.
+
+**My GATT dump was right and my conclusion from it was wrong.** The dump
+proved there is no standard Battery Service on this device. I read that as
+proving there is no battery reading, and deleted the feature. The original
+app never used a Battery Service either: it asks over the same proprietary
+UART that answers `sdicmd 0XR3!!`. I was looking in the one place the vendor
+had already decided not to put it, and then treating a confirmed absence
+there as an answer about the whole device.
+
+Worth naming the pattern, because it is now three for three: the absence of
+`0x180F` in the manual proved nothing, its absence from the GATT dump proved
+only that it is not a Battery Service device, and both times I let a narrow
+true finding stand in for a broad conclusion. The APK is the first piece of
+evidence in this whole thread that is actually about how the battery is
+read.
+
+**Shipped: Settings → Battery capture.** It sends `get -batt` through the
+proven transport — `frameBytes()`, the same 7C 61 marker, the same
+CRC-16/XMODEM, the same write characteristic, the same acked-or-not write —
+and records **every notification as hex and ASCII**, before framing or
+parsing touches it. The raw hook sits in `onPacket`, which is the single
+point every notification passes through, and is off unless a capture is
+running.
+
+**Nothing is parsed.** No percentage is derived, no value is stored, no
+column comes back. The parser gets written from an observed packet.
+
+If the framed form draws no reply within 2.5 s it sends the bare command on
+the same characteristic and labels the two attempts apart — one trip to the
+room instead of two. Both are logged whatever happens, including "(no
+notifications)", because a silent attempt is a result.
+
+`-9991` stays what it is: the TEROS insufficient-supply error, standing on
+its own, not a stand-in for a battery reading. CLAUDE.md says so, and says
+not to go hunting for a Battery Service again — nor to conclude anything
+from its absence.
+
+### 44. A3 is Bio365 now → v49
+
+Replanted out of Mother Earth coco. It was the only coco room in the
+facility, and therefore the only room whose Hilhorst offset could have
+differed from the fitted 2.90 — the concern I raised in v48 is moot rather
+than answered. Every production room is now on one substrate, which the test
+asserts directly so that a future coco room fails the suite instead of
+quietly using the wrong offset.

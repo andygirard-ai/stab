@@ -769,6 +769,73 @@ function histTs(h){
         .then(function(){ line('— end of scan —'); });
     });
   };
+  /* ---- battery capture over the DECA UART ----
+     The SOLUS 1.2.6 release binary contains the literal command "get -batt"
+     alongside MeterBleUart, BLEUart, the DECA UUIDs, SolusDevice,
+     batteryLevel and getBatteryIcon, and contains no 180F or 2A19. So the
+     original app reads the battery through this same UART, and the GATT dump
+     that found no Battery Service was right about the service and wrong as
+     an answer about the battery.
+
+     This sends the command through the transport already proven by sdicmd —
+     same framing, same characteristic, same write — and records every
+     notification raw. It does not parse the reply. The parser gets written
+     from an observed packet, not from a guess about one. */
+  $('batgo').onclick=function(){
+    var out=[], el=$('batout');
+    function line(x){ out.push(x); el.textContent=out.join('\n'); }
+    function dump(label, frames){
+      if(!frames.length){ line('  (no notifications)'); return; }
+      frames.forEach(function(f,i){
+        line('  ['+(i+1)+'] +'+(f.ms-frames[0].ms)+'ms  '+f.n+' bytes');
+        line('      hex   '+f.hex);
+        line('      ascii '+f.ascii);
+      });
+    }
+    line('battery capture · '+new Date().toLocaleString('en-US'));
+    (function(){
+      if(S.dev && S.dev.gatt && S.dev.gatt.connected) return Promise.resolve(true);
+      if(!navigator.bluetooth){ line('no Web Bluetooth — open this in Bluefy'); return Promise.resolve(false); }
+      line('connecting…  (wake the probe: press its button, LED blinks)');
+      return connect().then(function(){ return !!(S.dev&&S.dev.gatt&&S.dev.gatt.connected); })
+        .catch(function(e){ line('connect failed: '+errText(e)); return false; });
+    })().then(function(okc){
+      if(!okc){ line('— end —'); return; }
+      if(!S.wchr){ line('no write characteristic — cannot send'); line('— end —'); return; }
+      line('device: '+(S.dev.name||'(unnamed)'));
+      /* notifications were subscribed by connect(), before any write */
+      line('notify: DECA0003 subscribed by connect, before anything was sent');
+      var acked=!!(S.wchr.properties && S.wchr.properties.write);
+      function send(label, bytes){
+        line('');
+        line(label);
+        line('  sent  '+hexOf(bytes));
+        rawCapStart();
+        var d=new Uint8Array(bytes);
+        var w=acked?S.wchr.writeValue(d):S.wchr.writeValueWithoutResponse(d);
+        return w.catch(function(e){ line('  write failed: '+errText(e)); })
+          .then(function(){ return new Promise(function(r){ setTimeout(r,2500); }); })
+          .then(function(){ return rawCapStop(); });
+      }
+      var framed=frameBytes(BATT_CMD);
+      return send('framed "'+BATT_CMD+'"  — the same framing sdicmd uses', framed)
+        .then(function(f){
+          dump('framed', f);
+          if(f.length) return null;
+          /* nothing came back to the framed form; the raw form costs another
+             two seconds and saves a second trip to the room */
+          var raw=[]; for(var i=0;i<BATT_CMD.length;i++) raw.push(BATT_CMD.charCodeAt(i)&0xFF);
+          return send('raw "'+BATT_CMD+'"  — unframed, same characteristic', raw)
+            .then(function(g){ dump('raw', g); });
+        })
+        .then(function(){ line(''); line('— end of capture —'); });
+    });
+  };
+  $('batcopy').onclick=function(){
+    var t=$('batout').textContent||'';
+    if(!t.trim()){ toast('run the capture first'); return; }
+    shareOrCopy(t,'batt_capture_'+fnameDate()+'.txt','battery capture');
+  };
   $('scancopy').onclick=function(){
     var t=$('scanout').textContent||'';
     if(!t.trim()){ toast('run the scan first'); return; }
@@ -1275,10 +1342,27 @@ emitReading=function(pr){
   }
   if(S.auto && !S.pegsOpen && !S.logOpen && !S.finished && !S.verifying && S.trigger) autoFeed(r);
 };
+/* Raw notification capture, off by default. Every notification passes
+   through here before any framing or parsing, which is the only place a
+   reply of unknown shape can be recorded faithfully. The SOLUS 1.2.6 binary
+   carries the literal string "get -batt" beside MeterBleUart, SolusDevice,
+   batteryLevel and getBatteryIcon — and no 180F or 2A19 — so the battery
+   comes back over this UART in a form nobody here has seen yet. Log it, do
+   not interpret it. */
+var RAWCAP=null;
+function rawCapStart(){ RAWCAP=[]; }
+function rawCapStop(){ var r=RAWCAP; RAWCAP=null; return r||[]; }
+function hexOf(bytes){
+  return bytes.map(function(b){ return (b<16?'0':'')+b.toString(16); }).join(' ').toUpperCase();
+}
+function asciiOf(bytes){
+  return bytes.map(function(b){ return (b>=0x20&&b<=0x7E)?String.fromCharCode(b):'.'; }).join('');
+}
 function onPacket(e){
   DBG.pkts++;
   var dv=e.target.value, bytes=[];
   for(var i=0;i<dv.byteLength;i++) bytes.push(dv.getUint8(i));
+  if(RAWCAP) RAWCAP.push({ms:Date.now(), n:bytes.length, hex:hexOf(bytes), ascii:asciiOf(bytes)});
   rxBytes(bytes);
 }
 function onDrop(){

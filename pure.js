@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v48';
+var VER='v49';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -683,6 +683,9 @@ var SVC='deca0001-10c7-43a8-8c9f-42b70e03808d';
    What is in doubt is whether this bridge implements it, which is a question
    about the device and not about the spec. The probe scan in settings asks
    the device directly. */
+/* The literal command in the SOLUS 1.2.6 release binary. Sent through the
+   DECA UART, framed exactly as sdicmd is. */
+var BATT_CMD='get -batt';
 var BAT_SVC='0000180f-0000-1000-8000-00805f9b34fb';
 var BAT_CHR='00002a19-0000-1000-8000-00805f9b34fb';
 var NTF='deca0003-10c7-43a8-8c9f-42b70e03808d';

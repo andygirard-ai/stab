@@ -354,6 +354,100 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ battery over the DECA UART ============
+  // The SOLUS 1.2.6 release binary carries the literal "get -batt" beside
+  // MeterBleUart, SolusDevice, batteryLevel and getBatteryIcon, and no 180F
+  // or 2A19. The GATT dump was right that there is no Battery Service and
+  // wrong as an answer about the battery — it comes back over the same UART
+  // that answers sdicmd.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.BATT_CMD==='get -batt','the command is the literal from the binary: '+JSON.stringify(w.BATT_CMD));
+    // framed exactly as sdicmd is: 7C 61, length, payload, CRC-16/XMODEM
+    const f=w.frameBytes(w.BATT_CMD);
+    ok(f[0]===0x7C && f[1]===0x61,'framed with the same 7C 61 marker');
+    ok(((f[2]<<8)|f[3])===f.length,'…the same whole-frame length: '+((f[2]<<8)|f[3])+' of '+f.length);
+    ok(f.length===6+w.BATT_CMD.length,'…and no padding: '+f.length+' bytes for a '+w.BATT_CMD.length+'-char command');
+    const body=f.slice(0,f.length-2), crc=(f[f.length-2]<<8)|f[f.length-1];
+    ok(w.crc16(body)===crc,'…and a CRC that checks out');
+    const ascii=f.slice(4,f.length-2).map(b=>String.fromCharCode(b)).join('');
+    ok(ascii==='get -batt','the payload is the command verbatim: '+JSON.stringify(ascii));
+    w.close(); }
+
+  // the capture records notifications raw, before any parsing touches them
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    let written=null;
+    w.S.dev={name:'ZSC08328', gatt:{connected:true}};
+    // a notification arrives through onPacket, which is where the raw hook
+    // sits — rxBytes is one layer further in and would bypass it
+    const notify=bytes=>w.onPacket({target:{value:{byteLength:bytes.length,
+      getUint8:i=>bytes[i]}}});
+    w.S.wchr={properties:{write:true}, writeValue:function(d2){
+      written=[].slice.call(d2);
+      setTimeout(function(){ notify(w.frameBytes('batt 87 4.21V')); },30);
+      return Promise.resolve();
+    }};
+    d.getElementById('batgo').click(); await sleep(2900);
+    const t=d.getElementById('batout').textContent;
+    ok(written && written.join()===w.frameBytes('get -batt').join(),
+       'it writes the framed command through the sdicmd write path');
+    ok(/framed "get -batt"/.test(t),'the capture says what it sent');
+    ok(/subscribed by connect, before anything was sent/.test(t),
+       'and that notifications were already subscribed — connect does that before any write');
+    ok(/hex   7C 61/.test(t),'the reply is logged as hex: '+(t.match(/hex   [^\n]*/)||[''])[0]);
+    ok(/ascii .*batt 87 4\.21V/.test(t),'and as ascii: '+(t.match(/ascii [^\n]*/)||[''])[0]);
+    // nothing is interpreted
+    ok(!/87%/.test(t) && !/percent/i.test(t),'nothing is parsed — no percentage is claimed anywhere');
+    ok(w.S.batt===undefined || w.S.batt==null,'and no battery value is stored');
+    ok(errors.length===0,'no runtime errors (battery capture): '+errors.join('|'));
+    w.close(); }
+
+  // no reply to the framed form falls back to the raw one, labelled, in the
+  // same trip to the room
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    const sent=[];
+    w.S.dev={name:'ZSC08328', gatt:{connected:true}};
+    w.S.wchr={properties:{write:true}, writeValue:function(d2){
+      sent.push([].slice.call(d2)); return Promise.resolve();
+    }};
+    d.getElementById('batgo').click(); await sleep(5600);
+    const t=d.getElementById('batout').textContent;
+    ok(sent.length===2,'two attempts when the first is silent: '+sent.length);
+    ok(sent[0][0]===0x7C,'the first is framed');
+    ok(sent[1].map(b=>String.fromCharCode(b)).join()===''.concat(...'get -batt').split('').join(),
+       'the second is the bare command on the same characteristic');
+    ok(/\(no notifications\)/.test(t),'each silent attempt says so');
+    ok(/raw "get -batt"/.test(t),'and the two are labelled apart: '+
+       (t.match(/raw "[^\n]*/)||[''])[0]);
+    w.close(); }
+
+  // the raw hook is off unless a capture is running
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===1,'an ordinary sweep is unaffected');
+    ok(w.hexOf([0x7C,0x61,0x0F])==='7C 61 0F','the hex helper is plain: '+w.hexOf([0x7C,0x61,0x0F]));
+    ok(w.asciiOf([0x62,0x61,0x74,0x74,0x00])==='batt.','and unprintables show as dots: '+
+       w.asciiOf([0x62,0x61,0x74,0x74,0x00])); }
+
+  // A3 is Bio365 now, so no room in the facility runs coco
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.ROOMS.A3.media==='Bio365','A3 was replanted into Bio365: '+w.ROOMS.A3.media);
+    ok(w.ROOMS.A3.bag===2,'…still 2 gallon');
+    const media={}; Object.keys(w.ROOMS).forEach(k=>{ if(!w.ROOMS[k].kind) media[w.ROOMS[k].media]=1; });
+    ok(Object.keys(media).join()==='Bio365',
+       'every production room is on one substrate, so the fitted 2.90 offset covers all of them: '+
+       Object.keys(media).join(', '));
+    ok(w.offsetFor('Bio365')===2.90,'and that offset is 2.90: '+w.offsetFor('Bio365'));
+    w.close(); }
+
   // ============ the scan had no way to be run ============
   // Field report 9/11: "when I'm in settings and I tap scan probe, I'm not
   // connected. But then when I go to a room and connect, the only way to get

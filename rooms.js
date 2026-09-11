@@ -26,7 +26,10 @@ var SCHED_ML_TABLE={ C3:{7:1330, 8:1330} };
    at sweep start; that override lives in stab_roomcfg, not here) */
 var ROOMS={
  A1:{t:12,bag:2,media:'Bio365'}, A2:{t:12,bag:2,media:'Bio365'},
- A3:{t:12,bag:2,media:'Mother Earth coco'}, A4:{t:12,bag:1.25,media:'Bio365'},
+ /* 9/11: replanted into Bio365. It was the only coco room in the facility,
+    which meant it was the only room whose Hilhorst offset could differ from
+    the fitted 2.90 — that question is now moot. */
+ A3:{t:12,bag:2,media:'Bio365'}, A4:{t:12,bag:1.25,media:'Bio365'},
  A5:{t:12,bag:1.25,media:'Bio365'}, A6:{t:12,bag:1.25,media:'Bio365'},
  A7:{t:12,bag:1.25,media:'Bio365'},
  B1:{t:11,bag:2,media:'Bio365'}, B2:{t:11,bag:2,media:'Bio365'},
