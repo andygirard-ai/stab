@@ -49,12 +49,18 @@ same frame shape as a reading:
 -9991   supply voltage too low to measure
 ```
 
-`-9991` is the **only battery warning the app can give.** The TEROS 12 is a
-passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per measurement — no
-battery, no power telemetry in its SDI-12 command set. The **ZSC bridge runs
-on two AA alkaline cells** (2–3 months normal use, up to 6 with daily use)
-with no fuel gauge, and its manual documents no level readout of any kind:
-its own low-battery indication is a **red blinking LED on the case**.
+**`-9991` is not a battery gauge.** It says the sensor's supply was
+inadequate at the moment of measurement — a bad stereo connection, contact
+resistance or a regulation fault can cause it as readily as exhausted cells —
+and it is an end-stage fault: by the time it fires the measurement is already
+lost. It is no substitute for a graded 73 / 42 / 18 reading.
+
+The TEROS 12 is a passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per
+measurement — no battery, no power telemetry in its SDI-12 command set. The
+**ZSC bridge runs on two AA alkaline cells** (2–3 months normal use, up to 6
+with daily use); its manual documents no level readout, but that manual is
+user-facing and has no GATT section at all, so it says nothing either way
+about the firmware's services.
 
 **The CSV had a Batt column from v18 to v42 and it was never once filled.**
 It is gone. It was read exactly the way the Bluetooth SIG specifies —
@@ -62,13 +68,16 @@ service `0x180F`, characteristic `0x2A19`, `getUint8(0)`, 0–100, with
 `battery_service` in `optionalServices` — and that implementation returned
 nothing across weeks of sweeps.
 
-**What is and is not established.** The SIG numbers are not in doubt. Whether
-*this bridge* implements them is a question about the device, and no METER
-document answers it: the ZSC manual has no GATT, UUID, service or
-characteristic section at all. The evidence for absence is the field result
-plus a two-AA primary cell with no obvious fuel gauge — strong, but
-circumstantial. A device that knows to blink red *does* measure its supply
-somehow, so a coarse voltage-derived percentage is not impossible.
+**What is and is not established.** The SIG numbers are not in doubt.
+Whether *this bridge* implements them is a question about the device, and
+nothing on record answers it. The 8/30 audit that introduced the column was
+a code audit — its findings are S1–S10, all software defects — and it
+contains no GATT dump; `Batt` was appended alongside `Operator`, `Frame` and
+`Lat ms` as a speculative diagnostic. **Nobody has ever observed `0x180F` on
+this device.** Equally, nobody has observed its absence: the manual's silence
+proves nothing, and an MCU can derive a percentage from an ADC on the supply
+rail without any fuel-gauge IC, which the Battery Service spec expressly
+allows (Battery Level may represent expected usable lifetime).
 
 **Settings → Probe scan** asks the bridge directly and prints the error name
 verbatim. **If it ever returns a byte, put the column back** — the deletion

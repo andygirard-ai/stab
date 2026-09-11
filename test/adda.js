@@ -363,7 +363,7 @@ function rowsFor(w,room,spec){
   // on the wire we already read. All three error codes were falling through
   // to the unparsed bucket.
   { const {w,d,errors}=boot(null); await sleep(50);
-    const cases=[['-9991',/ZSC batteries too low/],['-9992',/calibration lost/],
+    const cases=[['-9991',/supply voltage too low/],['-9992',/calibration lost/],
                  ['-9999',/measurement compromised/]];
     cases.forEach(([code,re])=>{
       const pr=w.parseText('0\t'+code+' 24.9 308\rg8');
@@ -384,10 +384,12 @@ function rowsFor(w,room,spec){
     ok(w.S.rows.length===0,'nothing is logged: '+w.S.rows.length+' rows');
     ok(w.S.i===i0,'the cursor does not move');
     ok(!d.getElementById('alarm').classList.contains('hide'),'the operator gets a held banner');
-    ok(/-9991/.test(d.getElementById('alarmtxt').textContent) &&
-       /change the two AA cells/.test(d.getElementById('alarmtxt').textContent),
-       'and says what to do about it, which is not "charge" — they are alkaline: '+
-       d.getElementById('alarmtxt').textContent);
+    const at=d.getElementById('alarmtxt').textContent;
+    ok(/-9991/.test(at) && /stereo plug/.test(at) && /ZSC batteries/.test(at),
+       'and names the supply fault with its likeliest causes in order — not "the batteries are low", '+
+       'which -9991 does not say: '+at);
+    ok(!/batteries too low/.test(at),
+       '-9991 is a supply fault at the sensor, not a battery gauge, and the wording must not imply one');
     ok(d.getElementById('alarmundo').classList.contains('hide'),
        'with no Undo, because no reading was taken');
     ok(w.DBG.sensorErr===1 && w.DBG.lastSensorErr==='-9991','and it is counted: '+w.DBG.sensorErr);
@@ -790,7 +792,31 @@ function rowsFor(w,room,spec){
        'and the alias separately, so a naming mistake cannot pass for absence');
     ok(/deca0002.*write/.test(t) && /deca0003.*notify/.test(t),
        'the characteristics it does carry are listed, with their properties');
+    ok(/service deca0001/.test(t),'under the service they belong to');
     ok(!/column goes back in/.test(t),'and nothing claims a battery was found');
+    w.close(); }
+
+  // 180f present but non-conforming is a different answer from 180f absent,
+  // and the scan has to show which
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    const nf=new Error('x'); nf.name='NotFoundError';
+    w.S.dev={name:'ZSC', gatt:{connected:true,
+      getPrimaryService:()=>Promise.resolve({
+        getCharacteristics:()=>Promise.resolve([
+          {uuid:'00002a1a-0000-1000-8000-00805f9b34fb',properties:{read:true}}]),
+        getCharacteristic:()=>Promise.reject(nf)}),
+      getPrimaryServices:()=>Promise.resolve([])}};
+    d.getElementById('scango').click(); await sleep(80);
+    const t=d.getElementById('scanout').textContent;
+    ok(/service FOUND — characteristics:/.test(t),'a found service lists what it carries');
+    ok(/00002a1a/.test(t),'…including a characteristic that is not 2a19: '+
+       (t.match(/00002a1a[^\n]*/)||[''])[0]);
+    ok(/180f found but 2a19 failed/.test(t),
+       'and the read failure is reported separately from the service being absent');
+    ok(!/BATTERY READS/.test(t),'nothing claims a battery was found');
     w.close(); }
 
   // ============ the pad, in the order the buttons are actually used =======

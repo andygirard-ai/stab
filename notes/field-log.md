@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v44** — v30–v34 shipped 9/10, v35–v44 on 9/11.
+**Live on main: v45** — v30–v34 shipped 9/10, v35–v45 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -49,6 +49,7 @@ interrupted by a reload. This is the list to execute against.
 | v42 | sensor error codes are faults, not silence — -9991 is the low-supply one | TEROS guide |
 | v43 | the Batt column is deleted — it never once returned a value | ZSC guide |
 | v44 | probe scan — ask the bridge instead of arguing about it | 9/11 |
+| v45 | -9991 is not a battery gauge · the scan dumps 180f's characteristics | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -1053,3 +1054,66 @@ This is the same mistake twice in two days, from two directions: on 9/11 I
 decided the battery "belongs to the bridge" and went hunting; today a second
 opinion decided the bridge "advertises 0x180F" and called it solved. Neither
 was a measurement. The scan is a measurement.
+
+### 37. Three corrections taken, one premise checked → v45
+
+The second opinion came back with three specific errors in what I wrote. Two
+I had already conceded in v44; the third I had not, and it was the best point
+in the exchange.
+
+**Taken: the manual proves nothing about the GATT database.** A user manual
+is not a BLE integration guide. METER documents two AA cells, battery life
+and the red LED because those are user-facing. Absence of "battery level"
+from it says nothing about firmware. I leaned on that argument hard in v43
+and it does not carry weight.
+
+**Taken: the fuel-gauge claim is false.** An MCU can derive a percentage from
+an ADC on the supply rail with no fuel-gauge IC — and the Battery Service
+spec expressly permits Battery Level to represent expected usable lifetime
+rather than a measured state of charge.
+
+**Taken, and this one is new and important: `-9991` is not a battery
+indication.** I framed it as "the only battery warning the app can give." It
+is not. It says the *sensor's supply was inadequate at the moment of
+measurement*, which a bad stereo connection, contact resistance or a
+regulation fault can cause as readily as flat cells. And it is an end-stage
+fault — by the time it fires, the measurement is already lost. It is no
+substitute for a graded 73 / 42 / 18.
+
+Fixed in the message the operator actually sees. It read *"ZSC batteries too
+low to measure — change the two AA cells."* It now reads **"supply voltage
+too low to measure — check the stereo plug, then the ZSC batteries"** — the
+likeliest causes in the order worth checking them, and no claim about
+charge state. CLAUDE.md says the same, and the test asserts the wording does
+*not* imply a gauge.
+
+**The premise I checked, because everything else rested on it.** The argument
+was built on "the thing you already observed on the actual device: the ZSC
+exposed/advertised BLE service 0x180F" — hedged, in their own words, as *"if
+your August 30 BLE audit actually discovered 0x180F."*
+
+It did not. The 8/30 audit is in the changelog at the top of app.js. Its
+findings are **S1–S10 and every one is a software defect** — resume,
+reconnect, request/response correlation, trigger hunting, in-flight state,
+redo, connect failures, CSV quoting, undo, hygiene. There is no GATT dump in
+it. The same entry records the CSV change as *"appended: Operator, Frame,
+Batt, Lat ms"* — four diagnostic columns added together, `Batt` among them,
+on the assumption that the standard service would be there if anyone asked.
+
+**So nobody has ever observed `0x180F` on this device.** Nobody has observed
+its absence either. Both of us were reasoning from documents about a question
+only the device can answer.
+
+**Shipped.** The scan now does exactly what they prescribed: discover, then
+**enumerate the service's characteristics**, then look for `2A19`, then read
+it. That ordering matters — "180f present but non-conforming" and "180f
+absent" are different answers and were collapsing into one error name. It
+also dumps every granted service's characteristics, not just DECA.
+
+`battery_service` has been back in `optionalServices` since v44, so the
+revert they asked for is already in place. The column stays out only because
+there is nothing to put in it yet; the scan says in plain words that a byte
+puts it back.
+
+**One ten-second test settles it. Connect the probe, Settings → Probe scan,
+copy, send.**

@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v44';
+var VER='v45';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -752,18 +752,18 @@ function poreEC(counts, bulk_uS, tC, off){
    probe in any of these states looked to the operator like a probe that had
    simply gone quiet: misses climbing, no reading, no reason.
 
-   -9991 is the one that matters most, and it is the whole of the battery
-   story. The TEROS 12 is a passive 4.0-15 VDC sensor with no battery and no
-   power telemetry. The ZSC bridge it plugs into runs on two AA alkaline
-   cells with no fuel gauge, and its manual documents no level readout of any
-   kind — the ZSC's own low-battery indication is a red blinking LED on the
-   case, which is no use to an app. So this frame is the only battery warning
-   the app can give, and it arrives on the wire we already read.
+   -9991 is NOT a battery gauge and must not be described as one. It says
+   the sensor's supply was inadequate at the moment of measurement, which a
+   bad stereo connection, contact resistance or a regulation fault can cause
+   as readily as exhausted cells. And it is an end-stage fault: by the time
+   it fires the measurement is already lost. It is no substitute for a
+   graded 73 / 42 / 18 reading, which is a separate question about whether
+   the ZSC exposes the standard Battery Service — see the probe scan.
    */
 var SENSOR_ERRS={
   '-9999':'measurement compromised — the values would mean nothing',
   '-9992':'sensor calibration lost or corrupt — needs METER support',
-  '-9991':'ZSC batteries too low to measure — change the two AA cells'
+  '-9991':'supply voltage too low to measure — check the stereo plug, then the ZSC batteries'
 };
 function parseText(txt){
   var s=String(txt).replace(/[^\x20-\x7E]/g,' ');

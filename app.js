@@ -693,10 +693,27 @@ function histTs(h){
     line('device: '+(S.dev.name||'(unnamed)'));
     /* the SIG UUID and the Web Bluetooth alias resolve to the same service;
        both are tried so a naming mistake cannot be confused with absence */
+    function chars(svc, indent){
+      if(!svc.getCharacteristics) return Promise.resolve();
+      return svc.getCharacteristics().then(function(cs){
+        cs.forEach(function(c){
+          var p=c.properties||{}, f=[];
+          ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
+          line(indent+c.uuid+'  ['+f.join(',')+']');
+        });
+      }).catch(function(e){ line(indent+'(characteristics unreadable — '+((e&&e.name)||e)+')'); });
+    }
+    /* Dump the service's characteristics before reading, so "180f present
+       but non-conforming" is distinguishable from "180f absent". The Battery
+       Service spec makes 2A19 mandatory and readable; if 180f is here and
+       2A19 is not, that is the interesting answer and it should be visible
+       rather than collapsed into one error name. */
     function attempt(label, id){
       return g.getPrimaryService(id).then(function(svc){
-        line(label+': service FOUND');
-        return svc.getCharacteristic(BAT_CHR).then(function(c){
+        line(label+': service FOUND — characteristics:');
+        return chars(svc,'    ').then(function(){
+          return svc.getCharacteristic(BAT_CHR);
+        }).then(function(c){
           return c.readValue().then(function(v){
             if(!v || v.byteLength<1){ line(label+': 2a19 read returned no bytes'); return; }
             var pct=v.getUint8(0);
@@ -712,17 +729,14 @@ function histTs(h){
         if(!g.getPrimaryServices) return;
         return g.getPrimaryServices().then(function(ss){
           line('services granted and present: '+(ss.map(function(x){return x.uuid;}).join(' ')||'none'));
-          var deca=null;
-          ss.forEach(function(x){ if(String(x.uuid).indexOf('deca')===0) deca=x; });
-          if(!deca || !deca.getCharacteristics) return;
-          return deca.getCharacteristics().then(function(cs){
-            line('deca characteristics:');
-            cs.forEach(function(c){
-              var p=c.properties||{}, f=[];
-              ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
-              line('  '+c.uuid+'  ['+f.join(',')+']');
+          /* every one of them, not only DECA: a readable characteristic we
+             do not already use is the last place a reading could hide */
+          return ss.reduce(function(ch,svc){
+            return ch.then(function(){
+              line('  service '+svc.uuid);
+              return chars(svc,'    ');
             });
-          });
+          }, Promise.resolve());
         }).catch(function(e){ line('service enumeration: '+((e&&e.name)||e)); });
       })
       .then(function(){ line('— end of scan —'); });
