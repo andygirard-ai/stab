@@ -184,7 +184,7 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   pegsOpen:false, cal:false, finished:false, roomStarted:false,
   redo:[], logOpen:false, triage:[], feedEC:null, feedPH:null, skips:0, unstable:0, startedAt:0, copied:false, shared:false, free:{},
   skipped:{}, access:null, alarmQueue:[], huntFails:0, shotMidSweep:false, probeFrames:0,
-  profile:false, spotTable:null,
+  profile:false, spotTable:null, postFlush:false,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
@@ -223,7 +223,7 @@ function saveSession(){
   if(DEMO) return;
   lsSet('stab_session',JSON.stringify({v:22,
     s:{room:S.room,side:S.side,dir:S.dir,mode:S.mode,op:S.op,i:S.i,probeFrames:S.probeFrames||0,
-       profile:!!S.profile,spotTable:S.spotTable,
+       profile:!!S.profile,spotTable:S.spotTable,postFlush:!!S.postFlush,
        notes:S.notes,free:S.free||{},route:S.route,startedAt:S.startedAt,
        feedEC:S.feedEC,feedPH:S.feedPH,triage:S.triage||[],
        skips:S.skips||0,unstable:S.unstable||0,
@@ -438,6 +438,18 @@ function histTs(h){
      three-second walk-ins stop holding records. The sweeps themselves are
      kept — for some of them the stored CSV is the only copy — they are
      simply stamped out of the running. */
+  /* The depth control shipped in v34 with no styling — it rendered as plain
+     text, so tapping "Profile" looked like nothing happening and the choice
+     persisted silently. Every sweep since has been taking a mid at every
+     position. Nobody chose that, so it is cleared once. */
+  (function unstickProfile(){
+    try{
+      if(localStorage.getItem('stab_profreset')) return;
+      lsSet('stab_profreset','1');
+      if(PREF.profile){ PREF.profile=false; S.profile=false; savePrefs(); }
+    }catch(e){}
+  })();
+
   (function stampQual(){
     try{
       if(localStorage.getItem('stab_qualrule')) return;
@@ -459,8 +471,13 @@ function histTs(h){
       b.classList.add('on');
       S.profile=(b.dataset.prof==='1');
       savePrefs();
-      showRoomHistory();
     };
+  });
+  /* Post-flush is a property of one sweep, not a preference: it is never
+     remembered, because remembering it would silently lift the ceiling on
+     Monday. */
+  [].forEach.call(document.querySelectorAll('.pf'),function(b){
+    b.onclick=function(){ b.classList.toggle('on'); };
   });
 
   /* saved bag sizes / feed EC must be applied before the grid draws them */
@@ -589,7 +606,7 @@ function histTs(h){
   mark('prof',S.profile?'1':'0','prof');
 
   $('setup').addEventListener('click',function(e){
-    var b=e.target.closest('.side,.dir,.mode,.cap'); if(!b) return;
+    var b=e.target.closest('.side,.dir,.mode,.cap,.prof'); if(!b) return;
     var cls=b.classList.contains('side')?'side':
             b.classList.contains('dir')?'dir':
             b.classList.contains('mode')?'mode':'cap';
@@ -736,6 +753,7 @@ function histTs(h){
       S.room=sess.room; S.side=sess.side||S.side; S.dir=sess.dir||S.dir;
       S.mode=sess.mode||S.mode; S.op=sess.op||S.op; S.probeFrames=sess.probeFrames||0;
       S.profile=!!sess.profile; S.spotTable=(sess.spotTable==null?null:sess.spotTable);
+      S.postFlush=!!sess.postFlush;
       S.notes=sess.notes||{}; S.free=sess.free||{}; S.route=sess.route||[]; S.i=sess.i||0;
       S.startedAt=sess.startedAt||Date.now();
       S.triage=sess.triage||[]; S.skips=sess.skips||0; S.unstable=sess.unstable||0;
@@ -785,7 +803,9 @@ $('startbtn').onclick=function(){
   S.route=buildRoute(S.room,S.dir,S.mode,S.side); S.i=0; S.rows=[]; S.notes={};
   S.startedAt=Date.now(); S.roomStarted=true;
   S.skips=0; S.unstable=0; S.redo=[]; S.alarmQueue=[]; S.huntFails=0; S.shotMidSweep=false;
-  S.probeFrames=0; S.spotTable=null; renderAlarm();
+  S.probeFrames=0; S.spotTable=null;
+  S.postFlush=!!(document.querySelector('.pf.on'));
+  renderAlarm();
   S.skipped={};   /* S.access is set on setup and committed by this tap */
   saveSession();
   $('setup').classList.add('hide'); $('startbar').classList.remove('up');
@@ -1076,21 +1096,32 @@ function toast(msg){
    A toast auto-dismisses in 2.4s, too fast for something the field showed
    goes unnoticed. Alarms queue instead: each stays up until tapped, and the
    next one (if any) takes its place. */
-function showAlarm(msg){
+function showAlarm(msg, opts){
   S.alarmQueue=S.alarmQueue||[];
-  S.alarmQueue.push(msg);
+  S.alarmQueue.push(opts?{msg:msg, undo:!!opts.undo}:msg);
   renderAlarm();
 }
 function renderAlarm(){
   var el=$('alarm'); if(!el) return;
   if(!S.alarmQueue || !S.alarmQueue.length){ el.classList.add('hide'); return; }
-  var t=$('alarmtxt'); if(t) t.textContent=S.alarmQueue[0];
+  var a=S.alarmQueue[0];
+  var t=$('alarmtxt'); if(t) t.textContent=(typeof a==='string')?a:a.msg;
+  /* An alarm raised by a reading can take that reading back with it: it
+     caught the error, so it can fix the error. */
+  var canUndo=(typeof a!=='string' && a.undo && S.rows.length>0);
+  var ub=$('alarmundo'); if(ub) ub.classList.toggle('hide',!canUndo);
   el.classList.remove('hide');
 }
 var alarmOk=$('alarmok');
 if(alarmOk) alarmOk.onclick=function(){
   if(S.alarmQueue) S.alarmQueue.shift();
   renderAlarm();
+};
+var alarmUndo=$('alarmundo');
+if(alarmUndo) alarmUndo.onclick=function(){
+  if(S.alarmQueue) S.alarmQueue.shift();
+  renderAlarm();
+  $('undo').click();
 };
 
 /* ---------------- bluetooth ---------------- */
@@ -1576,7 +1607,7 @@ function doCommit(r, meta){
     /* Settle n: auto = probe samples from insertion to commit; manual = write attempts */
     tries:S.auto?(A.samples||1):(S.tries||0),
     unstable:!!meta.unstable,
-    implaus:((ROOMS[S.room].bag===2 && r.vwc>62) || r.vwc<6),
+    implaus:isImplausible(S.room, r.vwc, !!S.postFlush),
     batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
     manualCommit:!!meta.manual,
     /* 1.4: a live per-stab alarm, distinct from the CHECK "no feed" rule —
@@ -1584,7 +1615,12 @@ function doCommit(r, meta){
        fault", not "drying bag" (a drying bag's EC rises, it does not sit
        at zero). */
     zeroEc:(r.bulk!=null && r.bulk<0.02 && r.vwc<20),
-    _pc:pc||null, _out:!!outlier
+    _pc:pc||null, _out:!!outlier,
+    /* §undo: where the cursor stood when this was committed. S.i-- was the
+       inverse only while the route never changed shape, and it changes on
+       every +plant and every conditional mid — so undoing after an insert
+       left the reading gone and the cursor where it was. */
+    _i:S.i
   };
   /* §4: a shot that fires mid-sweep splits the room into two populations
      that are not comparable — on 9/9 C-3 flipped from 1.9h to 0.0h partway
@@ -1610,13 +1646,23 @@ function doCommit(r, meta){
     beep('alarm');
     showAlarm('zero EC — T'+stop.t+' '+stop.pos+' '+(stop.depth==='reference'?'ref':'mid')+' — delivery fault, not a dry reading');
   }
-  if(row.implaus){ beep('out'); toast('implausible '+row.vwc+'% — bad seat? undo and re-stab'); }
+  if(row.implaus){
+    beep('out');
+    showAlarm('implausible · '+row.vwc+'% against a ceiling of '+
+      plausCeiling(S.room,!!S.postFlush).toFixed(0)+'% — bad seat?'+
+      (S.postFlush?'':' If this room was just flushed, tag the sweep post-flush.'),
+      {undo:true});
+  }
   else if(row.flag){ beep('floor'); toast('below floor · '+row.vwc+'%'); }
   else if(meta.unstable){ beep('out'); toast('unstable — logged median'); }
   else if(outlier){
     beep('out');
     var dref=pc?(r.vwc-pc.v):(r.vwc-tmed);
-    toast('outlier Δ'+(dref>=0?'+':'')+dref.toFixed(1)+' — undo?');
+    /* A toast that asks "undo?" and slides away in 2.4 seconds is a question
+       nobody gets to answer. It caught the error; it can fix the error. */
+    showAlarm('outlier · T'+row.table+' '+row.position+' '+r.vwc.toFixed(1)+'% · Δ'+
+      (dref>=0?'+':'')+dref.toFixed(1)+' from '+(pc?'the last sweep here':'this table'),
+      {undo:true});
   }
   else if(row.vwc<f+6) beep('warn');
   else beep('ok');
@@ -1694,14 +1740,15 @@ $('skip').onclick=openSkip;
 $('undo').onclick=function(){
   if(!S.rows.length){ toast('nothing to undo'); return; }
   var r=S.rows.pop();
-  if(S.i>0) S.i--;
+  var wasI=S.i;
+  S.i=(r._i!=null)?r._i:Math.max(0,S.i-1);
   var extraStop=null;
   /* an adjacent-plant stop, or the conditional mid-bag the undone reference
      called for (§6.7) — either way it was created by the row coming off */
   if(S.route[S.i] && (S.route[S.i].extra || S.route[S.i].auto)){
     extraStop=S.route.splice(S.i,1)[0];
   }
-  S.redo.push({row:r, extraStop:extraStop});
+  S.redo.push({row:r, extraStop:extraStop, i:wasI});
   /* A1.4: undoing the reading that raised an alarm takes the alarm with it —
      leaving the banner up made the operator dismiss it a second time. */
   if(S.alarmQueue && S.alarmQueue.length){ S.alarmQueue=[]; renderAlarm(); }
@@ -1719,7 +1766,8 @@ $('redo').onclick=function(){
   if(!S.redo.length){ toast('nothing to redo'); return; }
   var rec=S.redo.pop();
   if(rec.extraStop) S.route.splice(S.i,0,rec.extraStop);
-  S.rows.push(rec.row); S.i++;
+  S.rows.push(rec.row);
+  S.i=(rec.i!=null)?rec.i:S.i+1;
   var r=rec.row, key=r.room+'|'+r.table+'|'+r.position+'|'+r.depth;
   PREV[key]={d:r.date,v:r.vwc,e:r.ec,ts:Date.now()};
   lsSet('stab_prev',JSON.stringify(PREV));
@@ -2117,7 +2165,10 @@ function finish(){
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
   var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
-  var swFlags=sweepFlags().join(' ');
+  var swx=sweepFlags();
+  if(S.postFlush) swx.push('POST_FLUSH');
+  if(S.batt==null && S.battWhy) swx.push('BATT:'+String(S.battWhy).replace(/[ ,]/g,'_'));
+  var swFlags=swx.join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
       r.mode,r.dir,r.bag,r.media,r.side,r.vwc,(r.ec==null?'':r.ec),r.bulk,

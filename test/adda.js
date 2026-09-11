@@ -349,6 +349,164 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ 9/11 bugs ============
+
+  // 1. the depth control was inert — real buttons with no styling at all,
+  //    so tapping Profile looked like nothing happening and the choice stuck.
+  //    v34's test set S.profile directly and never touched the UI, which is
+  //    exactly why this shipped.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const segs=[].slice.call(d.querySelectorAll('#setup .two button, #cfgsheet .two button'));
+    const bare=segs.filter(b=>!b.classList.contains('seg'));
+    ok(bare.length===0,'every segmented control carries the class that styles it'+
+       (bare.length?': '+bare.map(b=>b.className).join(' | '):''));
+    ok(segs.length>=16,'and there are '+segs.length+' of them');
+    // the styling rule must actually name that class
+    const css=d.querySelector('style').textContent;
+    ok(/\.seg,/.test(css) && /\.seg\.on,/.test(css),
+       'the stylesheet styles .seg in both states, so a new control cannot be invisible');
+    w.close(); }
+
+  // driven through the buttons, which is the part that was never tested
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
+    const prof=n=>d.querySelector('.prof[data-prof="'+n+'"]');
+    ok(prof(0).classList.contains('on'),'Reference is the default');
+    ok(!w.S.profile,'…and the state agrees');
+    prof(1).click(); await sleep(20);
+    ok(w.S.profile===true,'tapping Profile sets it: '+w.S.profile);
+    ok(prof(1).classList.contains('on') && !prof(0).classList.contains('on'),
+       'and the selection is visible, which it was not');
+    d.getElementById('startbtn').click(); await sleep(30);
+    ok(w.S.route.length===33*2,'profile routes a mid at every position: '+w.S.route.length);
+    w.S.roomStarted=false; }
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
+    d.querySelector('.prof[data-prof="1"]').click(); await sleep(20);
+    d.querySelector('.prof[data-prof="0"]').click(); await sleep(20);
+    ok(w.S.profile===false,'and tapping back to Reference clears it');
+    d.getElementById('startbtn').click(); await sleep(30);
+    ok(w.S.route.length===33,'reference-only again: '+w.S.route.length);
+    ok(w.S.route.every(x=>x.depth==='reference'),'no mids routed at all'); }
+
+  // a Profile chosen blind, before the control was visible, is cleared once
+  { const {w,d,errors}=boot({'stab_setup':JSON.stringify({side:'standard',dir:'up',mode:'sweep',cap:'auto',profile:true})});
+    await sleep(50);
+    ok(w.S.profile===false,'a setting nobody could see was a setting nobody chose');
+    ok(w.localStorage.getItem('stab_profreset')==='1','and it is only cleared once');
+    ok(d.querySelector('.prof[data-prof="0"]').classList.contains('on'),'the control shows Reference');
+    w.close(); }
+  { const {w,d,errors}=boot({'stab_setup':JSON.stringify({profile:true}),'stab_profreset':'1'});
+    await sleep(50);
+    ok(w.S.profile===true,'a Profile chosen after the fix survives');
+    w.close(); }
+
+  // 2. undo did not restore the cursor once the route could change shape
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    // front, then +plant at front, then the extra, then advance to center
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('extra').click(); await sleep(20);
+    const atExtra=w.S.i, stopExtra=w.S.route[w.S.i];
+    enterSettling(w,34.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    const atThird=w.S.route[w.S.i];
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===3,'three readings in');
+    ok(w.S.route[w.S.i]!==atThird,'and the cursor has moved past it');
+    d.getElementById('undo').click(); await sleep(20);
+    ok(w.S.rows.length===2,'undo removes the reading');
+    ok(w.S.route[w.S.i]===atThird,
+       'and the cursor lands back on the stop that reading was taken at: T'+
+       w.S.route[w.S.i].t+' '+w.S.route[w.S.i].pos);
+    d.getElementById('undo').click(); await sleep(20);
+    ok(w.S.i===atExtra,'undoing the adjacent plant puts the cursor on the extra stop: '+w.S.i+' vs '+atExtra);
+    d.getElementById('redo').click(); await sleep(20);
+    ok(w.S.rows.length===2,'redo brings it back');
+    ok(w.S.route[w.S.i]===atThird,'…and the cursor goes forward with it, to where it was');
+    ok(errors.length===0,'no runtime errors (undo): '+errors.join('|')); }
+
+  // 3. the outlier banner can fix what it caught
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    for(const v of [33,34]){ enterSettling(w,v,900); await sleep(20);
+      d.getElementById('log').click(); await sleep(20); }
+    enterSettling(w,52.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===3,'the outlier is logged, as it always was');
+    ok(!d.getElementById('alarm').classList.contains('hide'),
+       'and it raises a banner, not a toast that slides away');
+    ok(/outlier/.test(d.getElementById('alarmtxt').textContent),
+       'saying what it is: '+d.getElementById('alarmtxt').textContent);
+    ok(!d.getElementById('alarmundo').classList.contains('hide'),'with an Undo beside the OK');
+    d.getElementById('alarmundo').click(); await sleep(20);
+    ok(w.S.rows.length===2,'which takes the reading back: '+w.S.rows.length);
+    ok(d.getElementById('alarm').classList.contains('hide'),'and clears the banner'); }
+
+  // an alarm that is not about a reading offers no undo
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); await sleep(20);
+    w.showAlarm('a shot fired mid-sweep');
+    ok(!d.getElementById('alarm').classList.contains('hide'),'the banner is up');
+    ok(d.getElementById('alarmundo').classList.contains('hide'),'…with no Undo, because there is nothing to undo'); }
+
+  // 4. the wet ceiling is field capacity, not a flat number or the last sweep
+  { const {w,d,errors}=boot(null); await sleep(50);
+    // B2 flowered 8/27, so it is young and its FC is low
+    ok(w.fcFor('B2')<w.fcFor('B4'),'a young room has a lower field capacity than an old one: '+
+       w.fcFor('B2')+' vs '+w.fcFor('B4'));
+    const ceil=w.plausCeiling('B2',false);
+    ok(!w.isImplausible('B2',ceil-1,false),'a reading under the ceiling stands: '+(ceil-1).toFixed(1));
+    ok(w.isImplausible('B2',ceil+1,false),'one over it is flagged: '+(ceil+1).toFixed(1));
+    ok(w.isImplausible('B2',5,false),'and the dry end still catches a bad seat');
+    // flush day: a bag at field capacity read straight through the old flat 62
+    ok(w.plausCeiling('B2',true)>w.plausCeiling('B2',false),'a post-flush sweep lifts the ceiling');
+    ok(!w.isImplausible('B2',ceil+1,true),'so the same reading stands on flush day');
+    // the ceiling is config, like the floor
+    w.saveRoomCfg('B2',{fc:60, savedAt:Date.now()});
+    ok(w.fcFor('B2')===60,'and FC is overridable per room: '+w.fcFor('B2'));
+    ok(w.plausCeiling('B2',false)===68,'ceiling follows it: '+w.plausCeiling('B2',false));
+    w.close(); }
+
+  // the tag belongs to one sweep and is never remembered
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
+    d.querySelector('.pf').click(); await sleep(20);
+    d.getElementById('startbtn').click(); await sleep(30);
+    ok(w.S.postFlush===true,'the sweep is tagged');
+    w.S.dev={gatt:{connected:true}}; w.S.chr={}; w.S.trigger=w.TRIGGER;
+    ['log','extra','skip','undo','redo'].forEach(id=>{ d.getElementById(id).disabled=false; });
+    enterSettling(w,58.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].implaus===false,'58% is not implausible on flush day');
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(/POST_FLUSH/.test(csv[1].split(',')[col('Sweep flags')]),
+       'and the export says so, which is what explains the numbers: '+csv[1].split(',')[col('Sweep flags')]);
+    ok(!JSON.parse(w.localStorage.getItem('stab_setup')||'{}').postFlush,
+       'it is not remembered — Monday must not inherit a lifted ceiling'); }
+
+  // 5. the battery reason rides along in the export he already sends
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const err=new Error('x'); err.name='NotFoundError';
+    await w.readBattery({getPrimaryService:()=>Promise.reject(err),
+                         getPrimaryServices:()=>Promise.resolve([])});
+    await sleep(20);
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(/BATT:NotFoundError/.test(csv[1].split(',')[col('Sweep flags')]),
+       'the reason is in the CSV, not only on a screen nobody screenshots: '+
+       csv[1].split(',')[col('Sweep flags')]);
+    ok(csv[1].split(',')[col('Batt')]==='','and the Batt column stays honestly empty'); }
+
   // ============ the Batt column ============
   // Field report 9/11: "the CSV already has a Batt column and it's empty."
   // The read was already here and already correct. Its only failure path was

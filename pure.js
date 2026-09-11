@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v38';
+var VER='v39';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -737,6 +737,50 @@ function walkPhase(walkIndex, side){
    reference lands low enough for the answer to mean something. Profile mode
    keeps the old every-position behaviour for post-change confirmation and
    drainage work, and a triage is that work by definition. */
+/* ===== field capacity, and what counts as implausible =====
+   The ceiling was a flat 62% for a 2-gallon bag, and on flush day a bag at
+   field capacity reads right through it. Judging a reading against the
+   previous sweep is worse: the previous sweep is exactly what a flush is
+   supposed to differ from.
+
+   So the ceiling is the room's own field capacity plus a margin. FC is not
+   one number — it climbs through flower, about 44% at day 2, 48% at day 10,
+   55% at day 17, easing to 52% by day 25 in a 2-gallon bag — so it is
+   interpolated from DOF and overridable per room in config, like the floor.
+   A post-flush sweep lifts the ceiling by its own margin, because a bag that
+   has just been flooded is legitimately wetter than one that has not. */
+var FC_CURVE=[[2,44],[10,48],[17,55],[25,52],[60,52]];
+var FC_MARGIN=8, FC_FLUSH_MARGIN=10, VWC_MIN=6;
+function fcFor(rm){
+  var c=rcfg(rm);
+  if(c.fc!=null && c.fc!=='' && !isNaN(+c.fc)) return +c.fc;
+  var dof=dofNow(rm);
+  var base;
+  if(dof===''||dof==null) base=FC_CURVE[2][1];
+  else if(dof<=FC_CURVE[0][0]) base=FC_CURVE[0][1];
+  else{
+    base=FC_CURVE[FC_CURVE.length-1][1];
+    for(var i=1;i<FC_CURVE.length;i++){
+      var a=FC_CURVE[i-1], b=FC_CURVE[i];
+      if(dof<=b[0]){
+        base=a[1]+(b[1]-a[1])*((dof-a[0])/(b[0]-a[0]));
+        break;
+      }
+    }
+  }
+  /* the curve is measured in 2-gallon bags; a smaller bag holds less water
+     per unit volume at the same tension, and its floor carries that */
+  var cfg=ROOMS[rm];
+  if(cfg && cfg.bag && cfg.bag!==2) base+=(floorFor(rm)-22);
+  return Math.round(base*10)/10;
+}
+function plausCeiling(rm, postFlush){
+  return fcFor(rm) + FC_MARGIN + (postFlush?FC_FLUSH_MARGIN:0);
+}
+function isImplausible(rm, vwc, postFlush){
+  if(vwc<VWC_MIN) return true;
+  return vwc > plausCeiling(rm, postFlush);
+}
 function midTrigger(room){
   return Math.max(25, floorFor(room));
 }

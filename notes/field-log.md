@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v38** — v30–v34 shipped 9/10, v35–v38 on 9/11.
+**Live on main: v39** — v30–v34 shipped 9/10, v35–v39 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -40,6 +40,10 @@ interrupted by a reload. This is the list to execute against.
 | v37 | walk order by window, and a warning at Start | backlog §5.5 |
 | v38 | the battery read says why it failed, and shows when it works | 9/11 |
 | v38 | + plant moved to the thumb end of the pad | 9/11 |
+| v39 | the depth control was invisible — one class styles them all | 9/11 |
+| v39 | undo restores the cursor the row was taken at | 9/11 |
+| v39 | the outlier banner has an Undo beside the OK | 9/11 |
+| v39 | the wet ceiling is field capacity, with a post-flush tag | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -706,3 +710,94 @@ slot, the hardest to reach with a thumb, and `redo` had the near-right one.
 target to match how often it is hit. `undo` sits beside it because that is
 the mis-tap that costs a reading — and `redo` stays on the same row, one tap
 away, to cover it.
+
+### 27. The depth control was invisible, so the saving never happened → v39
+
+**Observed.** "Depth control is inert. Reference / Profile render as plain
+text, not buttons, and the sweep is taking a mid at every position
+regardless. CSV shows sweep mode with paired stabs at 45–58%."
+
+**What it was.** The buttons were real and the handler was wired. The
+stylesheet lists the controls it styles by class —
+`.side,.dir,.mode,.cap` — and **`.prof` was not in it.** No background, no
+border, no selected state. So the control rendered as two words of body text,
+tapping "Profile" looked like nothing happening, and the choice was saved and
+carried forward silently. Every sweep since v34 has been taking a mid at
+every position, which is precisely the 75% that §6.7 was for.
+
+The paired stabs at 45–58% are the proof: the conditional mid fires under
+25%, so nothing in that range could have inserted one. Only a profile route
+could.
+
+**Shipped.** One class, `.seg`, styles every segmented control, and every one
+of the sixteen carries it. The room-state buttons added in v37 had the same
+defect and were also rendering as plain text — same fix, same line. A stored
+`profile:true` is cleared once, because it could only ever have been set
+blind.
+
+**How it got through.** v34's test set `S.profile` directly and asserted the
+route length. It never touched a button. The tests now drive the control:
+tap Profile, start, count 66; tap Reference, start, count 33. And a
+structural assertion that every segmented button carries the class that
+styles it, so a new control cannot ship invisible.
+
+### 28. Undo did not restore the cursor → v39
+
+**Observed.** "Add a plant at center, advance to front, undo — reading is
+removed but the cursor stays at front."
+
+**What it was.** `if(S.i>0) S.i--;` was the inverse of a commit only while the
+route never changed shape. It changes shape on every `+plant` and, since v34,
+on every conditional mid. Undo then removed the row and moved the cursor to
+whatever happened to be one slot back.
+
+**Shipped.** Each row records the route index it was committed at, and undo
+restores that exact stop rather than counting backwards. Redo restores the
+cursor that undo replaced. Immune to any future route mutation, because it
+stores the answer instead of deriving it.
+
+### 29. The outlier banner can fix what it caught → v39
+
+**Observed.** "It caught the error; let it fix the error."
+
+The outlier was a toast that said "— undo?" and then slid away in 2.4
+seconds: a question nobody gets to answer. Outliers and implausible readings
+now raise the held banner with **Undo beside OK**. Alarms not raised by a
+reading — a mid-sweep shot, for instance — show no Undo, because there is
+nothing to undo.
+
+### 30. The wet ceiling is field capacity now → v39
+
+**Observed.** "High-side outlier on flush day. Cap plausibility at the room's
+FC plus margin from config, not against the prior sweep."
+
+The ceiling was a flat 62% for a 2-gallon bag. A bag at field capacity on
+flush day reads straight through it, and judging against the previous sweep
+is worse — the previous sweep is exactly what a flush is meant to differ from.
+
+Field capacity is not one number: it climbs through flower, about 44% at day
+2, 48% at day 10, 55% at day 17, easing to 52% by day 25. It is interpolated
+from DOF, adjusted by the room's floor for a smaller bag, and **overridable
+per room in config, like the floor**. The ceiling is FC + 8.
+
+**A post-flush sweep tag lifts it by another 10.** It is a property of one
+sweep and is never remembered — remembering it would silently lift the
+ceiling on Monday. It reaches the export as `POST_FLUSH`, which is what
+explains the numbers to whoever reads the CSV later.
+
+### 31. Two reported items were already fixed in v38
+
+Batt and the + plant placement are both v38, which went to main earlier the
+same day. If the export still shows an empty Batt column and + plant is still
+on the left, the phone is running an older build — the version string on the
+setup screen says which.
+
+v39 also puts the battery failure reason into the Sweep flags column
+(`BATT:NotFoundError`), so the answer arrives in the export rather than only
+on a screen nobody screenshots.
+
+**A note on how this batch was built.** Three of the app.js edits in this
+round were written and then silently lost: they were in one script with a
+fourth edit that failed its anchor assertion, and the script aborted before
+writing the file. The outlier and implausible changes looked applied and were
+not. The test caught it. Smaller edits, or verify after each.
