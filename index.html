@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v35</title>
+<title>Stab v36</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,6 +52,8 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
   padding:2px 5px;border-radius:6px}
 .rm.on .tb{background:#07121F;color:#A7CBFD}
 .rm .tb.hb{background:var(--warn);color:#2A1503}
+.rm .tb.fb{background:var(--low);color:#2A0606}
+.rm.on .tb.fb{background:#2A0606;color:var(--low)}
 .rm.on .tb.hb{background:#2A1503;color:var(--warn)}
 .rm.on{background:linear-gradient(180deg,#83B3FB 0%,#5B92EC 100%);border-color:#5B92EC;border-top-color:#A7CBFD;color:#07121F;
   box-shadow:0 5px 14px rgba(96,165,250,.35), inset 0 1px 0 rgba(255,255,255,.4)}
@@ -183,6 +185,8 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 #pct{font-family:var(--mono);font-size:22px;color:var(--dim)}
 #sub{display:flex;gap:22px;font-family:var(--mono);font-size:16px;color:var(--dim);margin-bottom:12px}
 #sub b{color:var(--ink);font-weight:500}
+#tflag{background:rgba(248,113,113,.12);border:1px solid var(--low);border-radius:9px;
+  padding:8px 11px;margin:8px 0 2px;font-family:var(--mono);font-size:12px;color:var(--low);line-height:1.45}
 #nextup{font-family:var(--mono);font-size:12px;color:var(--dimmer);
   letter-spacing:.08em;margin-top:4px}
 #ctx{font-family:var(--mono);font-size:12px;color:var(--dimmer);
@@ -344,6 +348,28 @@ table.sched td{padding:6px;border-bottom:1px solid var(--line);color:var(--ink)}
 table.sched tr.bad td{color:var(--warn)}
 table.sched tr.p2 td{color:var(--dimmer);font-size:11px}
 table.sched .sh{color:var(--live)}
+/* ---------- the day (backlog §6.3) ---------- */
+#daysheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#daytop{font-size:28px;font-weight:700;margin-bottom:2px}
+#daysub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:6px;line-height:1.5}
+.dayg{display:grid;gap:7px;margin-bottom:4px}
+.dayr{display:block;width:100%;text-align:left;background:var(--surface);
+  border:1px solid var(--line);border-left-width:3px;border-radius:9px;padding:10px 12px;color:var(--ink)}
+.dayr.done{border-left-color:var(--ok)}
+.dayr.hand{border-left-color:var(--warn)}
+.dayr.todo{border-left-color:var(--line)}
+.dayr b{font-size:16px;margin-right:8px}
+.dayr .dw{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.dayr .dch{display:block;font-family:var(--mono);font-size:10px;color:var(--dimmer);margin-top:4px}
+.dtag{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;
+  padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+.dtag.chg{background:var(--live);color:#07121F}
+.dtag.flg{background:var(--low);color:#2A0606}
+.dtag.win{background:var(--warn);color:#2A1503}
+.dtag.late{background:var(--low);color:#2A0606}
+#weekly{cursor:pointer}
+
 /* ---------- room setup (backlog §5.4) ---------- */
 #cfgsheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
@@ -439,7 +465,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v35</b></div>
+  <div class="brand">Substrate sweep · <b>v36</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -550,6 +576,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <div id="ecwrap"><span id="ecbig" class="enone">--</span><span id="ecunit">EC</span></div>
   <div id="sub"><span><b id="tmp">--</b> °F</span><span id="roomavg"></span></div>
   <div id="nextup"></div>
+  <div id="tflag" class="hide"></div>
   <div id="ctx"></div>
   <div id="recent"></div>
   <div id="diag"></div>
@@ -570,7 +597,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v35</div>
+  <div class="v">stab v36</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -672,6 +699,15 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   </div>
 </div>
 
+<div id="daysheet" class="hide">
+  <div id="daytop">Today</div>
+  <div id="daysub"></div>
+  <div id="daybody"></div>
+  <div class="lgact">
+    <button id="dayclose">Close</button>
+  </div>
+</div>
+
 <div id="cfgsheet" class="hide">
   <div id="cfgtop">Room setup</div>
   <div id="cfgsub">What the room is, as opposed to what it is doing this week.
@@ -742,8 +778,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=35"></script>
-<script src="pure.js?v=35"></script>
-<script src="app.js?v=35"></script>
+<script src="rooms.js?v=36"></script>
+<script src="pure.js?v=36"></script>
+<script src="app.js?v=36"></script>
 </body>
 </html>

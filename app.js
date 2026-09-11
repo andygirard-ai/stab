@@ -509,8 +509,13 @@ function histTs(h){
     /* no coverage bar on a fixture — it is not on anybody's rotation */
     var sub=cfg.kind?(k+' · '+cfg.kind):(cfg.bag+' gal · '+age);
     if(blind[k]) sub=cfg.bag+' gal · hand-only';
+    /* §6.2: an open fault is a reason to walk into the room differently, so
+       it belongs on the tile he reads before he walks, not only in the brief */
+    var nf=flagCount(k);
+    if(nf) sub+=' · '+nf+' flag'+(nf>1?'s':'');
     b.innerHTML=k+(blind[k]?'<span class="tb hb">hand</span>'
-                 :(days===0&&!cfg.kind?'<span class="tb">today</span>':''))+
+                 :(nf?'<span class="tb fb">'+nf+'</span>'
+                 :(days===0&&!cfg.kind?'<span class="tb">today</span>':'')))+
       '<span class="sub">'+sub+'</span>'+
       '<span class="cov '+(cfg.kind?'':(blind[k]?'r':cls))+'"></span>';
     return b;
@@ -839,6 +844,10 @@ function render(){
     : 'last one';
   var rv=S.rows.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;});
   $('roomavg').innerHTML=rv.length>2?'room <b>'+med(rv).toFixed(0)+'</b> · n'+rv.length:'';
+  /* §6.2: at the table, not buried in a list he read twenty minutes ago */
+  var fl=(s.spot&&S.spotTable!=null)?flagLine(S.room,S.spotTable):flagLine(S.room,s.t);
+  $('tflag').textContent=fl;
+  $('tflag').classList.toggle('hide',!fl);
   var key=S.room+'|'+s.t+'|'+s.pos+'|'+s.depth, p=PREV[key];
   $('ctx').innerHTML=p
     ? '<span class="was">last here '+p.d+'</span> &nbsp; '+p.v+'% &nbsp; '+(p.e==null?'—':p.e)+' dS/m &nbsp; <span id="cdelta"></span>'
@@ -1662,6 +1671,8 @@ $('note').onclick=function(){
 $('pos').onclick=function(){ openTarget(null); };
 $('schedbtn').onclick=openSchedule;
 $('cfgbtn').onclick=openRoomSetup;
+$('weekly').onclick=openDay;
+$('dayclose').onclick=function(){ $('daysheet').classList.add('hide'); };
 $('cfgclose').onclick=function(){ $('cfgsheet').classList.add('hide'); };
 $('cfgsave').onclick=function(){
   if(!saveRoomSetup()) return;
@@ -1899,7 +1910,14 @@ function getEv(){
   }catch(e){ return []; }
 }
 function addEv(e){
+  /* ts is the event's id — closeEv() finds a fault by it. Two events logged
+     in the same millisecond would share one, and marking either fixed would
+     close both. A human cannot tap that fast, but tagging a row of tables
+     for flush can, and a silently closed fault is a leak nobody goes back
+     to. Nudge past any collision; ordering is preserved either way. */
+  var last=getEv()[0];
   e.ts=Date.now();
+  if(last && e.ts<=last.ts) e.ts=last.ts+1;
   e.when=new Date().toLocaleString('en-US');
   e.op=S.op||'';
   var a=getEv(); a.unshift(e);
@@ -2030,7 +2048,7 @@ function finish(){
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
   var swFlags=sweepFlags().join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
@@ -2038,7 +2056,8 @@ function finish(){
       (r.tmp*9/5+32).toFixed(1),(r.flag?'YES':''),csvq(rowNote(r.table)),csvq(r.raw),
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
       (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
-      tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):'')].join(',');
+      tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):''),
+      csvq(flagLine(S.room,r.table))].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
@@ -2091,13 +2110,14 @@ function finish(){
   $('wbroomnone').classList.toggle('hide',!none);
   $('wbroom').classList.toggle('hide',none);
   $('copyroom').parentNode.classList.toggle('hide',none);
+  clearChangedIfConfirmed();
   try{
     if(DEMO) throw 0;
     var h2=getHist();
     h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
       n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)), low:lows,
       dur:dur, clean:clean, qual:qual, spm:(spm==null?null:+spm.toFixed(2)),
-      probeFrames:S.probeFrames||0, handOnly:handOnlyBlind(),
+      probeFrames:S.probeFrames||0, handOnly:handOnlyBlind(), op:S.op||'',
       skipped:skippedList().length, swept:coverage().swept,
       csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
       dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
@@ -2277,7 +2297,44 @@ function getSched(){
   try{ return JSON.parse(localStorage.getItem('stab_sched')||'{}'); }catch(e){ return {}; }
 }
 function saveSched(rm,rec){
-  var a=getSched(); a[rm]=rec; lsSet('stab_sched',JSON.stringify(a));
+  var a=getSched(), was=a[rm];
+  /* §6.4: a room whose shot structure just changed needs a reading 1-2 h
+     after its next P1 to confirm the front still reaches the bottom of the
+     bag. Nobody remembers which rooms those are by Thursday, so the diff
+     against the previous import is kept and the room says so until a sweep
+     lands in that window. */
+  var diffs=schedDiff(was, rec);
+  if(diffs.length) rec.changed={at:Date.now(), diffs:diffs};
+  else if(was && was.changed) rec.changed=was.changed;
+  a[rm]=rec; lsSet('stab_sched',JSON.stringify(a));
+}
+function schedDiff(was, now){
+  if(!was || !was.tables || !now || !now.tables) return [];
+  var old={}, out=[];
+  was.tables.forEach(function(t){ old[t.table]=t; });
+  now.tables.forEach(function(t){
+    var o=old[t.table]; if(!o) return;
+    var a=o.P1||{}, b=t.P1||{};
+    if(a.start!==b.start && a.start && b.start) out.push('T'+t.table+' '+a.start+'→'+b.start);
+    else if(a.duration!==b.duration && a.duration!=null && b.duration!=null)
+      out.push('T'+t.table+' shot '+schedFmt(a.duration)+'→'+schedFmt(b.duration));
+    else if(a.frequency!==b.frequency && a.frequency && b.frequency)
+      out.push('T'+t.table+' x'+a.frequency+'→x'+b.frequency);
+    else if(a.interval!==b.interval && a.interval && b.interval)
+      out.push('T'+t.table+' every '+(a.interval/3600).toFixed(1)+'h→'+(b.interval/3600).toFixed(1)+'h');
+  });
+  return out;
+}
+/* The post-shot window is 1 to 2 hours after P1. A sweep that lands in it
+   is the confirmation the change was waiting for, so the flag clears. */
+function clearChangedIfConfirmed(){
+  var a=getSched(), rec=a[S.room];
+  if(!rec || !rec.changed) return;
+  var h=hoursSinceShot(S.room);
+  if(h!=null && h>=1 && h<=2.5 && probeFrames()>0){
+    delete rec.changed;
+    lsSet('stab_sched',JSON.stringify(a));
+  }
 }
 
 /* ---------------- schedule paste-in (Addendum B §4) ----------------
@@ -2366,6 +2423,50 @@ function applyRoomCfg(){
   keep.bag=bag; keep.ec=S.feedEC; keep.ph=S.feedPH;
   saveRoomCfg(S.room, keep);
 }
+/* ---------------- the day (backlog §6.3) ----------------
+   At 3:13 PM on 9/10 the operator asked what he had covered and the answer
+   meant reading the workbook. Every part of it was already in the app. */
+function openDay(){
+  var rows=dayCoverage(), h='';
+  var done=rows.filter(function(r){ return r.swept && !r.handOnly; }).length;
+  var hand=rows.filter(function(r){ return r.handOnly; }).length;
+  $('daytop').textContent=new Date().toLocaleDateString('en-US',
+    {weekday:'long',month:'short',day:'numeric'});
+  $('daysub').textContent=done+' of '+rows.length+' rooms on the probe'+
+    (hand?' · '+hand+' hand-only':'')+
+    ' · '+rows.filter(function(r){ return r.postShotDue; }).length+' waiting on a post-change read';
+  ['AM','PM','other'].forEach(function(wing){
+    var g=rows.filter(function(r){ return r.wing===wing; });
+    if(!g.length) return;
+    h+='<div class="lbl">'+(wing==='AM'?'AM rooms · lights out 11:00'
+        :wing==='PM'?'PM rooms · lights out 13:15':'other')+'</div><div class="dayg">';
+    g.forEach(function(r){
+      var cls=r.handOnly?'hand':(r.swept?'done':'todo');
+      var what=r.handOnly ? 'hand-only · cannot detect below floor'
+             : r.swept ? (r.at||'')+(r.op?' · '+r.op:'')+
+                         (r.coverage!=null?' · '+r.coverage+'%':'')+' · '+r.n+' stabs'
+             : 'not read';
+      var tail='';
+      if(r.postShotDue) tail+='<span class="dtag chg">post-change read due</span>';
+      if(r.flags) tail+='<span class="dtag flg">'+r.flags+' flag'+(r.flags>1?'s':'')+'</span>';
+      if(!r.swept && r.closesIn!=null && r.closesIn>0 && r.closesIn<3)
+        tail+='<span class="dtag win">window closes in '+r.closesIn.toFixed(1)+'h</span>';
+      if(!r.swept && r.closesIn!=null && r.closesIn<=0)
+        tail+='<span class="dtag late">window closed</span>';
+      h+='<button class="dayr '+cls+'" data-r="'+r.room+'"><b>'+r.room+'</b>'+
+         '<span class="dw">'+what+'</span>'+tail+
+         (r.changed&&r.changed.length?'<span class="dch">'+r.changed.join(' · ').replace(/</g,'&lt;')+'</span>':'')+
+         '</button>';
+    });
+    h+='</div>';
+  });
+  $('daybody').innerHTML=h;
+  [].forEach.call(document.querySelectorAll('#daybody .dayr'),function(b){
+    b.onclick=function(){ $('daysheet').classList.add('hide'); pickRoom(b.dataset.r); };
+  });
+  $('daysheet').classList.remove('hide');
+}
+
 /* ---------------- room setup (backlog §5.4) ----------------
    Two wrong calls on 9/10 came from this being uneditable: C3 showed the
    previous grow's strain map and produced a wrong tiering recommendation,
@@ -2556,7 +2657,8 @@ function drawLog(){
     h+=fld('table — blank if room level','<input id="lg_table" placeholder="5">');
     h+=fld('what','<div class="chips" id="lg_what">'+
       ['valve not opening','valve clicks, no flow','leak','kinked line','unhooked dripper',
-       'dual source','no master valve','breaker reset','header crack']
+       'needs a dripper','fan','header crack','dead bag','needs flush',
+       'dual source','no master valve','breaker reset']
         .map(function(w){return '<button class="chip" data-w="'+w+'">'+w+'</button>';}).join('')+'</div>');
     h+=fld('detail','<textarea id="lg_detail" rows="2" placeholder="crack before the screen in the header"></textarea>');
   } else if(LOGKIND==='bulb'){
@@ -2587,8 +2689,21 @@ function drawLog(){
         b.classList.toggle('on');
       };
     });
-    $('logrecent').innerHTML='<div class="hl">after the flush</div>'+
+    /* §6.2: tables tagged "needs flush" during the week, collected. This
+       list was assembled by hand in chat from a week of conversation. */
+    var fl2=flushList();
+    $('logrecent').innerHTML=
+      (fl2.length
+        ? '<div class="hl">tables tagged for flush</div><div class="r">'+
+          fl2.join('<br>').replace(/</g,'&lt;')+'</div>'+
+          '<div class="r"><button class="chip" id="flushcopy">copy the list</button></div>'
+        : '<div class="hl">tables tagged for flush</div>'+
+          '<div class="r">none — tag one with log · fault · "needs flush"</div>')+
+      '<div class="hl">after the flush</div>'+
       '<div class="r">stab three tables per room about an hour after it drains — that is the field capacity reading</div>';
+    if($('flushcopy')) $('flushcopy').onclick=function(){
+      shareOrCopy(fl2.join(' · '),'flush_'+fnameDate()+'.txt','flush list');
+    };
     return;
   } else {
     h+=fld('room','<input id="lg_room" value="'+rm+'">');

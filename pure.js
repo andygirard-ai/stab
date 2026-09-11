@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v35';
+var VER='v36';
 function floorFor(rm){
   var c=ROOMS[rm]; if(!c) return 22;
   return (c.floor!=null)?c.floor:(FLOOR[c.bag]!=null?FLOOR[c.bag]:22);
@@ -279,6 +279,102 @@ function schedTiers(room){
 
    Reached through accessors, never by indexing RMAP or DRIPPERS directly,
    so there is one place an override can be missed. */
+/* ===== open table flags (backlog §6.2) =====
+   C5 T5's header elbow is leaking. A5 T3 had two drippers repaired. B3
+   T4-T7 centers need a third dripper. None of that had anywhere to live
+   except a row note on the day it was seen and the operator's memory after
+   that, and the flush list for 9/11 was assembled by hand in chat.
+
+   Faults were already stored and already had an open/fixed lifecycle; what
+   was missing was them reaching the three places somebody would act on
+   them — the room tile before the walk, the stab screen at the table, and
+   the export afterwards. */
+function openFlags(rm, t){
+  var ev=(typeof getEv==='function')?getEv():[];
+  return ev.filter(function(e){
+    if(e.kind!=='fault' || e.status!=='open' || e.room!==rm) return false;
+    if(t==null) return true;
+    return String(e.table)===String(t);
+  });
+}
+function flagCount(rm){ return openFlags(rm,null).length; }
+function flagLine(rm, t){
+  return openFlags(rm,t).map(function(e){
+    return e.what+(e.detail?' — '+e.detail:''); }).join(' · ');
+}
+/* Tables tagged for the next flush, facility-wide. The 9/11 list — B4
+   T3/T6/T9, B6 T7, C1 T5/T8, C5 T2/T4/T5, C6 T9, A6 T7, A7 T7 — was
+   assembled by hand from a week of conversation. */
+var FLUSH_TAG='needs flush';
+function flushList(){
+  var ev=(typeof getEv==='function')?getEv():[], by={};
+  ev.forEach(function(e){
+    if(e.kind!=='fault' || e.status!=='open' || e.what!==FLUSH_TAG) return;
+    if(e.table==null || e.table==='') return;
+    (by[e.room]=by[e.room]||[]).push(String(e.table));
+  });
+  return Object.keys(by).sort().map(function(rm){
+    var seen={}, ts=[];
+    by[rm].forEach(function(t){ if(!seen[t]){ seen[t]=1; ts.push(t); } });
+    ts.sort(function(a,b){ return (+a)-(+b); });
+    return rm+' T'+ts.join('/');
+  });
+}
+/* ===== what has been covered today (backlog §6.3) =====
+   At 3:13 PM on 9/10 the operator asked what he had covered and the answer
+   meant reading the workbook. The app already knew. This is that question
+   and the 6:45 AM plan in one place.
+
+   AM and PM rooms are the grouping because they are the grouping he walks
+   in: lights out at 11:00 for the AM rooms and 13:15 for the PM ones is
+   what makes a room's window close, and a room read after its window is a
+   post-shot reading that only confirms a shot landed. */
+function roomWing(rm){
+  var ser=schedSeries(rm,null);
+  var start=ser.length?ser[0].start:(SCHED[rm]?SCHED[rm][0]:null);
+  if(!start) return 'other';
+  var h=+start.split(':')[0];
+  return h<12?'AM':'PM';
+}
+/* AM rooms must be read before 11:00, PM before 13:15, A7 before 09:15.
+   Returns hours left, negative once the window has closed. */
+function windowCloses(rm){
+  if(rm==='A7') return '09:15';
+  return roomWing(rm)==='AM' ? '11:00' : '13:15';
+}
+function hoursToWindow(rm, nowDate){
+  var c=windowCloses(rm); if(!c) return null;
+  var now=nowDate||new Date(), p=c.split(':');
+  var t=new Date(now); t.setHours(+p[0],+p[1],0,0);
+  return (t-now)/3600000;
+}
+function dayCoverage(nowDate){
+  var now=nowDate||new Date(), t0=new Date(now); t0.setHours(0,0,0,0);
+  var hist=(typeof getHist==='function')?getHist():[];
+  var today={};
+  hist.forEach(function(x){
+    if(x.mode && x.mode!=='sweep') return;
+    var ts=x.ts||Date.parse(x.when||'')||0;
+    if(ts<t0.getTime()) return;
+    if(!today[x.room] || ts>(today[x.room].ts||0)) today[x.room]=x;
+  });
+  var imp=(typeof getSched==='function')?(getSched()||{}):{};
+  var rows=Object.keys(ROOMS).filter(function(k){ return !ROOMS[k].kind; }).map(function(rm){
+    var x=today[rm]||null, cfg=ROOMS[rm];
+    var cov=(x && x.swept!=null && cfg.t) ? Math.round(100*x.swept/cfg.t) : null;
+    var rec=imp[rm];
+    return {room:rm, wing:roomWing(rm),
+            swept:!!x, handOnly:!!(x&&x.handOnly), at:x?(x.when||'').split(', ')[1]||'':'',
+            op:x?(x.op||''):'', n:x?(x.n||0):0, coverage:cov,
+            postShotDue:!!(rec && rec.changed), changed:(rec&&rec.changed)?rec.changed.diffs:null,
+            flags:flagCount(rm), closesIn:hoursToWindow(rm, now)};
+  });
+  rows.sort(function(a,b){
+    if(a.wing!==b.wing) return a.wing<b.wing?-1:1;
+    return a.room<b.room?-1:1;
+  });
+  return rows;
+}
 function rcfg(rm){
   try{ return (typeof roomCfg==='function' ? (roomCfg()[rm]||{}) : {}); }
   catch(e){ return {}; }

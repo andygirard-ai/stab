@@ -346,6 +346,148 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ §6.2 table flags that persist ============
+  // C5 T5's header elbow is leaking. A5 T3 had two drippers repaired. B3
+  // T4-T7 centers need a third dripper. None of it had anywhere to live
+  // except a row note on the day it was seen. Faults were already stored
+  // with an open/fixed lifecycle; what was missing was them reaching the
+  // three places somebody would act on them.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.addEv({kind:'fault',room:'C5',table:'5',what:'leak',detail:'header elbow',status:'open'});
+    w.addEv({kind:'fault',room:'C5',table:'2',what:'needs flush',status:'open'});
+    ok(w.flagCount('C5')===2,'two open flags on C5: '+w.flagCount('C5'));
+    ok(w.flagCount('C1')===0,'none on a room that has none');
+    ok(/leak — header elbow/.test(w.flagLine('C5','5')),'and the table knows which: '+w.flagLine('C5','5'));
+    ok(w.flagLine('C5','7')==='','a table with no flag says nothing');
+    // a fixed flag stops showing but is not deleted
+    const ts=w.getEv().filter(e=>e.what==='leak')[0].ts;
+    w.closeEv(ts);
+    ok(w.flagCount('C5')===1,'marking it fixed drops the count: '+w.flagCount('C5'));
+    ok(w.getEv().filter(e=>e.what==='leak').length===1,'…without losing the history');
+    w.close(); }
+
+  // the tile before the walk, the stab screen at the table, the export after
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.addEv({kind:'fault',room:'B2',table:'3',what:'unhooked dripper',detail:'front left',status:'open'});
+    w.buildSetupAgain && w.buildSetupAgain();
+    const {w:w2,d:d2}=boot({'stab_events':w.localStorage.getItem('stab_events')});
+    await sleep(50);
+    const tile=d2.querySelector('#rooms .rm[data-room="B2"]');
+    ok(/1 flag/.test(tile.querySelector('.sub').textContent),
+       'the tile carries the count before he walks in: '+tile.querySelector('.sub').textContent);
+    ok(tile.querySelector('.tb') && tile.querySelector('.tb').textContent==='1','…as a badge too');
+    start(w2,d2,'B2',2); w2.S.trigger=w2.TRIGGER; await sleep(20);
+    // walk to T3 and check the flag surfaces at the table, not before
+    w2.S.i=w2.S.route.findIndex(x=>x.t===2); w2.render();
+    ok(d2.getElementById('tflag').classList.contains('hide'),'nothing shown on T2');
+    w2.S.i=w2.S.route.findIndex(x=>x.t===3); w2.render();
+    ok(!d2.getElementById('tflag').classList.contains('hide'),'the flag appears when the cursor reaches T3');
+    ok(/unhooked dripper — front left/.test(d2.getElementById('tflag').textContent),
+       'saying what it is: '+d2.getElementById('tflag').textContent);
+    enterSettling(w2,33.0,900); await sleep(20);
+    d2.getElementById('log').click(); await sleep(20);
+    d2.getElementById('exit').click(); await sleep(60);
+    const csv=d2.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(col('Open flags')>=0,'and the export has a column for them');
+    ok(/unhooked dripper/.test(csv[1].split(',')[col('Open flags')]),
+       'carrying it on the row: '+csv[1].split(',')[col('Open flags')]);
+    w.close(); }
+
+  // the flush list assembles itself instead of being remembered
+  { const {w,d,errors}=boot(null); await sleep(50);
+    [['B4','3'],['B4','6'],['B4','9'],['B6','7'],['C1','5'],['C1','8'],
+     ['C5','2'],['C5','4'],['C5','5'],['C6','9'],['A6','7'],['A7','7']]
+      .forEach(([rm,t])=>w.addEv({kind:'fault',room:rm,table:t,what:'needs flush',status:'open'}));
+    const list=w.flushList();
+    ok(list.join(' · ')==='A6 T7 · A7 T7 · B4 T3/6/9 · B6 T7 · C1 T5/8 · C5 T2/4/5 · C6 T9',
+       'the 9/11 list, assembled rather than typed: '+list.join(' · '));
+    w.addEv({kind:'fault',room:'B4',table:'3',what:'leak',status:'open'});
+    ok(w.flushList()[2]==='B4 T3/6/9','a different fault on the same table does not join the flush list');
+    w.close(); }
+
+  // ============ §6.3 what has been covered today ============
+  // Asked at 3:13 PM on 9/10; answering it meant reading the workbook.
+  { const t0=new Date(); t0.setHours(0,0,0,0);
+    const ts=Math.max(Date.now()-3600e3, t0.getTime()+60e3);
+    const hist=[
+      {room:'B1',ts:ts,when:new Date(ts).toLocaleString('en-US'),n:33,mode:'sweep',med:32,
+       swept:11,op:'APG',handOnly:false},
+      {room:'C4',ts:ts,when:new Date(ts).toLocaleString('en-US'),n:0,mode:'sweep',med:null,
+       swept:0,op:'EGY',handOnly:true},
+      {room:'B2',ts:Date.now()-3*86400e3,when:'9/8/2026, 9:00:00 AM',n:33,mode:'sweep',med:31,swept:11}];
+    const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
+    const rows=w.dayCoverage();
+    ok(rows.length===19,'every production room is on the list: '+rows.length);
+    const by={}; rows.forEach(r=>by[r.room]=r);
+    ok(by.B1.swept && !by.B1.handOnly && by.B1.coverage===100 && by.B1.op==='APG',
+       'B1 read on the probe: '+by.B1.coverage+'% by '+by.B1.op);
+    ok(by.C4.handOnly,'C4 is marked hand-only, not covered');
+    ok(!by.B2.swept,'a sweep from three days ago is not today');
+    ok(by.B1.wing==='AM' && by.C4.wing==='PM',
+       'grouped the way he walks them: B1 '+by.B1.wing+', C4 '+by.C4.wing);
+    ok(by.A7.wing==='AM','A7 runs 7 to 7, so its first shot is in the morning');
+    ok(w.windowCloses('A7')==='09:15' && w.windowCloses('B1')==='11:00' && w.windowCloses('C4')==='13:15',
+       'and each carries the hour its pre-irrigation window shuts');
+    // the screen itself
+    d.getElementById('weekly').click(); await sleep(30);
+    ok(!d.getElementById('daysheet').classList.contains('hide'),'the weekly line opens it');
+    const body=d.getElementById('daybody').textContent;
+    ok(/1 of 19 rooms on the probe/.test(d.getElementById('daysub').textContent),
+       'the headline is the answer to the question: '+d.getElementById('daysub').textContent);
+    ok(/hand-only/.test(body),'C4 says hand-only on its row');
+    ok(/AM rooms/.test(body) && /PM rooms/.test(body),'and the rooms are grouped');
+    // tapping a room takes him there
+    d.querySelector('#daybody .dayr[data-r="B3"]').click(); await sleep(20);
+    ok(w.S.room==='B3','tapping a row picks the room: '+w.S.room);
+    ok(d.getElementById('daysheet').classList.contains('hide'),'and closes the screen');
+    ok(errors.length===0,'no runtime errors (§6.3): '+errors.join('|'));
+    w.close(); }
+
+  // ============ §6.4 a schedule that changed earns a post-change read ======
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const mk=(start,freq)=>({savedAt:Date.now(), room:'B5', tables:[
+      {table:1, room:'B5', P1:{start:start, duration:284, interval:7200, frequency:freq}, P2:null, flush:null}]});
+    w.saveSched('B5', mk('01:15',3));
+    ok(!w.getSched().B5.changed,'a first import is not a change');
+    w.saveSched('B5', mk('01:15',4));
+    ok(w.getSched().B5.changed,'a different frequency is');
+    ok(/T1 x3→x4/.test(w.getSched().B5.changed.diffs.join(' ')),
+       'and the diff says what moved: '+w.getSched().B5.changed.diffs.join(' · '));
+    w.saveSched('B5', mk('02:30',4));
+    ok(/T1 01:15→02:30/.test(w.getSched().B5.changed.diffs.join(' ')),'a moved start too');
+    const row=w.dayCoverage().filter(r=>r.room==='B5')[0];
+    ok(row.postShotDue,'so the room is waiting on a post-change read');
+    d.getElementById('weekly').click(); await sleep(30);
+    ok(/post-change read due/.test(d.getElementById('daybody').textContent),'and the day screen says so');
+    w.close(); }
+
+  // the flag clears on a sweep taken in the window, not on any sweep
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('B2',{savedAt:Date.now(), room:'B2', tables:[
+      {table:1, room:'B2', P1:{start:'01:15', duration:284, interval:7200, frequency:3}, P2:null, flush:null}]});
+    const a=w.getSched(); a.B2.changed={at:Date.now(), diffs:['T1 x2→x3']};
+    w.localStorage.setItem('stab_sched',JSON.stringify(a));
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    // 9 AM is nearly 4 h past the 05:15 last shot — outside the 1-2 h window
+    w.hoursSinceShot=()=>3.9;
+    d.getElementById('exit').click(); await sleep(60);
+    ok(!!w.getSched().B2.changed,'a sweep outside the window does not clear it'); }
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('B2',{savedAt:Date.now(), room:'B2', tables:[
+      {table:1, room:'B2', P1:{start:'01:15', duration:284, interval:7200, frequency:3}, P2:null, flush:null}]});
+    const a=w.getSched(); a.B2.changed={at:Date.now(), diffs:['T1 x2→x3']};
+    w.localStorage.setItem('stab_sched',JSON.stringify(a));
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    w.hoursSinceShot=()=>1.6;
+    d.getElementById('exit').click(); await sleep(60);
+    ok(!w.getSched().B2.changed,'one taken 1.6 h after the shot does — that is the confirmation'); }
+
   // ============ §5.4 room setup ============
   // Two wrong calls on 9/10 came from this being uneditable: C3 showed the
   // previous grow's strain map and produced a wrong tiering recommendation,

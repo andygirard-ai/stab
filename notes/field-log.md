@@ -31,13 +31,19 @@ interrupted by a reload. This is the list to execute against.
 | v34 | row notes are row-aligned — one line per table, blanks included | backlog §6.1 |
 | v35 | room setup screen — strains, drippers, tank, flower start, plants | backlog §5.4 |
 | v35 | volume per plant from runtime x drippers x emitter flow | backlog §5.4 |
+| v36 | table flags reach the tile, the stab screen and the export | backlog §6.2 |
+| v36 | the flush list assembles itself | backlog §6.2 |
+| v36 | day coverage screen — the 3 PM question | backlog §6.3 |
+| v36 | a changed schedule earns a post-change read | backlog §6.4 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
-9. §6.2 table flags · §6.3 day coverage
-10. §5.3 display · §5.5 sweep windows · §6.4 post-change reminder
+10. §5.5 sweep-window room ordering (§5.3 display shipped in v27)
 11. §6.5 rename tool
 12. §5.6 Growlink device log
+
+Also open, from §5.7: the room state toggle (active / harvest / empty) and
+greying the median line when the prior sweep is over four days old.
 
 Items through 6 are the second-operator gate.
 
@@ -520,3 +526,60 @@ prove it.
 Also: appending a CSV column has now broken a positional write twice — once
 in the export itself, where the skip reason and sweep flag were written to
 `nCols-1`. Both write by column name now.
+
+### 19. Table flags now reach somewhere → v36
+
+Backlog §6.2. C5 T5's header elbow is leaking. A5 T3 had two drippers
+repaired. B3 T4–T7 centers need a third. None of it had anywhere to live
+except a row note on the day it was seen.
+
+The store was already there — faults have carried room, table, type, detail,
+operator, timestamp and an open/fixed lifecycle since v19, and a fixed one
+keeps its history. What was missing was them reaching the three places
+somebody would act on:
+
+- **the room tile**, before the walk, as a count and a badge
+- **the stab screen**, when the cursor reaches that table, in a red panel
+  saying what it is — not in a list he read twenty minutes ago
+- **the export**, in an Open flags column
+
+The type chips gain `needs a dripper`, `fan`, `dead bag` and `needs flush`.
+
+**The flush list assembles itself now.** Tag a table `needs flush` during the
+week and the flush tab prints the facility list with a copy button. Today's —
+`A6 T7 · A7 T7 · B4 T3/6/9 · B6 T7 · C1 T5/8 · C5 T2/4/5 · C6 T9` — was
+assembled by hand in chat from a week of conversation. The test asserts that
+exact string.
+
+**A real bug came out of writing the test.** `addEv` used `Date.now()` as the
+event id and `closeEv` finds a fault by it, so two events logged in the same
+millisecond shared an id and marking either fixed closed both. A human cannot
+tap that fast; tagging a row of tables for flush can. A silently closed fault
+is a leak nobody goes back to.
+
+### 20. The day, on one screen → v36
+
+Backlog §6.3. At 3:13 PM on 9/10 the operator asked what he had covered and
+the answer meant reading the workbook. Every part of it was already in the
+app.
+
+Tap the weekly line on the setup page. Every room, grouped AM and PM the way
+they are walked, each showing today's sweep with its time, operator, coverage
+and stab count — or `hand-only · cannot detect below floor`, or nothing. Open
+flag counts, post-change reads due, and a warning when a room's
+pre-irrigation window is about to close or has closed. Tapping a room picks
+it and closes the screen.
+
+The grouping is derived from each room's own first shot rather than a list,
+so A7 lands in AM where it belongs and a room whose lights move follows.
+
+### 21. A changed schedule earns a post-change read → v36
+
+Backlog §6.4. When a schedule import differs from the previous one for a
+room, the diff is kept — `T1 01:15→02:30`, `T1 x3→x4` — and the room reads
+`post-change read due` until a sweep lands 1 to 2 hours after P1, which is
+the reading that confirms the front still reaches the bottom of the bag. A
+sweep outside that window does not clear it, and neither does one with no
+probe frames.
+
+A first import is not a change.
