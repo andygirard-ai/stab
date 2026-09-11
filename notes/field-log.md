@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v40** — v30–v34 shipped 9/10, v35–v40 on 9/11.
+**Live on main: v41** — v30–v34 shipped 9/10, v35–v41 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -45,6 +45,7 @@ interrupted by a reload. This is the list to execute against.
 | v39 | the outlier banner has an Undo beside the OK | 9/11 |
 | v39 | the wet ceiling is field capacity, with a post-flush tag | 9/11 |
 | v40 | header variants, missing units, 0s = off, sensor column kept | 9/11 paste |
+| v41 | the weekly blob is the whole facility — one paste, 19 rooms | 9/11 blob |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -851,3 +852,46 @@ land on an inactive one, which would report the whole room as never watered.
 That is a worse lie than the stale schedule the fallback exists to avoid. It
 picks a running table now, and only reports nothing when every table in the
 room is off.
+
+### 33. The weekly blob is the whole facility → v41
+
+He sent the thing he actually copies each week: nineteen rooms, 209 records,
+one blob, led by `all schedules as of 9/11/26 10:14am`.
+
+**The block parser was already right.** All 209 records parse, every room's
+table count is correct, every reconciliation passes, and there is not one
+warning across the facility. The four fixes in v40 are all exercised by it:
+A3 and A4 print `0s` on every table, A3 T11+12's flush prints `45`, a blank
+line, then `0 Secs`, A2 T3 prints `1h 12m 0s`, and the header case varies by
+room.
+
+**Everything above the block parser assumed one room.** `parseSchedule`
+reported `room: 'A1'` and the flat table list was sorted by table number
+alone, so A1 T1 interleaved with B1 T1. Pasting the blob on the C4 screen
+would have stored all 216 records under C4 — and before that, refused to
+save at all, because the wrong-room guard would have said "that paste says
+A1, you are on C4."
+
+**Shipped.** The parse groups by room; grouping comes before sorting, which
+is what stops the interleave. The verification screen shows a room a line
+with its table count, first shot and state — 209 rows is not a check anybody
+performs — and the button reads **Save all 19 rooms**. One tap stores all
+nineteen. A single-room paste still gets the per-table screen and still
+refuses to save onto the wrong room.
+
+The blob's own timestamp is kept per room, because it says how stale the
+schedule is independently of when it was pasted: a Monday blob pasted on
+Thursday is three days old and nothing else in the import would know.
+
+**What the facility looks like as of 9/11 10:14am**
+
+- **A3 and A4 are off** — every table, 0s daily runtime. Their P1 is still
+  read and stored, so they come back on correctly. `hoursSinceShot` returns
+  nothing for them rather than a number, which is the point of v40's change.
+- **Both sensor orphans are confirmed and captured**: C1 T10 `#20004922` and
+  C4 T6 `#20004907`, and only those two. That is the mapping the sensor pull
+  has been waiting on.
+- **76 of 216 tables have no sensor assigned at all** — all of B3, B4, B5,
+  B6, C5, C6 and most of B2, plus scattered others. Worth knowing before the
+  overnight pull is built: a third of the facility has no substrate sensor to
+  pull from.

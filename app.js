@@ -1800,11 +1800,23 @@ $('schedparse').onclick=function(){
   drawSchedParse();
 };
 $('schedok').onclick=function(){
-  if(!SCHEDPARSE || !SCHEDPARSE.tables.length) return;
-  saveSched(S.room,{savedAt:Date.now(), room:S.room, tables:SCHEDPARSE.tables});
+  var r=SCHEDPARSE;
+  if(!r || !r.tables.length) return;
+  /* One paste, every room in it. The weekly blob carries all nineteen, and
+     saving them one room at a time was nineteen trips through this screen. */
+  var groups=(r.rooms&&r.rooms.length)?r.rooms:[{room:S.room, tables:r.tables}];
+  var n=0, skipped=[];
+  groups.forEach(function(g){
+    var rm=(groups.length===1)?S.room:g.room;
+    if(!ROOMS[rm]){ skipped.push(g.room); return; }
+    saveSched(rm,{savedAt:Date.now(), asOf:r.asOf||null, room:rm, tables:g.tables});
+    n++;
+  });
   $('schedsheet').classList.add('hide');
   showBrief();
-  toast('schedule saved for '+S.room+' · '+SCHEDPARSE.tables.length+' tables');
+  toast(n>1 ? 'schedules saved for '+n+' rooms · '+r.tables.length+' tables'+
+              (skipped.length?' · skipped '+skipped.join(', '):'')
+            : 'schedule saved for '+S.room+' · '+r.tables.length+' tables');
 };
 $('schedclose').onclick=function(){ $('schedsheet').classList.add('hide'); SCHEDPARSE=null; };
 $('targetcancel').onclick=function(){ $('targetsheet').classList.add('hide'); TP.forRow=null; };
@@ -2467,6 +2479,7 @@ var SCHEDPARSE=null;
 function openSchedule(){
   if(!S.room){ toast('pick a room first'); return; }
   SCHEDPARSE=null;
+  $('schedok').textContent='Save schedule';
   $('schedtop').textContent='Schedule · '+S.room;
   $('schedpaste').value='';
   var cur=getSched()[S.room];
@@ -2477,6 +2490,33 @@ function openSchedule(){
   $('schedok').classList.add('hide');
   $('schedsheet').classList.remove('hide');
 }
+function drawSchedRooms(r){
+  var unknown=r.rooms.filter(function(g){ return !ROOMS[g.room]; });
+  var h='<div class="sn">'+r.rooms.length+' rooms · '+r.tables.length+' tables'+
+    (r.asOf?' · as of '+esc(r.asOf):'')+'</div>';
+  if(unknown.length) h+='<div class="sn bad">not rooms this app knows: '+
+    unknown.map(function(g){ return esc(g.room); }).join(', ')+' — they will be skipped</div>';
+  h+='<table class="sched"><tr><th>room</th><th>tables</th><th>first shot</th><th>state</th></tr>';
+  r.rooms.forEach(function(g){
+    var known=!!ROOMS[g.room];
+    var off=g.tables.filter(function(t){ return t.inactive; }).length;
+    var bad=g.tables.filter(function(t){ return t.reconciles===false; }).length;
+    var live=g.tables.filter(function(t){ return !t.inactive; })[0];
+    var st=off===g.tables.length ? 'all off'
+         : bad ? bad+' misread'
+         : g.warnings.length ? 'short paste'
+         : (off?off+' off':'ok');
+    var cls=!known?' class="off"':(bad||g.warnings.length)?' class="bad"':'';
+    h+='<tr'+cls+'><td>'+esc(g.room)+'</td><td>'+g.tables.length+'</td>'+
+       '<td>'+(live&&live.P1.start?fmt12(+live.P1.start.split(':')[0],live.P1.start.split(':')[1]):'—')+'</td>'+
+       '<td>'+st+'</td></tr>';
+  });
+  h+='</table>';
+  if(r.warnings.length) h+='<div class="sn bad">'+r.warnings.map(esc).join('<br>')+'</div>';
+  $('schedbody').innerHTML=h;
+  $('schedok').textContent='Save all '+r.rooms.filter(function(g){ return !!ROOMS[g.room]; }).length+' rooms';
+  $('schedok').classList.remove('hide');
+}
 function schedFmt(sec){
   if(sec==null) return '—';
   var m=Math.floor(sec/60), r=Math.round(sec%60);
@@ -2485,10 +2525,15 @@ function schedFmt(sec){
 function drawSchedParse(){
   var r=SCHEDPARSE;
   if(!r || !r.tables.length){
-    $('schedbody').innerHTML='<div class="sn bad">nothing read from that paste — is it the whole room screen?</div>';
+    $('schedbody').innerHTML='<div class="sn bad">nothing read from that paste — is it a schedule screen?</div>';
     $('schedok').classList.add('hide');
     return;
   }
+  /* The weekly blob is the whole facility, so the common case is nineteen
+     rooms at once and the per-table detail would be 209 rows nobody reads.
+     A room a line, with what is off and what is missing, is the check that
+     matters at that size; the per-table screen stays for a single room. */
+  if(r.rooms && r.rooms.length>1){ drawSchedRooms(r); return; }
   var wrongRoom=(r.room && r.room!==S.room);
   var h='';
   if(wrongRoom) h+='<div class="sn bad">that paste says '+r.room+', you are on '+S.room+'</div>';

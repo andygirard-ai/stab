@@ -351,6 +351,94 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the weekly blob — the whole facility in one paste =========
+  // What he actually copies each week: nineteen rooms, 209 records, one
+  // blob. Every earlier fixture was a single room's screen, and the pipeline
+  // above the block parser assumed that.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const blob=fs.readFileSync(path.join(__dirname,'sched_ALL_2026-09-11.txt'),'utf8');
+    const r=w.parseSchedule(blob);
+    ok(r.rooms.length===19,'all nineteen rooms come out of one paste: '+r.rooms.length);
+    ok(r.tables.length===216,'216 table records — 7 A-wing rooms of 12, 12 of 11: '+r.tables.length);
+    ok(r.warnings.length===0,'and not one warning: '+r.warnings.join(' | '));
+    ok(r.asOf==='9/11/26 10:14am','the blob\'s own timestamp is kept: '+r.asOf);
+    const by={}; r.rooms.forEach(g=>by[g.room]=g);
+    ok(Object.keys(by).sort().join(',')==='A1,A2,A3,A4,A5,A6,A7,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6',
+       'every production room, no strays: '+Object.keys(by).sort().join(','));
+    ok(by.A1.tables.length===12 && by.B1.tables.length===11,'wing sizes right');
+    // grouping has to come before sorting or the rooms interleave
+    ok(r.tables.slice(0,12).every(t=>t.room==='A1'),
+       'the flat list stays grouped: '+r.tables.slice(0,3).map(t=>t.room+'T'+t.table).join(' '));
+    ok(r.tables[0].table===1 && r.tables[11].table===12,'and sorted within a room');
+    w.close(); }
+
+  // the things this blob contains that no earlier fixture did
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_ALL_2026-09-11.txt'),'utf8'));
+    const get=(rm,t)=>r.tables.filter(x=>x.room===rm&&x.table===t)[0];
+    // A3 and A4 print 0s daily runtime on every table — both rooms are off
+    const off={}; r.tables.forEach(t=>{ if(t.inactive) off[t.room]=(off[t.room]||0)+1; });
+    ok(Object.keys(off).sort().join(',')==='A3,A4','two rooms are switched off: '+Object.keys(off).sort().join(','));
+    ok(off.A3===12 && off.A4===12,'every table in them: A3 '+off.A3+', A4 '+off.A4);
+    ok(get('A3',1).reconciles===null,'and none of them is flagged as a misread block');
+    ok(get('A3',1).P1.duration===536,'…while their P1 is still read, for when they come back on');
+    // A3 T11+12's flush prints 45, a blank line, then 0 Secs
+    ok(get('A3',11).flush.duration===2700,
+       'A3 T11+12 flush is 45 minutes, not 45 seconds: '+get('A3',11).flush.duration+'s');
+    ok(get('A3',12).flush.duration===2700,'…on both halves of the shared valve');
+    // an hour in the printed total
+    ok(get('A2',3).runtimeSec===4320 && get('A2',3).reconciles===true,
+       'A2 T3 prints 1h 12m 0s and reconciles against 36m x2: '+get('A2',3).runtimeSec+'s');
+    // every reconciliation in the facility passes
+    ok(r.tables.filter(t=>t.reconciles===false).length===0,'not one misread block in 209 records');
+    // the sensor map, which is what the sensor pull needs
+    const ids=r.tables.filter(t=>t.sensorId).map(t=>t.room+' T'+t.table+' #'+t.sensorId);
+    ok(ids.join(', ')==='C1 T10 #20004922, C4 T6 #20004907',
+       'both known orphans found, and only those: '+ids.join(', '));
+    const none=r.tables.filter(t=>!t.sensor).length;
+    ok(none===76,'and 76 tables have no sensor assigned: '+none);
+    ok(get('A1',11).sensor==='A1 11 Back Moisture' && get('A1',12).sharedSensor===true,
+       'the shared valve carries one sensor across both records');
+    w.close(); }
+
+  // one paste, every room saved
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="C4"]').click(); await sleep(20);
+    d.getElementById('cfgbtn'); d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value=fs.readFileSync(path.join(__dirname,'sched_ALL_2026-09-11.txt'),'utf8');
+    d.getElementById('schedparse').click(); await sleep(30);
+    const body=d.getElementById('schedbody').textContent;
+    ok(/19 rooms · 216 tables/.test(body),'the screen summarises by room, not 216 rows: '+body.slice(0,44));
+    ok(/as of 9\/11\/26/.test(body),'with the blob\'s own timestamp');
+    ok(/all off/.test(body),'and says which rooms are switched off');
+    ok(/Save all 19 rooms/.test(d.getElementById('schedok').textContent),
+       'the button says what it will do: '+d.getElementById('schedok').textContent);
+    // the wrong-room guard must not fire on a facility paste
+    ok(!/you are on C4/.test(body),'it does not complain that the paste "says A1" — it says all of them');
+    d.getElementById('schedok').click(); await sleep(30);
+    const saved=JSON.parse(w.localStorage.getItem('stab_sched')||'{}');
+    ok(Object.keys(saved).length===19,'nineteen rooms stored from one tap: '+Object.keys(saved).length);
+    ok(saved.B1.tables.length===11 && saved.A1.tables.length===12,'each with its own tables');
+    ok(saved.C4.asOf==='9/11/26 10:14am','and each carrying when the blob was taken');
+    // and the schedules are live: B3's shots now come from the import
+    const at=new Date(); at.setHours(10,52,0,0);
+    ok(w.hoursSinceShot('A3',at,1)===null,'a room that is off reports no last shot');
+    ok(w.hoursSinceShot('A1',at,1)!==null,'a room that is running does: '+w.hoursSinceShot('A1',at,1).toFixed(1)+'h');
+    ok(errors.length===0,'no runtime errors (weekly blob): '+errors.join('|'));
+    w.close(); }
+
+  // a single-room paste still gets the per-table screen and the room guard
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B5"]').click(); await sleep(20);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value=fs.readFileSync(path.join(__dirname,'sched_C4_2026-09-10.txt'),'utf8');
+    d.getElementById('schedparse').click(); await sleep(20);
+    ok(/says C4, you are on B5/.test(d.getElementById('schedbody').textContent),
+       'one room and the wrong one still refuses: '+d.getElementById('schedbody').textContent.slice(0,40));
+    ok(d.getElementById('schedok').classList.contains('hide'),'…with no save offered');
+    w.close(); }
+
   // ============ 9/11 schedule paste, second round ============
   // Four things a wider set of real screens showed. Written from the
   // operator's notes on the paste rather than the paste itself, so the

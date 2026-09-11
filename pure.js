@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v40';
+var VER='v41';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -234,6 +234,14 @@ function sensorId(name){
   var m=/#(\d{4,})/.exec(String(name||''));
   return m?m[1]:null;
 }
+/* The blob leads with "all schedules as of 9/11/26 10:14am". Kept, because
+   it says how stale the schedule is independently of when it was pasted —
+   a Monday blob pasted on Thursday is three days old and nothing else in
+   the import would know. */
+function schedAsOf(text){
+  var m=/as of\s+([^\n]+)/i.exec(String(text||'').slice(0,400));
+  return m?m[1].trim():null;
+}
 function parseSchedule(text){
   var raws=String(text||'').split(/\r?\n/);
   var lines=raws.map(function(l){ return l.replace(/\t.*$/,'').trim(); });
@@ -316,23 +324,40 @@ function parseSchedule(text){
                      :((calc!=null&&b.runtime!=null)?(Math.abs(calc-b.runtime)<=60):null)});
     });
   });
-  tables.sort(function(a,b){ return a.table-b.table; });
-  var rm=(blocks[0]&&blocks[0].room)||null;
-  /* The screen is meant to be pasted whole. A short paste is not an error,
-     but the uncovered tables will read off their neighbours' schedule, so
-     the operator has to be told which ones before he commits it. */
-  if(rm && ROOMS[rm]){
+  /* The weekly blob is the whole facility in one paste — nineteen rooms,
+     209 records — not one room's screen. Grouping by room is the difference
+     between one import a week and nineteen. Sorting the flat list by table
+     number alone would interleave A1 T1 with B1 T1, so the grouping has to
+     come first. */
+  var byRoom={}, order=[];
+  tables.forEach(function(t){
+    if(!byRoom[t.room]){ byRoom[t.room]={room:t.room, tables:[], warnings:[]}; order.push(t.room); }
+    byRoom[t.room].tables.push(t);
+  });
+  order.forEach(function(rm){
+    var g=byRoom[rm];
+    g.tables.sort(function(a,b){ return a.table-b.table; });
+    /* A room's screen is meant to be pasted whole. A short paste is not an
+       error, but the uncovered tables will read off their neighbours'
+       schedule, so the operator has to be told which before committing. */
+    if(!ROOMS[rm]) return;
     var have={}, miss=[];
-    tables.forEach(function(t){ have[t.table]=1; });
+    g.tables.forEach(function(t){ have[t.table]=1; });
     for(var n=1;n<=ROOMS[rm].t;n++) if(!have[n]) miss.push(n);
     if(miss.length){
       var fb=null;
-      for(var k=0;k<tables.length;k++) if(!tables[k].inactive){ fb=tables[k]; break; }
-      warn.push('no schedule for T'+miss.join(', T')+
-        ' — those tables will read off T'+(fb?fb.table:(tables[0]?tables[0].table:'?')));
+      for(var k=0;k<g.tables.length;k++) if(!g.tables[k].inactive){ fb=g.tables[k]; break; }
+      g.warnings.push('no schedule for T'+miss.join(', T')+
+        ' — those tables will read off T'+(fb?fb.table:(g.tables[0]?g.tables[0].table:'?')));
     }
-  }
-  return {room:rm, tables:tables, warnings:warn};
+  });
+  var rooms=order.map(function(rm){ return byRoom[rm]; });
+  var flat=[];
+  rooms.forEach(function(g){ g.tables.forEach(function(t){ flat.push(t); }); });
+  rooms.forEach(function(g){
+    g.warnings.forEach(function(w){ warn.push((rooms.length>1?g.room+': ':'')+w); });
+  });
+  return {room:order[0]||null, rooms:rooms, tables:flat, warnings:warn, asOf:schedAsOf(text)};
 }
 /* The brief's one-line summary of when the room gets water. It reads the
    same source hoursSinceShot does, so the brief can never describe one
