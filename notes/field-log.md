@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v41** — v30–v34 shipped 9/10, v35–v41 on 9/11.
+**Live on main: v42** — v30–v34 shipped 9/10, v35–v42 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -46,6 +46,7 @@ interrupted by a reload. This is the list to execute against.
 | v39 | the wet ceiling is field capacity, with a post-flush tag | 9/11 |
 | v40 | header variants, missing units, 0s = off, sensor column kept | 9/11 paste |
 | v41 | the weekly blob is the whole facility — one paste, 19 rooms | 9/11 blob |
+| v42 | sensor error codes are faults, not silence — -9991 is the low-supply one | TEROS guide |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -895,3 +896,56 @@ Thursday is three days old and nothing else in the import would know.
   B6, C5, C6 and most of B2, plus scattered others. Worth knowing before the
   overnight pull is built: a third of the facility has no substrate sensor to
   pull from.
+
+### 34. The probe has no battery, and says so a different way → v42
+
+He sent the TEROS 11/12 Integrator Guide with "so far I haven't gotten a
+battery response to work."
+
+**The guide settles it by exclusion.** The TEROS 12 is a passive sensor:
+4.0–15 VDC supplied by the host, 3–16 mA for a 25 ms measurement, 0.03 mA
+asleep. "Low-power design supports battery-operated data loggers" means it is
+designed to be *powered by* a battery logger, not that it has one. Its whole
+SDI-12 command set — `aI!`, `aM!`, `aC!`, `aR0!`, `aR3!`, `aR4!`, `aXR3!`,
+`aXR4!`, DDI serial — carries no power telemetry of any kind.
+
+So there was never a battery in the sensor to read. Anything battery-shaped
+belongs to the ZSC bridge, and the Battery Service attempt stays pointed at
+it.
+
+**But the guide also has the answer.** The sensor prints three error codes
+*in place of the measured value*:
+
+```
+-9999   measurement compromised, values meaningless
+-9992   calibration lost or corrupt
+-9991   supply voltage too low to measure
+```
+
+`-9991` is the only low-supply signal this hardware gives, and **it arrives
+on the wire we already read.**
+
+**What was happening to them.** The reading regex needs `\d+\.\d+` in the
+counts position, so `-9991` never matched, and the frame fell through to the
+unparsed bucket. A probe reporting low supply looked exactly like a probe
+that had gone quiet: misses climbing, nothing on screen, no reason. All three
+codes behaved that way.
+
+**Shipped.** Each code is recognised, named and raised as a held banner. None
+of them commits a reading or moves the cursor, the capture machine is
+re-armed so the next good stab still works, and the sweep carries
+`SENSOR_ERR:-9991x1` into the export with a count in the diagnostics.
+
+The BLE scan also now enumerates the DECA service's own characteristics with
+their properties, because a readable one the app does not already use is the
+only place a vendor battery reading could hide. One connect prints
+`deca chars: deca0002[write] deca0003[notify] …` into the export.
+
+**Decision rule, so this does not drag on.** If the next export shows no
+battery service and no unexplained readable DECA characteristic, the probe
+has no battery telemetry at all and the Batt column gets deleted rather than
+left empty. An empty column that will never fill is worse than no column.
+
+Also confirmed against the guide, unchanged: the `aXR3!` response format is
+exactly what the app parses — `a<TAB><counts> <temp> <EC><CR><type><checksum>
+<CRC>`, EC in µS/cm, temperature in °C.

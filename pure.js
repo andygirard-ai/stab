@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v41';
+var VER='v42';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -739,8 +739,28 @@ function poreEC(counts, bulk_uS, tC, off){
 
 /* parseText: path 1 = direct sensor reply (temp already degC per integrator
    guide); path 2 = ZSC status frame (counts x10, temp raw/100-50). */
+/* The sensor's three error codes, printed in place of the measured value
+   (Integrator Guide, SENSOR ERROR CODES). They arrive in the same frame
+   shape as a reading and were falling through to the unparsed bucket, so a
+   probe in any of these states looked to the operator like a probe that had
+   simply gone quiet: misses climbing, no reading, no reason.
+
+   -9991 is the one that matters most here. The TEROS 12 has no battery — it
+   is a passive 4.0-15 VDC sensor and its whole SDI-12 command set carries no
+   power telemetry — so this is the only low-supply signal the hardware
+   gives, and it comes down the wire we already read. */
+var SENSOR_ERRS={
+  '-9999':'measurement compromised — the values would mean nothing',
+  '-9992':'sensor calibration lost or corrupt — needs METER support',
+  '-9991':'supply voltage too low to measure — charge or swap the bridge'
+};
 function parseText(txt){
   var s=String(txt).replace(/[^\x20-\x7E]/g,' ');
+  /* an error frame still looks like a sensor line: sentinel, then the type
+     character the reading regex keys on */
+  var e=s.match(/(-999[129])[\s\S]{0,24}?[gh]\s*\d*\s*$/) || s.match(/(-999[129])\s/);
+  if(e) return {err:e[1], msg:SENSOR_ERRS[e[1]]||'sensor error '+e[1],
+                raw:s.trim().slice(0,48), direct:true};
   var m=s.match(/(\d+\.\d+)\s+(-?\d+\.?\d*)\s+(-?\d+)\s*[gh]/);
   if(m) return {counts:+m[1], tC:+m[2], bulk:+m[3], raw:m[0].trim(), direct:true};
   var n=s.match(/(\d+)\s*:\s*(\d+)\s+(\d+)\s+(\d+)/);
@@ -759,6 +779,7 @@ function bytesToText(arr){
    Hooks are assigned by the DOM layer (and by tests). ---- */
 var emitReading=function(pr){};
 var emitUnparsed=function(tag,txt){};
+var emitSensorError=function(pr){};
 var RX={buf:[], lastAt:0, flushT:null};
 function rxBytes(bytes){
   for(var i=0;i<bytes.length;i++) RX.buf.push(bytes[i]);
@@ -768,8 +789,9 @@ function rxBytes(bytes){
 }
 function tryText(txt){
   var pr=parseText(txt);
-  if(pr){ emitReading(pr); return true; }
-  return false;
+  if(!pr) return false;
+  if(pr.err){ emitSensorError(pr); return true; }
+  emitReading(pr); return true;
 }
 function processRx(){
   var b=RX.buf, guard=0;

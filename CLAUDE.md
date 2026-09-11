@@ -40,6 +40,20 @@ Reply     0 2297.3 24.9 308 g<checksum><crc>
           address · calibrated VWC counts · °C · bulk EC µS/cm · sensor type g
 ```
 
+**Sensor error codes** — printed *in place of* the measured value, in the
+same frame shape as a reading:
+
+```
+-9999   measurement compromised, values meaningless
+-9992   calibration lost or corrupt
+-9991   supply voltage too low to measure
+```
+
+`-9991` is the **only low-supply signal this hardware gives**. The TEROS 12 is
+a passive 4.0–15 VDC sensor drawing 3–16 mA for 25 ms per measurement; it has
+no battery and its SDI-12 command set carries no power telemetry. Anything
+battery-shaped belongs to the ZSC bridge, not the sensor.
+
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 
 ```

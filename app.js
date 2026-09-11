@@ -188,7 +188,8 @@ var S={room:null, side:'standard', dir:'up', mode:'sweep', auto:true,
   flaggedTable:false, reconnB:false};
 var A={state:'air', buf:[], lastAir:null, t0:0};
 var CAL={stage:'live', frozen:null, released:false};
-var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[], services:null};
+var DBG={pkts:0, polls:0, directs:0, statusFrames:0, writeFails:0, timeouts:0, unparsed:[],
+         services:null, chars:null, sensorErr:0, lastSensorErr:null};
 /* assigned inside buildSetup; settings calls it to open the practice room */
 var pickRoom=function(){};
 var WAIT=[];
@@ -1133,6 +1134,22 @@ emitUnparsed=function(tag,txt){
   dbgUnparsedPush(tag,txt);
   step('unparsed ['+tag+'] '+String(txt).slice(0,26));
 };
+/* A sensor error is not a reading and never commits. Before this they fell
+   into the unparsed bucket, so a probe reporting low supply looked exactly
+   like a probe that had gone quiet — misses climbing, nothing on screen, no
+   reason given. The held banner is right for all three: each of them means
+   stop and fix something, not stab again. */
+emitSensorError=function(pr){
+  DBG.sensorErr=(DBG.sensorErr||0)+1;
+  DBG.lastSensorErr=pr.err;
+  S.lastErr=pr.err;
+  step('sensor error '+pr.err+' — '+pr.msg);
+  A.state='air'; A.buf=[];
+  S.awaiting=false; clearTimeout(S.rt);
+  beep('alarm');
+  if(S.alarmQueue.length<2) showAlarm('probe '+pr.err+' · '+pr.msg);
+  setBig();
+};
 emitReading=function(pr){
   var now=Date.now();
   if(pr.direct) DBG.directs++; else DBG.statusFrames++;
@@ -1348,6 +1365,7 @@ function readBattery(g){
     S.batC=c;
     return c.readValue().then(function(v){
       S.batt=v.getUint8(0); S.battWhy='ok'; battPaint(); battWarn();
+      listGattServices(g);
       c.addEventListener('characteristicvaluechanged',function(e){
         S.batt=e.target.value.getUint8(0); battPaint(); battWarn();
       });
@@ -1365,11 +1383,33 @@ function readBattery(g){
    Bluetooth only returns services that were granted at requestDevice, so
    this is a floor on what is there, not a census — but it is enough to
    settle whether battery_service is among them. */
+/* What the bridge actually exposes. Web Bluetooth only hands back services
+   granted at requestDevice, so this is not a census — but the DECA service
+   is granted, and its characteristics are where a vendor battery reading
+   would live if one exists. The TEROS itself has none: it is a passive
+   4.0-15 VDC sensor whose whole SDI-12 command set carries no power
+   telemetry, so anything battery-shaped belongs to the ZSC bridge. */
 function listGattServices(g){
   if(!g || !g.getPrimaryServices) return Promise.resolve();
   return g.getPrimaryServices().then(function(ss){
     DBG.services=ss.map(function(s){ return s.uuid; });
     step('services: '+(DBG.services.join(' ')||'none readable'));
+    /* the DECA characteristics, with their properties — a readable one we
+       do not already use is the only place a vendor battery could hide */
+    var svc=null;
+    ss.forEach(function(x){ if(String(x.uuid).indexOf('deca')===0) svc=x; });
+    if(!svc || !svc.getCharacteristics) return;
+    return svc.getCharacteristics().then(function(cs){
+      DBG.chars=cs.map(function(c){
+        var p=c.properties||{}, f=[];
+        if(p.read) f.push('read');
+        if(p.notify) f.push('notify');
+        if(p.write) f.push('write');
+        if(p.writeWithoutResponse) f.push('writeNR');
+        return c.uuid.slice(0,8)+'['+f.join(',')+']';
+      });
+      step('deca chars: '+DBG.chars.join(' '));
+    }).catch(function(){});
   }).catch(function(e){
     DBG.services=['enumeration refused: '+((e&&e.name)||e)];
   });
@@ -2180,6 +2220,7 @@ function finish(){
   var swx=sweepFlags();
   if(S.postFlush) swx.push('POST_FLUSH');
   if(S.batt==null && S.battWhy) swx.push('BATT:'+String(S.battWhy).replace(/[ ,]/g,'_'));
+  if(DBG.sensorErr) swx.push('SENSOR_ERR:'+DBG.lastSensorErr+'x'+DBG.sensorErr);
   var swFlags=swx.join(' ');
   var lines=S.rows.map(function(r){
     return [r.date,r.time,r.room,r.table,r.position,r.depth,r.plant,csvq(r.strain),r.flags,r.hrs,
@@ -2262,7 +2303,9 @@ function finish(){
     ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
     ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
     ' · batt '+(S.batt==null?('none — '+(S.battWhy||'never read')):S.batt+'%')+
+    (DBG.sensorErr?' · sensor errors '+DBG.sensorErr+' (last '+DBG.lastSensorErr+')':'')+
     (DBG.services?('\nservices: '+DBG.services.join(' ')):'')+
+    (DBG.chars?('\ndeca chars: '+DBG.chars.join(' ')):'')+
     (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
   showHist();
   beep('sweepDone');

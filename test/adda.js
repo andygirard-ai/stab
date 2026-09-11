@@ -352,6 +352,82 @@ function rowsFor(w,room,spec){
 
 
 
+
+  // ============ the TEROS guide: sensor error codes ============
+  // The Integrator Guide settles the battery question by exclusion. The
+  // TEROS 12 is a passive 4.0-15 VDC sensor and its whole SDI-12 command set
+  // carries no power telemetry, so it has no battery to report. What it does
+  // have is three error codes printed in place of the measured value, and
+  // -9991 is "insufficient voltage to perform the measurement" — the only
+  // low-supply signal this hardware gives, arriving on the wire we already
+  // read. All three were falling through to the unparsed bucket.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const cases=[['-9991',/supply voltage too low/],['-9992',/calibration lost/],
+                 ['-9999',/measurement compromised/]];
+    cases.forEach(([code,re])=>{
+      const pr=w.parseText('0\t'+code+' 24.9 308\rg8');
+      ok(pr && pr.err===code,code+' parses as an error, not a reading: '+(pr?(pr.err||pr.counts):'unparsed'));
+      ok(pr && re.test(pr.msg),'…saying what it means: '+(pr?pr.msg:''));
+    });
+    const good=w.parseText('0\t2297.3 24.9 308\rg8');
+    ok(good && !good.err && good.counts===2297.3,'a real reading is untouched: '+good.counts);
+    const air=w.parseText('0\t1790.0 22.0 0\rg8');
+    ok(air && !air.err && air.counts===1790,'and so is an air frame');
+    w.close(); }
+
+  // an error frame never becomes a reading
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const i0=w.S.i;
+    w.rxBytes(w.frameBytes('0\t-9991 24.9 308\rg8')); await sleep(20);
+    ok(w.S.rows.length===0,'nothing is logged: '+w.S.rows.length+' rows');
+    ok(w.S.i===i0,'the cursor does not move');
+    ok(!d.getElementById('alarm').classList.contains('hide'),'the operator gets a held banner');
+    ok(/-9991/.test(d.getElementById('alarmtxt').textContent) &&
+       /supply voltage too low/.test(d.getElementById('alarmtxt').textContent),
+       'naming the fault: '+d.getElementById('alarmtxt').textContent);
+    ok(d.getElementById('alarmundo').classList.contains('hide'),
+       'with no Undo, because no reading was taken');
+    ok(w.DBG.sensorErr===1 && w.DBG.lastSensorErr==='-9991','and it is counted: '+w.DBG.sensorErr);
+    // it is not left in the unparsed bucket pretending to be a protocol fault
+    ok(!w.DBG.unparsed.some(x=>/9991/.test(x)),'it is not filed as an unparsed packet');
+    // the machine is re-armed, so a good stab after it still works
+    d.getElementById('alarmok').click(); await sleep(20);
+    enterSettling(w,33.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows.length===1,'a good reading after the error still logs: '+w.S.rows.length);
+    d.getElementById('exit').click(); await sleep(60);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=n=>csv[0].split(',').indexOf(n);
+    ok(/SENSOR_ERR:-9991x1/.test(csv[1].split(',')[col('Sweep flags')]),
+       'and the sweep carries it into the export: '+csv[1].split(',')[col('Sweep flags')]);
+    ok(/sensor errors 1 \(last -9991\)/.test(d.getElementById('dbg').textContent),
+       'with the count in the diagnostics'); }
+
+  // the bridge scan reports its characteristics, which is where a vendor
+  // battery would have to live if one exists
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); await sleep(20);
+    const err=new Error('x'); err.name='NotFoundError';
+    await w.readBattery({
+      getPrimaryService:()=>Promise.reject(err),
+      getPrimaryServices:()=>Promise.resolve([{
+        uuid:'deca0001-10c7-43a8-8c9f-42b70e03808d',
+        getCharacteristics:()=>Promise.resolve([
+          {uuid:'deca0002-10c7-43a8-8c9f-42b70e03808d',properties:{write:true}},
+          {uuid:'deca0003-10c7-43a8-8c9f-42b70e03808d',properties:{notify:true}},
+          {uuid:'deca0004-10c7-43a8-8c9f-42b70e03808d',properties:{read:true}}
+        ])}])
+    });
+    await sleep(30);
+    ok(w.DBG.chars && w.DBG.chars.length===3,'the DECA characteristics are enumerated: '+
+       (w.DBG.chars||[]).join(' '));
+    ok(/deca0004\[read\]/.test(w.DBG.chars.join(' ')),
+       'a readable one we do not already use would show up here');
+    d.getElementById('exit').click(); await sleep(60);
+    ok(/deca chars: /.test(d.getElementById('dbg').textContent),
+       'and it lands in the export diagnostics, not just a screen'); }
+
   // ============ the weekly blob — the whole facility in one paste =========
   // What he actually copies each week: nineteen rooms, 209 records, one
   // blob. Every earlier fixture was a single room's screen, and the pipeline
