@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v43';
+var VER='v44';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -655,6 +655,13 @@ function dofNow(rm, nowDate){
 
 /* ---- probe protocol ---- */
 var SVC='deca0001-10c7-43a8-8c9f-42b70e03808d';
+/* Bluetooth SIG assigned numbers: Battery Service and Battery Level. The
+   spec is not in doubt — a uint8, 0 to 100, read mandatory, notify optional.
+   What is in doubt is whether this bridge implements it, which is a question
+   about the device and not about the spec. The probe scan in settings asks
+   the device directly. */
+var BAT_SVC='0000180f-0000-1000-8000-00805f9b34fb';
+var BAT_CHR='00002a19-0000-1000-8000-00805f9b34fb';
 var NTF='deca0003-10c7-43a8-8c9f-42b70e03808d';
 var WRT='deca0002-10c7-43a8-8c9f-42b70e03808d';
 

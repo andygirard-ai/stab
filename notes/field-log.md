@@ -15,7 +15,7 @@ the diagnosis is often wrong the first time and the symptom is what survives.
 Fixes are batched rather than pushed one at a time, so a sweep is never
 interrupted by a reload. This is the list to execute against.
 
-**Live on main: v43** — v30–v34 shipped 9/10, v35–v43 on 9/11.
+**Live on main: v44** — v30–v34 shipped 9/10, v35–v44 on 9/11.
 
 **Queued on the branch, tested, not live:**
 
@@ -47,7 +47,8 @@ interrupted by a reload. This is the list to execute against.
 | v40 | header variants, missing units, 0s = off, sensor column kept | 9/11 paste |
 | v41 | the weekly blob is the whole facility — one paste, 19 rooms | 9/11 blob |
 | v42 | sensor error codes are faults, not silence — -9991 is the low-supply one | TEROS guide |
-| v43 | the Batt column is deleted — the hardware cannot fill it | ZSC guide |
+| v43 | the Batt column is deleted — it never once returned a value | ZSC guide |
+| v44 | probe scan — ask the bridge instead of arguing about it | 9/11 |
 
 **Not yet actioned, in the consolidated backlog's build order:**
 
@@ -997,3 +998,58 @@ on its second assertion and wrote nothing, so a message correction I had
 reported as applied was not. I caught it by grepping for the new string
 rather than trusting the `ok`. One edit per script from here, verified by
 reading the file back.
+
+### 36. Probe scan, and a claim that needed checking → v44
+
+A second opinion came back saying the battery question is "essentially
+solved": SOLUS/ZSC → `0x180F` → `0x2A19` → uint8 → 0–100%.
+
+**The protocol half is correct and I do not dispute it.** The Bluetooth SIG
+assigns Battery Service `0x180F` and Battery Level `0x2A19`; the value is one
+byte, 0 to 100; read is mandatory, notify optional. All true.
+
+**The device half is an inference presented as a finding.** The line
+"standard BLE service advertised by the ZSC" is not in any of the cited
+documents. The SIG documents say what `0x180F` means *if a device implements
+it* — not that this one does. The METER ZSC manual has no GATT, UUID,
+service or characteristic section at all: its only "advertising" is an LED
+state.
+
+**And the proposed implementation is the one that was already there.** From
+v18 to v42 the app did exactly this — `getPrimaryService('battery_service')`,
+`getCharacteristic('battery_level')`, `readValue()`, `getUint8(0)`, with
+`battery_service` in `optionalServices`. It ran on every connect for weeks
+and never returned a value. That is why it was deleted.
+
+**Where I overstated, and the correction.** v43's note said "a two-AA
+primary-cell device has no fuel gauge to read one from," as though that
+settled it. It does not. A device that knows to blink red when the cells are
+too low *is* measuring its supply somehow, and a coarse voltage-derived
+percentage over `0x180F` is not impossible. The evidence for absence is
+strong — weeks of nothing, and no documentation anywhere — but it is
+circumstantial, and I presented it as physical fact. CLAUDE.md now says what
+is established and what is not.
+
+**Shipped: Settings → Probe scan.** It asks the bridge instead of arguing
+about it. Connect the probe, tap once, and it prints:
+
+- `0x180F` by full SIG UUID, and `battery_service` by Web Bluetooth alias,
+  separately — so a naming mistake cannot be mistaken for absence
+- `0x2A19` read with the spec's own validation: at least one byte, and a
+  value over 100 called out as not a percentage
+- every granted service present on the device
+- every DECA characteristic with its properties, since a readable one we do
+  not already use is the last place a vendor reading could hide
+
+The error name is printed verbatim, and the whole thing copies out.
+`battery_service` is back in `optionalServices` — without it Web Bluetooth
+refuses the service outright, which would make "not found" untestable rather
+than false.
+
+**If it returns a byte, the column goes straight back in and I was wrong.**
+The scan says so in those words when it succeeds.
+
+This is the same mistake twice in two days, from two directions: on 9/11 I
+decided the battery "belongs to the bridge" and went hunting; today a second
+opinion decided the bridge "advertises 0x180F" and called it solved. Neither
+was a measurement. The scan is a measurement.

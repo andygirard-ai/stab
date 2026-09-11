@@ -56,10 +56,23 @@ on two AA alkaline cells** (2–3 months normal use, up to 6 with daily use)
 with no fuel gauge, and its manual documents no level readout of any kind:
 its own low-battery indication is a **red blinking LED on the case**.
 
-So there is nothing to read over Bluetooth. **The CSV had a Batt column from
-v18 to v42 and it was never once filled.** It is gone. Do not add it back —
-the hardware cannot fill it, and an empty column that will never fill reads
-as a bug in the app rather than a fact about the probe.
+**The CSV had a Batt column from v18 to v42 and it was never once filled.**
+It is gone. It was read exactly the way the Bluetooth SIG specifies —
+service `0x180F`, characteristic `0x2A19`, `getUint8(0)`, 0–100, with
+`battery_service` in `optionalServices` — and that implementation returned
+nothing across weeks of sweeps.
+
+**What is and is not established.** The SIG numbers are not in doubt. Whether
+*this bridge* implements them is a question about the device, and no METER
+document answers it: the ZSC manual has no GATT, UUID, service or
+characteristic section at all. The evidence for absence is the field result
+plus a two-AA primary cell with no obvious fuel gauge — strong, but
+circumstantial. A device that knows to blink red *does* measure its supply
+somehow, so a coarse voltage-derived percentage is not impossible.
+
+**Settings → Probe scan** asks the bridge directly and prints the error name
+verbatim. **If it ever returns a byte, put the column back** — the deletion
+was a judgement on evidence, not a fact about the hardware.
 
 **Conversions**, verified against METER's TEROS 11/12 Integrator Guide:
 

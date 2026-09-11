@@ -354,14 +354,14 @@ function rowsFor(w,room,spec){
 
 
   // ============ the TEROS guide: sensor error codes ============
-  // Two guides settle the battery question. The TEROS 12 is a passive
-  // 4.0-15 VDC sensor whose SDI-12 command set carries no power telemetry;
-  // the ZSC bridge runs on two AA alkaline cells with no fuel gauge and
-  // documents no level readout anywhere — its low-battery signal is a red
-  // blinking LED on the case. So there is nothing to read, and the Batt
-  // column is gone. What remains is -9991, "insufficient voltage to perform
-  // the measurement", which arrives on the wire we already read. All three
-  // error codes were falling through to the unparsed bucket.
+  // The TEROS 12 is a passive 4.0-15 VDC sensor whose SDI-12 command set
+  // carries no power telemetry, and the ZSC bridge runs on two AA cells and
+  // documents no level readout anywhere. The Batt column was read exactly as
+  // the SIG specifies and never returned a value, so it is gone — and the
+  // probe scan in settings can still overturn that. What is not in doubt is
+  // -9991, "insufficient voltage to perform the measurement", which arrives
+  // on the wire we already read. All three error codes were falling through
+  // to the unparsed bucket.
   { const {w,d,errors}=boot(null); await sleep(50);
     const cases=[['-9991',/ZSC batteries too low/],['-9992',/calibration lost/],
                  ['-9999',/measurement compromised/]];
@@ -403,7 +403,7 @@ function rowsFor(w,room,spec){
     const col=n=>csv[0].split(',').indexOf(n);
     ok(/SENSOR_ERR:-9991x1/.test(csv[1].split(',')[col('Sweep flags')]),
        'and the sweep carries it into the export: '+csv[1].split(',')[col('Sweep flags')]);
-    ok(col('Batt')<0,'the Batt column is gone — nothing in this hardware can fill it');
+    ok(col('Batt')<0,'the Batt column is gone — it never once returned a value');
     ok(/sensor errors 1 \(last -9991\)/.test(d.getElementById('dbg').textContent),
        'with the count in the diagnostics'); }
 
@@ -745,6 +745,53 @@ function rowsFor(w,room,spec){
        'and the export says so, which is what explains the numbers: '+csv[1].split(',')[col('Sweep flags')]);
     ok(!JSON.parse(w.localStorage.getItem('stab_setup')||'{}').postFlush,
        'it is not remembered — Monday must not inherit a lifted ceiling'); }
+
+  // the scan that can overturn the deletion: it asks the bridge rather than
+  // a document, and prints the error name verbatim
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.BAT_SVC==='0000180f-0000-1000-8000-00805f9b34fb','the SIG Battery Service UUID');
+    ok(w.BAT_CHR==='00002a19-0000-1000-8000-00805f9b34fb','and the Battery Level characteristic');
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    ok(!d.getElementById('setsheet').classList.contains('hide'),'settings opens');
+    d.getElementById('scango').click(); await sleep(30);
+    ok(/not connected/.test(d.getElementById('scanout').textContent),
+       'with no probe it says so rather than reporting a false absence: '+
+       d.getElementById('scanout').textContent);
+    // a bridge that does carry it
+    w.S.dev={name:'ZSC-1234', gatt:{connected:true,
+      getPrimaryService:()=>Promise.resolve({
+        getCharacteristic:()=>Promise.resolve({readValue:()=>Promise.resolve({byteLength:1,getUint8:()=>72})})}),
+      getPrimaryServices:()=>Promise.resolve([])}};
+    d.getElementById('scango').click(); await sleep(60);
+    const t=d.getElementById('scanout').textContent;
+    ok(/2a19 = 72%/.test(t),'a bridge that carries it reports the byte: '+(t.match(/2a19 = [^\n]*/)||[''])[0]);
+    ok(/column goes back in/.test(t),'…and says plainly that the deletion was wrong');
+    w.close(); }
+
+  // a bridge that does not carry it names the error rather than going quiet
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const brand=d.querySelector('.brand');
+    brand.dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true}));
+    await sleep(800);
+    const err=new Error('x'); err.name='NotFoundError';
+    w.S.dev={name:'ZSC-1234', gatt:{connected:true,
+      getPrimaryService:()=>Promise.reject(err),
+      getPrimaryServices:()=>Promise.resolve([{uuid:'deca0001-10c7-43a8-8c9f-42b70e03808d',
+        getCharacteristics:()=>Promise.resolve([
+          {uuid:'deca0002-10c7-43a8-8c9f-42b70e03808d',properties:{write:true}},
+          {uuid:'deca0003-10c7-43a8-8c9f-42b70e03808d',properties:{notify:true}}])}])}};
+    d.getElementById('scango').click(); await sleep(80);
+    const t=d.getElementById('scanout').textContent;
+    ok(/180f by UUID: NotFoundError/.test(t),'the UUID attempt reports its error name: '+
+       (t.match(/180f by UUID: [^\n]*/)||[''])[0]);
+    ok(/battery_service by alias: NotFoundError/.test(t),
+       'and the alias separately, so a naming mistake cannot pass for absence');
+    ok(/deca0002.*write/.test(t) && /deca0003.*notify/.test(t),
+       'the characteristics it does carry are listed, with their properties');
+    ok(!/column goes back in/.test(t),'and nothing claims a battery was found');
+    w.close(); }
 
   // ============ the pad, in the order the buttons are actually used =======
   { const {w,d,errors}=boot(null); await sleep(50);

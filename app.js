@@ -672,6 +672,66 @@ function histTs(h){
   })();
   $('dangerword').oninput=armDanger;
   $('setclose').onclick=function(){ $('setsheet').classList.add('hide'); };
+  /* ---- probe scan: settle the battery question with the device, not with
+     a document ----
+     The Batt column was read exactly this way from v18 to v42 and never
+     once returned a value, which is why it was deleted. But "never returned
+     a value" is not the same as "the service is absent", and the difference
+     is one error name. This asks the bridge and prints what it says,
+     verbatim and copyable. If a byte comes back, the column goes straight
+     back in and the deletion was wrong. */
+  $('scango').onclick=function(){
+    var out=[], el=$('scanout');
+    function done(){ el.textContent=out.join('\n'); }
+    function line(x){ out.push(x); done(); }
+    if(!S.dev || !S.dev.gatt || !S.dev.gatt.connected){
+      line('not connected — wake the probe and connect first, then scan');
+      return;
+    }
+    var g=S.dev.gatt;
+    line('probe scan · '+new Date().toLocaleString('en-US'));
+    line('device: '+(S.dev.name||'(unnamed)'));
+    /* the SIG UUID and the Web Bluetooth alias resolve to the same service;
+       both are tried so a naming mistake cannot be confused with absence */
+    function attempt(label, id){
+      return g.getPrimaryService(id).then(function(svc){
+        line(label+': service FOUND');
+        return svc.getCharacteristic(BAT_CHR).then(function(c){
+          return c.readValue().then(function(v){
+            if(!v || v.byteLength<1){ line(label+': 2a19 read returned no bytes'); return; }
+            var pct=v.getUint8(0);
+            line(label+': 2a19 = '+pct+(pct>100?'  (out of range — not a percentage)':'%'));
+            line('*** BATTERY READS. Send this to me and the column goes back in. ***');
+          });
+        }).catch(function(e){ line(label+': 180f found but 2a19 failed — '+((e&&e.name)||e)); });
+      }).catch(function(e){ line(label+': '+((e&&e.name)||e)); });
+    }
+    attempt('180f by UUID', BAT_SVC)
+      .then(function(){ return attempt('battery_service by alias','battery_service'); })
+      .then(function(){
+        if(!g.getPrimaryServices) return;
+        return g.getPrimaryServices().then(function(ss){
+          line('services granted and present: '+(ss.map(function(x){return x.uuid;}).join(' ')||'none'));
+          var deca=null;
+          ss.forEach(function(x){ if(String(x.uuid).indexOf('deca')===0) deca=x; });
+          if(!deca || !deca.getCharacteristics) return;
+          return deca.getCharacteristics().then(function(cs){
+            line('deca characteristics:');
+            cs.forEach(function(c){
+              var p=c.properties||{}, f=[];
+              ['read','notify','write','writeWithoutResponse','indicate'].forEach(function(k){ if(p[k]) f.push(k); });
+              line('  '+c.uuid+'  ['+f.join(',')+']');
+            });
+          });
+        }).catch(function(e){ line('service enumeration: '+((e&&e.name)||e)); });
+      })
+      .then(function(){ line('— end of scan —'); });
+  };
+  $('scancopy').onclick=function(){
+    var t=$('scanout').textContent||'';
+    if(!t.trim()){ toast('run the scan first'); return; }
+    shareOrCopy(t,'probe_scan_'+fnameDate()+'.txt','probe scan');
+  };
   $('benchgo').onclick=function(){
     $('setsheet').classList.add('hide');
     pickRoom('BENCH');
@@ -1265,10 +1325,13 @@ function connect(){
 }
 function pickAndConnect(){
   step('requesting device');
-  return navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]})
+  /* battery_service is listed so the probe scan in settings can attempt it.
+     Web Bluetooth refuses any service not named at requestDevice, so leaving
+     it out would make "not found" untestable rather than false. */
+  return navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC,BAT_SVC]})
     .catch(function(){
       step('retry with all devices');
-      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});
+      return navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,BAT_SVC]});
     })
     .then(function(dev){
       S.dev=dev;

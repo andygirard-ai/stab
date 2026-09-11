@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v43</title>
+<title>Stab v44</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -416,6 +416,10 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
 #settop{font-size:28px;font-weight:700;margin-bottom:2px}
 #setsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:6px;line-height:1.5}
+#scanout{background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:10px;font-family:var(--mono);font-size:11px;color:var(--ink);line-height:1.5;
+  white-space:pre-wrap;word-break:break-all;margin:8px 0;min-height:18px;
+  -webkit-user-select:text;user-select:text}
 #dangerword{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
   padding:11px;font-family:var(--mono);font-size:13px;color:var(--ink);margin:8px 0}
 #dangerbtns{display:grid;gap:8px}
@@ -479,7 +483,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v43</b></div>
+  <div class="brand">Substrate sweep · <b>v44</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -616,7 +620,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v43</div>
+  <div class="v">stab v44</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -783,6 +787,14 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     <textarea id="imppaste" class="hide" rows="3" placeholder="or paste the exported text here, then tap Import again"></textarea>
   </div>
 
+  <div class="lbl">Probe scan</div>
+  <div class="tiny">Asks the bridge directly whether it carries the standard
+    Battery Service. Connect the probe first. The answer settles whether the
+    Batt column can ever come back.</div>
+  <button class="dbtn" id="scango">Scan the probe</button>
+  <pre id="scanout"></pre>
+  <button class="dbtn" id="scancopy">Copy the scan</button>
+
   <div class="lbl">Practice room</div>
   <div class="tiny" id="benchnote">A four-table fixture for learning the probe.
     It is not a real room and never counts towards coverage.</div>
@@ -807,8 +819,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=43"></script>
-<script src="pure.js?v=43"></script>
-<script src="app.js?v=43"></script>
+<script src="rooms.js?v=44"></script>
+<script src="pure.js?v=44"></script>
+<script src="app.js?v=44"></script>
 </body>
 </html>
