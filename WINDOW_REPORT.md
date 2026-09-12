@@ -317,7 +317,7 @@ doesn't stop anything else from shipping.
 # Window 4 report — Evan, and demand
 
 All three items shipped. Suite: **1049 → 1071 passing, all green.**
-Branch `claude/new-session-ri155r`, v60.
+Branch `claude/new-session-ri155r`, v60 (`f9574cd`).
 
 ## Shipped
 
@@ -378,7 +378,7 @@ rather than fighting the shadow.
 
 ## What's on branch (Window 4)
 
-One commit beyond the Window 3 correction: v60. Merges to `main` in the
+One commit beyond the Window 3 correction: `f9574cd` (v60). Merges to `main` in the
 same push as the Window 3 correction, per Andy's instruction.
 
 ## Blocked
