@@ -652,6 +652,9 @@ function histTs(h){
   function openSettings(){
     dataCounts();
     $('dangerword').value=''; armDanger();
+    var gc=growlinkCfg();
+    $('gl_key').value=gc.key||''; $('gl_base').value=gc.baseUrl||'';
+    renderGrowlinkStatus();
     $('setsheet').classList.remove('hide');
   }
   function armDanger(){
@@ -672,6 +675,18 @@ function histTs(h){
   })();
   $('dangerword').oninput=armDanger;
   $('setclose').onclick=function(){ $('setsheet').classList.add('hide'); };
+  function saveGrowlinkFields(){
+    saveGrowlinkCfg({key:($('gl_key').value||'').trim(), baseUrl:($('gl_base').value||'').trim()});
+    renderGrowlinkStatus();
+  }
+  $('gl_key').onchange=saveGrowlinkFields;
+  $('gl_base').onchange=saveGrowlinkFields;
+  $('gl_test').onclick=function(){
+    saveGrowlinkFields();
+    if(!growlinkCfg().key){ toast('no key to test'); return; }
+    $('gl_test').disabled=true;
+    testGrowlinkConnection().then(function(){ $('gl_test').disabled=false; });
+  };
   /* ---- probe scan: settle the battery question with the device, not with
      a document ----
      The Batt column was read exactly this way from v18 to v42 and never
@@ -2929,6 +2944,105 @@ function getRenames(){
 function saveRename(entry){
   var a=getRenames(); a.push(entry); lsSet('stab_renames', JSON.stringify(a));
 }
+/* Growlink zone list, per room (Weekend Plan 3.5). Late-bound like
+   getSched, so zoneFor in pure.js reaches this without knowing about
+   storage. Keyed by room, each holding the parsed entries for every
+   device pasted for it — a fresh paste for a room replaces its own
+   entries only, leaving every other room's list untouched. */
+function getZones(){
+  try{ return JSON.parse(localStorage.getItem('stab_zones')||'{}'); }catch(e){ return {}; }
+}
+function saveZones(rm, entries){
+  var a=getZones(); a[rm]={savedAt:Date.now(), entries:entries}; lsSet('stab_zones', JSON.stringify(a));
+}
+function renderZoneCoverage(rm){
+  var el=$('zonecov'); if(!el || !rm || !ROOMS[rm]) return;
+  var n=0;
+  for(var t=1;t<=ROOMS[rm].t;t++) if(zoneFor(rm,t)) n++;
+  el.textContent=n+' of '+ROOMS[rm].t+' tables have a zone'+(n?'':' — nothing pasted yet');
+}
+/* ---------------- Growlink, read-only (Weekend Plan 3.1) ----------------
+   Nothing here fires a valve — every call is a GET. The key and base URL
+   are typed in on this screen and kept in this device's own storage only,
+   never in source, same rule the original spec put on every other key
+   this app has ever touched. auth header and base URL are unverified
+   against the real API — Bearer plus a JSON body is the ordinary REST
+   default, not a confirmed fact about Growlink's own service; both are
+   one line to correct in growlinkGet once the real shape is known. */
+function growlinkCfg(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink')||'{}'); }catch(e){ return {}; }
+}
+function saveGrowlinkCfg(c){ lsSet('stab_growlink', JSON.stringify(c)); }
+function growlinkStatus(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_status')||'null'); }catch(e){ return null; }
+}
+function saveGrowlinkStatus(s){ lsSet('stab_growlink_status', JSON.stringify(s)); }
+function growlinkGet(path, params){
+  if(typeof fetch!=='function') return Promise.reject(new Error('no fetch in this browser'));
+  var cfg=growlinkCfg();
+  if(!cfg.key) return Promise.reject(new Error('no API key'));
+  if(!cfg.baseUrl) return Promise.reject(new Error('no base URL'));
+  var url=cfg.baseUrl.replace(/\/+$/,'')+path;
+  var q=Object.keys(params||{}).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  if(q) url+='?'+q;
+  return fetch(url, {headers:{Authorization:'Bearer '+cfg.key, Accept:'application/json'}})
+    .then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+t.slice(0,200)); });
+      return r.json();
+    });
+}
+/* The connectivity probe. /devices/data/log is the one endpoint the
+   window names with certainty (3.2 needs it anyway); "org resolved" reads
+   whatever the response itself carries as an org/account field, on the
+   assumption a multi-tenant API says which account answered — there is no
+   separate org-lookup endpoint confirmed, so this does not invent one. */
+function testGrowlinkConnection(){
+  var cfg=growlinkCfg();
+  if(!cfg.key){ renderGrowlinkStatus(); return Promise.resolve(); }
+  return growlinkGet('/devices/data/log',{limit:1}).then(function(data){
+    var org=(data && (data.org || data.orgId || (data.data&&(data.data.org||data.data.orgId)))) || null;
+    saveGrowlinkStatus({ok:true, org:org, at:Date.now()});
+    renderGrowlinkStatus();
+  }).catch(function(e){
+    saveGrowlinkStatus({ok:false, error:String((e&&e.message)||e), at:Date.now()});
+    renderGrowlinkStatus();
+  });
+}
+function renderGrowlinkStatus(){
+  var el=$('growlinkstatus'); if(!el) return;
+  var cfg=growlinkCfg();
+  if(!cfg.key){ el.innerHTML='<div class="sn">no key — nothing else on this screen runs</div>'; return; }
+  var s=growlinkStatus();
+  var h='<div class="sn">key present</div>';
+  if(!s) h+='<div class="sn">not tested yet</div>';
+  else if(s.ok) h+='<div class="sn">org '+esc(s.org||'resolved, no org field in the reply')+
+    ' · last call '+new Date(s.at).toLocaleString('en-US')+'</div>';
+  else h+='<div class="sn bad">last error: '+esc(s.error)+' · '+new Date(s.at).toLocaleString('en-US')+'</div>';
+  el.innerHTML=h;
+}
+/* activeRun, per room (Weekend Plan 3.4) — currentDayNo, totalNoOfDays,
+   currentGrowthStage, the field names off the discovery page. Never a
+   photoperiod for A3-A7: stripped right here, the one place an activeRun
+   response enters storage, so no downstream reader — this version or a
+   later one — can pick a bad photoperiod up by accident. Endpoint path
+   is unverified against the real API; see QUESTIONS.md. */
+function getActiveRuns(){
+  try{ return JSON.parse(localStorage.getItem('stab_activeruns')||'{}'); }catch(e){ return {}; }
+}
+function saveActiveRun(rm, data){
+  var a=getActiveRuns();
+  a[rm]={currentDayNo:data&&data.currentDayNo, totalNoOfDays:data&&data.totalNoOfDays,
+         currentGrowthStage:data&&data.currentGrowthStage, at:Date.now()};
+  lsSet('stab_activeruns', JSON.stringify(a));
+}
+function fetchActiveRun(rm){
+  return growlinkGet('/room/'+encodeURIComponent(rm)+'/activeRun').then(function(data){
+    saveActiveRun(rm, data);
+    return getActiveRuns()[rm];
+  });
+}
 function openRenameSheet(){
   var sel=$('rn_old'); if(!sel) return;
   sel.innerHTML=allStrainNames().map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join('');
@@ -3370,8 +3484,28 @@ function openRoomSetup(){
     i.oninput=function(){ i.classList.add('known'); };
   });
   $('cfg_fs').oninput=drawCfgDof;
+  $('zonepaste').value=''; $('zonebody').innerHTML='';
+  renderZoneCoverage(S.room);
   $('cfgsheet').classList.remove('hide');
 }
+$('zoneread').onclick=function(){
+  if(!S.room) return;
+  var r=parseZoneList($('zonepaste').value);
+  if(!r.entries.length){
+    $('zonebody').innerHTML='<div class="sn bad">nothing read from that paste — is it a zone list?</div>';
+    return;
+  }
+  if(r.room && r.room!==S.room){
+    $('zonebody').innerHTML='<div class="sn bad">that paste says '+esc(r.room)+', you are on '+S.room+'</div>';
+    return;
+  }
+  saveZones(S.room, r.entries);
+  renderZoneCoverage(S.room);
+  $('zonebody').innerHTML='<div class="sn">'+r.entries.length+' device'+(r.entries.length>1?'s':'')+' saved: T'+
+    r.entries.map(function(e){ return e.table; }).sort(function(a,b){return a-b;}).join(', T')+'</div>'+
+    (r.warnings.length?'<div class="sn bad">'+r.warnings.map(esc).join('<br>')+'</div>':'');
+  $('zonepaste').value='';
+};
 function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 /* The floor is one number and everything downstream reads it: the feel
    words, the mid-bag trigger, below-floor counts, and whether a hand can

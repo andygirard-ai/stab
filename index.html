@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v57</title>
+<title>Stab v58</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -362,10 +362,12 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
 #schedtop{font-size:28px;font-weight:700;margin-bottom:2px}
 #schedsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
-#schedpaste{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+#schedpaste,#zonepaste{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
   padding:11px;font-family:var(--mono);font-size:12px;color:var(--ink);resize:none;
   -webkit-user-select:text;user-select:text;margin-bottom:9px}
 #schedbody{margin:12px 0}
+#zonecov{margin-bottom:8px}
+#zonebody{margin:8px 0 4px}
 #schedbody .sn{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5}
 #schedbody .sn.bad{color:var(--warn)}
 table.sched{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
@@ -540,7 +542,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v57</b></div>
+  <div class="brand">Substrate sweep · <b>v58</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -678,7 +680,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v57</div>
+  <div class="v">stab v58</div>
   <div id="stats"></div>
   <div class="act2"><button id="reroom">Re-room this sweep</button></div>
   <div class="wbh">Checks · read here, never pasted</div>
@@ -881,6 +883,16 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     same way, so neither is a property of the room.</div>
   <div id="cfgtables"></div>
 
+  <div class="lbl">Zones (Weekend Plan 3.5)</div>
+  <div class="tiny">Paste Growlink's own zone list for this room — one
+    device per line, <code>#20003605  B1 Table 4  B-1</code> — to tie a
+    table to the device id the overnight sensor pull will eventually read.
+    Alongside the schedule paste's own Sensor column, not instead of it.</div>
+  <div id="zonecov" class="tiny"></div>
+  <textarea id="zonepaste" rows="4" placeholder="paste the Growlink zone list for this room"></textarea>
+  <button id="zoneread" class="fp">Read it</button>
+  <div id="zonebody"></div>
+
   <div class="lgact">
     <button id="cfgsave">Save room setup</button>
     <button id="cfgclose">Close</button>
@@ -894,6 +906,18 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
   <div class="lbl">Saved data</div>
   <div id="dcounts" class="tiny"></div>
+
+  <div class="lbl">Growlink (Weekend Plan 3.1)</div>
+  <div class="tiny">Read-only. Nothing in the app calls this yet except
+    the test below — no valve ever fires from this screen or any other.
+    The key lives here, never in source: it is typed in on this device and
+    kept in its storage only.</div>
+  <div class="cfg" style="grid-template-columns:1fr">
+    <div><label>API key</label><input id="gl_key" type="password" placeholder="paste the key"></div>
+    <div><label>base URL</label><input id="gl_base" placeholder="https://api.growlink.com"></div>
+  </div>
+  <div id="growlinkstatus" class="tiny"></div>
+  <div id="dbtns"><button class="dbtn" id="gl_test">Test connection</button></div>
 
   <div class="lbl">Full backup · sweeps + room config (Weekend Plan 1.6)</div>
   <div class="tiny">Storage is per device, and a second phone is coming.
@@ -962,8 +986,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=57"></script>
-<script src="pure.js?v=57"></script>
-<script src="app.js?v=57"></script>
+<script src="rooms.js?v=58"></script>
+<script src="pure.js?v=58"></script>
+<script src="app.js?v=58"></script>
 </body>
 </html>

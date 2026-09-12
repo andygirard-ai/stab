@@ -13,7 +13,8 @@ export default [
         AudioContext:'readonly', webkitAudioContext:'readonly',
         SpeechSynthesisUtterance:'readonly', speechSynthesis:'readonly',
         MediaRecorder:'readonly', Uint8Array:'readonly', DataView:'readonly',
-        TextDecoder:'readonly', requestAnimationFrame:'readonly', File:'readonly'
+        TextDecoder:'readonly', requestAnimationFrame:'readonly', File:'readonly',
+        fetch:'readonly'
       }
     },
     rules: { 'no-undef':'error', 'no-unreachable':'error', 'no-redeclare':'error', 'no-dupe-keys':'error' }

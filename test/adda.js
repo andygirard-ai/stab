@@ -25,6 +25,20 @@ function boot(storage){
       if(storage) Object.keys(storage).forEach(k=>w.localStorage.setItem(k,storage[k])); }});
   return {w:dom.window, d:dom.window.document, errors};
 }
+// jsdom has no fetch (like it has no navigator.bluetooth); this stubs one in
+// for the Growlink tests (3.1), same shape boot() uses otherwise.
+function bootWithFetch(storage, fetchImpl){
+  const errors=[], vc=new VirtualConsole();
+  vc.on('jsdomError',e=>errors.push(String(e.message||e)));
+  const dom=new JSDOM(html,{runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,
+    url:'https://example.github.io/stab/',
+    beforeParse(w){ w.Element.prototype.scrollIntoView=function(){}; w.confirm=()=>true; w.prompt=()=>'ABC';
+      w.HTMLCanvasElement.prototype.getContext=()=>({fillRect(){}});
+      w.localStorage.setItem('stab_wlt','1');
+      w.fetch=fetchImpl;
+      if(storage) Object.keys(storage).forEach(k=>w.localStorage.setItem(k,storage[k])); }});
+  return {w:dom.window, d:dom.window.document, errors};
+}
 const start=(w,d,room,bag)=>{ d.querySelector('#rooms .rm[data-room="'+room+'"]').click();
   d.getElementById('cfg_bag').value=String(bag||2); d.getElementById('startbtn').click(); d.getElementById('confirmgo').click();
   w.S.dev={gatt:{connected:true}}; w.S.chr={};
@@ -2502,6 +2516,142 @@ function rowsFor(w,room,spec){
     ok(/Sunset Sour/.test(d.getElementById('renamelist').textContent),'it shows up in the list on file');
     ok(w.getRenames().length===1 && w.getRenames()[0].old==='Kabuki Sour','and it is actually saved');
     ok(errors.length===0,'no runtime errors (2.3 settings tool): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 3.5 — Growlink zone list paste ============
+  // The second half of the v41 finding: 76 of 216 tables had no sensor
+  // mapping at all. This is Growlink's own export — a device id, the
+  // table it's on, and Growlink's own zone code — not a guess pieced
+  // together from a sensor name string.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseZoneList('#20003605  B1 Table 4  B-1\n#20003606  B1 Table 5  B-2');
+    ok(r.room==='B1' && r.entries.length===2,'both lines read as B1: '+r.room+' x'+r.entries.length);
+    ok(r.entries[0].device==='20003605' && r.entries[0].table===4 && r.entries[0].zone==='B-1',
+       'device, table and zone all come off one line: '+JSON.stringify(r.entries[0]));
+    ok(r.warnings.length===0,'a well-formed paste raises nothing');
+    const bad=w.parseZoneList('#20003605  B1 Table 4  B-1\n#20003607  B2 Table 1  B-3\nnot a zone line');
+    ok(/mixed rooms/.test(bad.warnings.join(' ')),'a second room in the same paste is named, not silently merged');
+    ok(/could not read/.test(bad.warnings.join(' ')),'and an unparseable line is reported, not dropped');
+    ok(errors.length===0,'no runtime errors (3.5 parseZoneList): '+errors.join('|'));
+    w.close(); }
+
+  // the room setup screen: paste, save, coverage, and a wrong-room paste
+  // is refused the same way the schedule paste already is
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.zoneFor('B1',4)===null,'nothing pasted yet — no zone, not a guess');
+    d.querySelector('#rooms .rm[data-room="B1"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    ok(/0 of 11 tables/.test(d.getElementById('zonecov').textContent),
+       'the coverage line starts honest: '+d.getElementById('zonecov').textContent);
+    d.getElementById('zonepaste').value='#20003605  B1 Table 4  B-1\n#20003606  B1 Table 5  B-2';
+    d.getElementById('zoneread').click(); await sleep(20);
+    ok(/2 devices saved/.test(d.getElementById('zonebody').textContent),
+       'confirms what was saved: '+d.getElementById('zonebody').textContent);
+    ok(/2 of 11 tables/.test(d.getElementById('zonecov').textContent),'and the coverage line updates in place');
+    ok(w.zoneFor('B1',4).device==='20003605' && w.zoneFor('B1',4).zone==='B-1','saved and readable back');
+    ok(w.zoneFor('B1',6)===null,'a table not in the paste is still unknown, not zero');
+    // a paste for the wrong room is refused, same as the schedule paste
+    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    d.getElementById('zonepaste').value='#20003605  B1 Table 4  B-1';
+    d.getElementById('zoneread').click(); await sleep(20);
+    ok(/says B1, you are on B2/.test(d.getElementById('zonebody').textContent),
+       'names the mismatch rather than saving it under the wrong room: '+d.getElementById('zonebody').textContent);
+    ok(w.zoneFor('B2',4)===null,'and nothing was saved under B2');
+    ok(errors.length===0,'no runtime errors (3.5 room setup): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 3.1 — Growlink connection status ============
+  // Read-only: every call in this window is a GET, and nothing here is the
+  // one PUT that fires a valve. Missing key -> one line, nothing else runs.
+  { const {w,d,errors}=bootWithFetch(null, ()=>Promise.reject(new Error('should not be called')));
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    ok(!d.getElementById('setsheet').classList.contains('hide'),'settings opens on the long press');
+    ok(/no key/.test(d.getElementById('growlinkstatus').textContent),
+       'missing key is one line: '+d.getElementById('growlinkstatus').textContent);
+    d.getElementById('gl_test').click(); await sleep(20);
+    ok(errors.length===0,'tapping test with no key does not call fetch at all: '+errors.join('|'));
+    w.close(); }
+
+  // a key with no base URL, or a base URL with no key, is still "no key"
+  // as far as the status line is concerned — both are required to run
+  { const {w,d,errors}=bootWithFetch(null, ()=>Promise.reject(new Error('should not be called')));
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='abc123';
+    d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    ok(/key present/.test(d.getElementById('growlinkstatus').textContent) &&
+       /not tested yet/.test(d.getElementById('growlinkstatus').textContent),
+       'a key with nothing tried yet: '+d.getElementById('growlinkstatus').textContent);
+    d.getElementById('gl_test').click(); await sleep(20);
+    ok(errors.length===0,'and testing without a base URL fails inside growlinkGet, not by calling fetch: '+errors.join('|'));
+    w.close(); }
+
+  // a successful test resolves the org from the reply and stamps the time
+  { let called=null;
+    const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
+      called={url,opts};
+      return Promise.resolve({ok:true, json:()=>Promise.resolve({data:[],org:'Acme Farms'})});
+    });
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_base').value='https://api.growlink.com';
+    d.getElementById('gl_base').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    ok(!!called && /\/devices\/data\/log/.test(called.url),'the probe call hits the one endpoint this window names for certain: '+called.url);
+    ok(called.opts.headers.Authorization==='Bearer abc123','the key travels as a bearer token');
+    ok(/org Acme Farms/.test(d.getElementById('growlinkstatus').textContent),
+       'and the reply\'s own org field shows up: '+d.getElementById('growlinkstatus').textContent);
+    ok(/last call/.test(d.getElementById('growlinkstatus').textContent),'with a timestamp');
+    ok(errors.length===0,'no runtime errors (3.1 success): '+errors.join('|'));
+    w.close(); }
+
+  // a failure is named, not swallowed
+  { const {w,d,errors}=bootWithFetch(null, ()=>Promise.resolve({ok:false, status:401, text:()=>Promise.resolve('bad key')}));
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='wrong'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_base').value='https://api.growlink.com';
+    d.getElementById('gl_base').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    ok(/last error/.test(d.getElementById('growlinkstatus').textContent) && /401/.test(d.getElementById('growlinkstatus').textContent),
+       'a rejected key says so, with the status: '+d.getElementById('growlinkstatus').textContent);
+    ok(errors.length===0,'no runtime errors (3.1 failure): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 3.4 — activeRun / DOF from the API ============
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const before=w.dofNow('C3');
+    ok(typeof before==='number','C3 has a flower start, so DOF is a number without any activeRun: '+before);
+    w.saveActiveRun('C3',{currentDayNo:14, totalNoOfDays:63, currentGrowthStage:'flower', photoperiod:'24/0'});
+    ok(w.dofNow('C3')===14,'once an activeRun is on file, its currentDayNo wins over the FLOWER_START count: '+w.dofNow('C3'));
+    ok(w.getActiveRuns().C3.photoperiod===undefined,
+       'photoperiod is stripped on the way into storage, not read from later — never trusted, for any room');
+    ok(w.dofNow('BENCH')==='','a room with neither an activeRun nor a flower start still reads unknown');
+    ok(errors.length===0,'no runtime errors (3.4 activeRun): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 3.3 — batch tank turnover ============
+  // Fill per day from a level series — a real refill is a jump over 0.3,
+  // jitter between refills is not. Shaped to reproduce the size of what
+  // Andy reads off the real chart (A ~31/day, C ~25 with a flush day at
+  // 0, B ~24), using invented timestamps, not the real 9/9-9/11 series.
+  { const {w}=boot(null);
+    const day=(d,h,m)=>new Date(2026,8,d,h,m);
+    const points=[
+      {at:day(9,0,0),level:50}, {at:day(9,0,10),level:50.1},   // jitter — under 0.3
+      {at:day(9,6,0),level:81}, {at:day(9,6,10),level:80.8},   // a 31-unit refill, then a small sip back
+      {at:day(10,0,0),level:80.8},                              // flush day: no refill at all
+      {at:day(10,23,50),level:80.6},
+      {at:day(11,6,0),level:111.6},                             // another ~31-unit refill
+    ];
+    const byDay=w.tankFillByDay(points);
+    ok(Math.round(byDay['9/9/2026'])===31,'9/9 fill: '+byDay['9/9/2026']);
+    ok(byDay['9/10/2026']===0,'9/10, the flush day, reads 0 — present in the data, not missing: '+byDay['9/10/2026']);
+    ok(Math.round(byDay['9/11/2026'])===31,'9/11 fill: '+byDay['9/11/2026']);
+    ok(Object.keys(byDay).length===3,'three days, none dropped for having nothing to report');
     w.close(); }
 
   // ============ §4 the verification screen ============

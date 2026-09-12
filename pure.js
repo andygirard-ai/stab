@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v57';
+var VER='v58';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -233,6 +233,61 @@ function schedSensor(rawLine){
 function sensorId(name){
   var m=/#(\d{4,})/.exec(String(name||''));
   return m?m[1]:null;
+}
+/* Growlink zone list paste (Weekend Plan 3.5) — the second half of the v41
+   finding: 76 of 216 tables had no sensor mapping at all. schedSensor only
+   ever sees a sensor NAME buried in the schedule screen and can only pull
+   a device id out of it when the name happens to print one raw; the zone
+   list is Growlink's own export and names the device id, the table it is
+   mounted on, and Growlink's own zone code directly — "#20003605  B1
+   Table 4  B-1". This is the mapping the eventual overnight sensor pull
+   (§5.6) reads a device id and a zone against; nothing here calls the API.
+   One line per device, tab- or space-separated same as the schedule
+   screens; a line that will not parse is reported, not silently dropped. */
+function parseZoneList(text){
+  var lines=String(text||'').split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var out=[], warnings=[], room=null;
+  lines.forEach(function(ln){
+    var m=/^#(\d+)\s+([A-Z]\d{1,2})\s+Table\s+(\d+)\s+(\S+)$/.exec(ln);
+    if(!m){ warnings.push('could not read: '+ln); return; }
+    var rm=m[2];
+    if(room && rm!==room) warnings.push('mixed rooms in one paste: '+room+' and '+rm);
+    room=room||rm;
+    out.push({device:m[1], room:rm, table:+m[3], zone:m[4]});
+  });
+  return {room:room, entries:out, warnings:warnings};
+}
+/* Device id and zone for a table, from whatever zone list has been pasted
+   for its room. Late-bound like getSched — pure.js reaches storage only
+   through this. A table absent from the list has no zone, not a guess. */
+function zoneFor(rm, t){
+  var z=(typeof getZones==='function')?(getZones()||{}):{};
+  var rec=z[rm];
+  if(!rec || !rec.entries) return null;
+  for(var i=0;i<rec.entries.length;i++) if(rec.entries[i].table===t) return rec.entries[i];
+  return null;
+}
+/* Batch tank turnover (Weekend Plan 3.3): fill per day from a level time
+   series — 10-minute points over a few days, off /sensors/data/chart. A
+   real fill is a level jump; the small dips and jitter a tank shows
+   between refills are not, so only a positive delta over 0.3 counts —
+   Andy's own threshold for reading these charts by eye. Takes points
+   already normalized to {at: Date, level: number}, not the raw API
+   response, so this holds regardless of the exact envelope that turns
+   out to have. A day present in the data with no qualifying delta reads
+   as 0, not as missing — 0 is itself a fact worth keeping (C's flush day). */
+function tankFillByDay(points){
+  var sorted=points.slice().sort(function(a,b){ return a.at-b.at; });
+  var byDay={};
+  sorted.forEach(function(p){
+    var day=p.at.toLocaleDateString('en-US');
+    if(!(day in byDay)) byDay[day]=0;
+  });
+  for(var i=1;i<sorted.length;i++){
+    var d=sorted[i].level-sorted[i-1].level;
+    if(d>0.3) byDay[sorted[i].at.toLocaleDateString('en-US')]+=d;
+  }
+  return byDay;
 }
 /* The blob leads with "all schedules as of 9/11/26 10:14am". Kept, because
    it says how stale the schedule is independently of when it was pasted —
@@ -778,7 +833,17 @@ function mlPlantToday(rm, t){
   if(row.runtimeSec==null) return null;
   return mlPerPlant(rm, (t==null?row.table:t), row.runtimeSec/60);
 }
+/* DOF from the API where set (Weekend Plan 3.4) — activeRun.currentDayNo,
+   the field rooms.js has always named as the real source of truth for the
+   day-of-cycle count, now actually read when a room has one on file.
+   getActiveRuns is late-bound like getSched. Falls back to the
+   FLOWER_START-derived count exactly as before when no activeRun exists
+   for the room, so a room this app has never fetched behaves exactly as
+   it did before this item. */
 function dofNow(rm, nowDate){
+  var runs=(typeof getActiveRuns==='function')?(getActiveRuns()||{}):{};
+  var ar=runs[rm];
+  if(ar && ar.currentDayNo!=null && !isNaN(+ar.currentDayNo)) return +ar.currentDayNo;
   var s=flowerStartFor(rm); if(!s) return '';
   var p=s.split('-'), start=new Date(+p[0],+p[1]-1,+p[2]).getTime();
   var n=nowDate?new Date(nowDate):new Date();
