@@ -2225,6 +2225,112 @@ function rowsFor(w,room,spec){
     ok(errors.length===0,'no runtime errors (1.3 table cue): '+errors.join('|'));
     w.S.roomStarted=false; }
 
+  // ============ Weekend Plan 1.4 — probe identity ============
+  // Connecting to the real bridge and reading its .name is exercised in
+  // probeid.js against a fake GATT stack; this proves the name, once known,
+  // reaches every row and the CSV — the prerequisite for per-probe
+  // calibration when Evan's probe arrives.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER;
+    w.S.probeName='ZSC08328'; await sleep(20);
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(w.S.rows[0].probe==='ZSC08328','the connected probe\'s name is written onto the row');
+    d.getElementById('exit').click(); await sleep(50);
+    const csv=d.getElementById('csv').value.split('\n');
+    const col=csv[0].split(',').indexOf('Probe');
+    ok(col>=0,'the CSV carries a Probe column');
+    ok(csv[1].split(',')[col]==='ZSC08328','and the row names its probe: '+csv[1].split(',')[col]);
+    ok(errors.length===0,'no runtime errors (1.4 probe identity): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 1.5 — feed EC from the tank ============
+  // The four ASSUMED wing-average guesses are gone outright. Feed EC now
+  // comes from the tank a room is assigned to (room config) and the day's
+  // reading for that tank (the day screen) — or 0, when the room is
+  // genuinely on water, and only because an operator said so.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.FEEDEC.A3===undefined && w.FEEDEC.A4===undefined && w.FEEDEC.B3===undefined && w.FEEDEC.C3===undefined,
+       'the four ASSUMED constants are gone, not corrected: A3='+w.FEEDEC.A3+' A4='+w.FEEDEC.A4);
+    ok(w.feedEcFor('A3')===null,'and a room with no tank reading yet reads unknown, not a guess');
+    ok(w.feedEcFor('A1')===2.5,'…while a room with a still-confirmed constant falls back to it in the meantime');
+    // enter today's A-tank reading on the day screen
+    d.getElementById('weekly').click(); await sleep(20);
+    ok(!d.getElementById('daysheet').classList.contains('hide'),'the day screen opens');
+    d.querySelector('#tankbody .tec[data-id="A"]').value='2.58';
+    d.querySelector('#tankbody .tph[data-id="A"]').value='6.1';
+    d.getElementById('tanksave').click(); await sleep(20);
+    ok(w.feedEcFor('A3')===2.58,'A3 inherits tank A\'s reading through the plain wing default: '+w.feedEcFor('A3'));
+    ok(w.feedEcFor('A1')===2.58,'and so does A1 — the live reading supersedes its own constant now that one exists');
+    d.getElementById('dayclose').click(); await sleep(20);
+    // C3, explicitly on water — the acceptance case: 0 because the operator
+    // said so, not because a constant did
+    d.querySelector('#rooms .rm[data-room="C3"]').click(); await sleep(20);
+    d.getElementById('cfgbtn').click(); await sleep(30);
+    d.getElementById('cfg_tank').value='water';
+    d.getElementById('cfgsave').click(); await sleep(20);
+    ok(w.feedEcFor('C3')===0,'C3 reads 0 because the operator entered the room as on-water: '+w.feedEcFor('C3'));
+    w.S.room='C3'; w.S.feedEC=null;
+    w.S.rows=[{date:'9/11/2026',time:'16:00:00',room:'C3',table:1,position:'front',depth:'reference',
+      plant:'',strain:'',flags:'',hrs:'2.0',mode:'sweep',dir:'up',bag:1.25,media:'Bio365',side:'standard',
+      vwc:15,ec:0.4,bulk:0.05,tmp:22,flag:true,raw:''},
+     {date:'9/11/2026',time:'16:01:00',room:'C3',table:1,position:'center',depth:'reference',
+      plant:'',strain:'',flags:'',hrs:'2.0',mode:'sweep',dir:'up',bag:1.25,media:'Bio365',side:'standard',
+      vwc:16,ec:0.4,bulk:0.05,tmp:22,flag:true,raw:''}];
+    const lines=w.checkLines();
+    ok(!lines.some(l=>/no feed/i.test(typeof l==='string'?l:l.s)),
+       'no-feed and dilution stay off for a water room, same as before — feed is 0, not absent');
+    ok(errors.length===0,'no runtime errors (1.5 tank feed EC): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 1.6 — stored-sweep backup ============
+  // Storage is per device and a second phone is coming. One file, every
+  // stored sweep plus room config, so a lost or wiped phone is not lost
+  // data — and the day screen says so until it has actually happened.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,35.0,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(50);
+    d.getElementById('weekly').click(); await sleep(20);
+    ok(!d.getElementById('backupnudge').classList.contains('hide'),
+       'not backed up today: the nudge shows on the one screen he visits daily');
+    ok(/1 saved sweep/.test(d.getElementById('backupcount').textContent),
+       'and says how much is at risk: '+d.getElementById('backupcount').textContent);
+    let sent=null;
+    const origShare=w.shareOrCopy;
+    w.shareOrCopy=function(text,name,label){ sent={text,name,label}; };
+    d.getElementById('backupgo2').click(); await sleep(20);
+    w.shareOrCopy=origShare;
+    ok(!!sent,'Back up now calls the same share/copy path as CSV export');
+    const pack=JSON.parse(sent.text);
+    ok(pack.kind==='stab_backup' && Array.isArray(pack.hist) && pack.hist.length>=1,
+       'the pack carries every stored sweep: '+(pack.hist&&pack.hist.length));
+    ok(pack.hist[0].csv && pack.hist[0].wb,'CSV and workbook text travel with it, not just the numbers');
+    ok(!!pack.roomcfg,'and room config rides along in the same file');
+    ok(d.getElementById('backupnudge').classList.contains('hide'),
+       'the nudge clears once today\'s backup has actually happened');
+    ok(errors.length===0,'no runtime errors (1.6 backup): '+errors.join('|'));
+    w.close(); }
+
+  // restoring merges rather than overwrites — Evan's phone should not erase this one
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const before=w.getHist().length;
+    const foreignTs=Date.now()-99999;
+    const pack={kind:'stab_backup',v:1,op:'EG',exported:Date.now(),
+      hist:[{room:'C5',when:'9/11/2026, 3:00:00 PM',ts:foreignTs,n:9,mode:'sweep',med:31.2,low:1,
+        csv:'Date,Room\n9/11/2026,C5\n',wb:'C5 workbook',wbrow:'',wbroom:''}],
+      roomcfg:{C5:{tank:'C',savedAt:Date.now()}, B2:{tank:'SHOULD_NOT_WIN'}}};
+    w.S.room='B2'; // an existing local config for B2 must survive the merge
+    const rc=w.roomCfg(); rc.B2={tank:'A',savedAt:1}; w.lsSet('stab_roomcfg',JSON.stringify(rc));
+    w.importBackupText(JSON.stringify(pack));
+    ok(w.getHist().length===before+1,'the other phone\'s sweep is added: '+before+' -> '+w.getHist().length);
+    ok(w.getHist().some(h=>h.ts===foreignTs),'found by its own timestamp, not by room name');
+    ok(w.tankFor('C5')==='C','a room config this phone never had comes in');
+    ok(w.tankFor('B2')==='A','and one it already had is not clobbered by the import');
+    ok(errors.length===0,'no runtime errors (1.6 restore): '+errors.join('|'));
+    w.close(); }
+
   // ============ §4 the verification screen ============
   // The paste is a convenience, not an authority: nothing is committed until
   // the operator has seen what was read.

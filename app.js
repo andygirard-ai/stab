@@ -861,6 +861,21 @@ function histTs(h){
     try{ localStorage.removeItem('stab_prev'); }catch(e){}
     dataCounts(); toast('position history cleared');
   };
+  $('backupgo').onclick=runBackup;
+  $('backupgo2').onclick=runBackup;
+  $('backupimport').onclick=function(){
+    var pasted=($('backuppaste').value||'').trim();
+    if(pasted){ importBackupText(pasted); return; }
+    $('backuppaste').classList.remove('hide');
+    try{ $('backupfile').click(); }catch(e){}
+  };
+  $('backupfile').onchange=function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(){ importBackupText(String(rd.result||'')); };
+    rd.readAsText(f);
+    this.value='';
+  };
   /* ---- PREV export / import: two probes, two phones, one history ---- */
   $('expprev').onclick=function(){
     var n=Object.keys(PREV).length;
@@ -2057,6 +2072,38 @@ $('schedbtn').onclick=openSchedule;
 $('cfgbtn').onclick=openRoomSetup;
 $('weekly').onclick=openDay;
 $('dayclose').onclick=function(){ $('daysheet').classList.add('hide'); };
+/* Tank readings (Weekend Plan 1.5) — one entry point, once a day, for the
+   number the dilution rule actually needs. A room reads it through its
+   tank assignment in room config; a room on water reads 0 regardless. */
+function renderTanks(){
+  var el=$('tankbody'); if(!el) return;
+  var t=getTanks();
+  el.innerHTML=TANK_IDS.map(function(id){
+    var r=t[id]||{};
+    return '<div class="tankrow"><label>'+id+'</label>'+
+      '<input class="tec" data-id="'+id+'" inputmode="decimal" placeholder="EC" value="'+(r.ec!=null?r.ec:'')+'">'+
+      '<input class="tph" data-id="'+id+'" inputmode="decimal" placeholder="pH" value="'+(r.ph!=null?r.ph:'')+'">'+
+      '<input class="torp" data-id="'+id+'" inputmode="numeric" placeholder="ORP" value="'+(r.orp!=null?r.orp:'')+'">'+
+      '</div>';
+  }).join('');
+}
+$('tanksave').onclick=function(){
+  var t=getTanks();
+  var now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+  TANK_IDS.forEach(function(id){
+    var ec=parseFloat((document.querySelector('#tankbody .tec[data-id="'+id+'"]')||{}).value);
+    var ph=parseFloat((document.querySelector('#tankbody .tph[data-id="'+id+'"]')||{}).value);
+    var orp=parseFloat((document.querySelector('#tankbody .torp[data-id="'+id+'"]')||{}).value);
+    var rec={};
+    if(!isNaN(ec)) rec.ec=ec;
+    if(!isNaN(ph)) rec.ph=ph;
+    if(!isNaN(orp)) rec.orp=orp;
+    if(Object.keys(rec).length){ rec.time=now; t[id]=rec; }
+    else delete t[id];
+  });
+  lsSet(tanksKey(), JSON.stringify(t));
+  toast('tank readings saved');
+};
 $('cfgclose').onclick=function(){ $('cfgsheet').classList.add('hide'); };
 $('cfgsave').onclick=function(){
   if(!saveRoomSetup()) return;
@@ -2525,7 +2572,7 @@ function buildExports(){
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
       (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
       tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):''),
-      csvq(flagLine(S.room,r.table)),csvq(r.probe||'')].join(',');
+      csvq(flagLine(S.room,r.table)),r.probe||''].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
@@ -2547,7 +2594,7 @@ function buildExports(){
     cells[14]=S.side; cells[24]=S.op||'';
     cells[iSkip]=csvq(skipReason(t));
     cells[iFlags]=swFlags; cells[iTank]=tankFor(S.room);
-    cells[iProbe]=csvq(S.probeName||'');
+    cells[iProbe]=S.probeName||'';
     lines.push(cells.join(','));
   });
   /* §3: a hand-only sweep produces no rows at all, so without this the whole
@@ -2560,7 +2607,7 @@ function buildExports(){
     hc[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; hc[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     hc[14]=S.side; hc[24]=S.op||'';
     hc[iFlags]=swFlags||'NO_READINGS'; hc[iTank]=tankFor(S.room);
-    hc[iProbe]=csvq(S.probeName||'');
+    hc[iProbe]=S.probeName||'';
     lines.push(hc.join(','));
   }
   var body=lines.join('\n');
@@ -2799,6 +2846,57 @@ function roomCfg(){
 function getSched(){
   try{ return JSON.parse(localStorage.getItem('stab_sched')||'{}'); }catch(e){ return {}; }
 }
+/* ---- full backup / restore (Weekend Plan 1.6) ----
+   Storage is per device and a second phone is coming. Every stored sweep
+   (the CSV and workbook text already sitting in stab_hist) plus room
+   config, in one shareable file — a lost or wiped phone should not be a
+   lost day's sweeps. */
+function backupKey(){ return 'stab_backup_'+new Date().toLocaleDateString('en-US').replace(/\//g,'-'); }
+function backupDone(){ try{ return localStorage.getItem(backupKey())==='1'; }catch(e){ return false; } }
+function markBackedUp(){ try{ localStorage.setItem(backupKey(),'1'); }catch(e){} }
+function runBackup(){
+  var h=getHist();
+  if(!h.length){ toast('no stored sweeps yet'); return; }
+  var pack={kind:'stab_backup',v:1,op:S.op,exported:Date.now(),hist:h,roomcfg:roomCfg()};
+  shareOrCopy(JSON.stringify(pack),'stab_backup_'+fnameDate()+'.json',
+    'backup ('+h.length+' sweep'+(h.length>1?'s':'')+')');
+  markBackedUp();
+  renderBackupNudge();
+}
+function importBackupText(txt){
+  var pack;
+  try{ pack=JSON.parse(txt); }catch(e){ toast('that is not a backup file'); return; }
+  if(!pack || pack.kind!=='stab_backup' || !Array.isArray(pack.hist)){ toast('that is not a stab backup'); return; }
+  /* merge by ts: this phone's own sweeps stay, the other phone's sweeps
+     that are missing here get added — never a blind overwrite */
+  var h=getHist(), have={}; h.forEach(function(x){ if(x.ts) have[x.ts]=true; });
+  var added=0;
+  pack.hist.forEach(function(x){ if(!x.ts || !have[x.ts]){ h.push(x); added++; } });
+  h.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  saveHist(h);
+  var rc=roomCfg(), merged=0;
+  Object.keys(pack.roomcfg||{}).forEach(function(rm){
+    if(!rc[rm]){ rc[rm]=pack.roomcfg[rm]; merged++; }
+  });
+  lsSet('stab_roomcfg',JSON.stringify(rc));
+  $('backuppaste').value=''; $('backuppaste').classList.add('hide');
+  toast('restored: '+added+' sweep'+(added===1?'':'s')+', '+merged+' room config'+(merged===1?'':'s'));
+}
+function renderBackupNudge(){
+  var el=$('backupnudge'); if(!el) return;
+  var h=getHist();
+  var due=h.length>0 && !backupDone();
+  el.classList.toggle('hide', !due);
+  if(due) $('backupcount').textContent=h.length+' saved sweep'+(h.length>1?'s':'')+' on this phone only';
+}
+/* Today's tank readings, keyed by tank (A/B/C/Veg) — Weekend Plan 1.5. A
+   fresh calendar day starts blank on purpose: yesterday's EC is not a fact
+   about today's tank, and carrying it forward silently would be exactly
+   the ASSUMED-constant mistake this replaces. Late-bound like getSched. */
+function tanksKey(){ return 'stab_tanks_'+new Date().toLocaleDateString('en-US').replace(/\//g,'-'); }
+function getTanks(){
+  try{ return JSON.parse(localStorage.getItem(tanksKey())||'{}'); }catch(e){ return {}; }
+}
 function saveSched(rm,rec){
   var a=getSched(), was=a[rm];
   /* §6.4: a room whose shot structure just changed needs a reading 1-2 h
@@ -2948,7 +3046,10 @@ function showRoomCfg(){
   if(!S.room){ el.classList.add('hide'); return; }
   var saved=roomCfg()[S.room]||{};
   $('cfg_bag').value=String(saved.bag||(ROOMS[S.room]?ROOMS[S.room].bag:2));
-  $('cfg_ec').value = saved.ec!=null ? saved.ec : (FEEDEC[S.room]||'');
+  /* 1.5: blank shows what the room's own tank actually reads today, not a
+     guessed constant — feedEcFor is the one place that decides. */
+  var live=feedEcFor(S.room);
+  $('cfg_ec').value = saved.ec!=null ? saved.ec : (live!=null?live:'');
   $('cfg_ph').value = saved.ph!=null ? saved.ph : '';
   el.classList.remove('hide');
 }
@@ -2956,12 +3057,13 @@ function applyRoomCfg(){
   if(!S.room || !ROOMS[S.room]) return;
   var bag=parseFloat($('cfg_bag')?$('cfg_bag').value:0)||ROOMS[S.room].bag;
   var ecTxt=($('cfg_ec')?$('cfg_ec').value:'').trim().toLowerCase();
-  /* "0", "w" or "water" means the room is on water; blank keeps the last known feed */
+  /* "0", "w" or "water" means the room is on water; blank reads from the
+     room's own tank (Weekend Plan 1.5), never a guessed constant. */
   var ec=(ecTxt==='0'||ecTxt==='w'||ecTxt==='water')?0:parseFloat(ecTxt);
   var ph=parseFloat($('cfg_ph')?$('cfg_ph').value:0);
   ROOMS[S.room].bag=bag;
-  if(!isNaN(ec) && ec>=0) FEEDEC[S.room]=ec;
-  S.feedEC=(!isNaN(ec)&&ec>=0)?ec:FEEDEC[S.room];
+  if(!isNaN(ec) && ec>=0){ FEEDEC[S.room]=ec; S.feedEC=ec; }
+  else S.feedEC=feedEcFor(S.room);
   S.feedPH=(!isNaN(ph)&&ph>0)?ph:null;
   /* merge: this used to replace the whole record, which would drop the
      move-in fields (flower start, strains, drippers, tank) on every Start */
@@ -2981,6 +3083,8 @@ function openDay(){
   $('daysub').textContent=done+' of '+rows.length+' rooms on the probe'+
     (hand?' · '+hand+' hand-only':'')+
     ' · '+rows.filter(function(r){ return r.postShotDue; }).length+' waiting on a post-change read';
+  renderTanks();
+  renderBackupNudge();
   /* §5.5: the sequence to walk, which is what the 3 PM question is really
      asking. The wing sections below stay, because that is how the rooms are
      laid out on the floor and he still navigates by them. */

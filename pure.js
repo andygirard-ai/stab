@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v54';
+var VER='v55';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -595,6 +595,25 @@ function tankFor(rm){
   var c=rcfg(rm);
   if(c.tank) return c.tank;
   return (FEEDEC[rm]===0) ? 'water' : '';
+}
+/* Feed EC from the tank, not the room (Weekend Plan 1.5). A3, A4, B3 and C3
+   used to carry a wing-average guess in FEEDEC, marked ASSUMED and now gone
+   — a dilution rule that reads a made-up number is worse than one that
+   reads nothing. getTanks is late-bound the same way getHist and getSched
+   are: today's readings, keyed by tank (A/B/C/Veg), entered once on the day
+   screen and inherited by every room assigned to that tank in room config.
+   A room with no tank reading yet falls back to FEEDEC where one still
+   exists, then to unknown — never to a guess. Rooms on water, whether by an
+   explicit tank of 'water' or the legacy FEEDEC===0, always read 0. */
+var TANK_IDS=['A','B','C','Veg'];
+function feedEcFor(rm){
+  var c=rcfg(rm), tk=(c.tank||'').trim();
+  if(/^water$/i.test(tk) || FEEDEC[rm]===0) return 0;
+  if(!tk) tk=rm.charAt(0);   /* the building wing, A/B/C — physical plumbing, not a guess */
+  var tanks=(typeof getTanks==='function')?(getTanks()||{}):{};
+  var tr=tk?tanks[tk]:null;
+  if(tr && tr.ec!=null && !isNaN(+tr.ec)) return +tr.ec;
+  return (FEEDEC[rm]!=null) ? FEEDEC[rm] : null;
 }
 /* Reconstruct the moment a row was captured, from the same Date/Time text
    that goes into the CSV (toLocaleDateString('en-US') / toLocaleTimeString
@@ -1254,7 +1273,7 @@ function checkLines(){
   /* every table we tried to read: measured + skipped. A skipped table with no
      readings never reaches byTable, so count the skip list, not the rows. */
   var nSkip=skippedList().length;
-  var f=floorFor(S.room), feed=(S.feedEC!=null?S.feedEC:FEEDEC[S.room]);
+  var f=floorFor(S.room), feed=(S.feedEC!=null?S.feedEC:feedEcFor(S.room));
   var tmeds=tableMedians(tabs), nTab=Object.keys(tmeds).length;
   var nSeen=nTab+nSkip;
   var strainTabs={};

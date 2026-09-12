@@ -80,16 +80,18 @@ var SCHED={A1:['01:15',120,2],A2:['13:15',120,2],A3:['01:15',120,5],A4:['13:15',
  B3:['01:15',120,5],B4:['01:15',120,3],B5:['01:15',120,2],B6:['01:15',120,2],C1:['13:15',120,2],
  C2:['13:15',120,2],C3:['13:15',120,5],C4:['13:15',120,4],C5:['13:15',120,3],C6:['13:15',120,2]};
 
-/* Feed EC target by room; 0 = on water.
-   Corrected 9/10/2026: A7 is the only room on water (harvest Monday). A3, A4,
-   B3 and C3 all read 0 here and are on feed — a 0 switches the dilution and
-   no-feed CHECK rules off entirely, so those rooms were being swept with two
-   rules silently disabled. The four values marked ASSUMED are the wing
-   default, not a confirmed target: correct them at the next sweep, or on the
-   setup screen, which overrides this per room. */
-var FEEDEC={A1:2.5,A2:2.5,A3:2.6/*ASSUMED*/,A4:2.6/*ASSUMED*/,A5:2.6,A6:2.6,A7:0,
-            B1:2.5,B2:2.5,B3:2.5/*ASSUMED*/,B4:2.5,B5:2.5,B6:2.5,
-            C1:2.5,C2:2.5,C3:2.5/*ASSUMED*/,C4:2.5,C5:2.5,C6:2.5};
+/* Feed EC target by room; 0 = on water. This is a fallback now, read only
+   when a room has no tank reading for the day (Weekend Plan 1.5) — feed EC
+   belongs to the tank, not the room, and a room without a live reading
+   should say so rather than guess. A7 is the only room confirmed on water
+   (harvest Monday). A3, A4, B3 and C3 used to carry a wing-average constant
+   here marked ASSUMED, corrected 9/10/2026 and now removed outright: those
+   rooms read from their tank (Today -> tank readings) via the tank
+   assignment in room config, or the setup screen's per-sweep override, or
+   they read as unknown — never a guessed number again. */
+var FEEDEC={A1:2.5,A2:2.5,A5:2.6,A6:2.6,A7:0,
+            B1:2.5,B2:2.5,B4:2.5,B5:2.5,B6:2.5,
+            C1:2.5,C2:2.5,C4:2.5,C5:2.5,C6:2.5};
 /* Flower start date per room. DOF computes from this forever, so this is a
    move-in edit, not a weekly one — the old DOF-plus-reference-date pair drifted
    the moment a room was replanted and nobody re-typed it, which is how B3 read
