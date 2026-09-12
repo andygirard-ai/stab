@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v55';
+var VER='v56';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -591,29 +591,35 @@ function strainListFor(rm){
   }
   return out;
 }
+/* Which tank actually feeds a room. Room config's cfg_tank, set at move-in,
+   always wins; under it is TANK, this week's seeded assignment from
+   rooms.js. Neither is a guess: there is no default for a room absent from
+   both, because tank assignment is a weekly choice about valves, not a
+   property of the building wing (a first pass here defaulted to the wing
+   letter and would have put six C rooms on the wrong tank). */
 function tankFor(rm){
   var c=rcfg(rm);
   if(c.tank) return c.tank;
-  return (FEEDEC[rm]===0) ? 'water' : '';
+  return TANK[rm] || '';
 }
-/* Feed EC from the tank, not the room (Weekend Plan 1.5). A3, A4, B3 and C3
-   used to carry a wing-average guess in FEEDEC, marked ASSUMED and now gone
-   — a dilution rule that reads a made-up number is worse than one that
-   reads nothing. getTanks is late-bound the same way getHist and getSched
-   are: today's readings, keyed by tank (A/B/C/Veg), entered once on the day
-   screen and inherited by every room assigned to that tank in room config.
-   A room with no tank reading yet falls back to FEEDEC where one still
-   exists, then to unknown — never to a guess. Rooms on water, whether by an
-   explicit tank of 'water' or the legacy FEEDEC===0, always read 0. */
+function isOnWater(rm){ return /^water$/i.test(tankFor(rm)); }
+/* Feed EC from the tank, not the room (Weekend Plan 1.5, corrected 9/12).
+   getTanks is late-bound the same way getHist and getSched are: today's
+   readings, keyed by tank (A/B/C/Veg), entered once on the day screen.
+   A room with no tank assignment reads unknown — not a guess, and not a
+   wing default — and the CHECK dilution rule simply does not run for it,
+   the same as it would for any other unknown feed. A room on water always
+   reads 0. There is no room-level EC constant to fall back to any more:
+   the tank's own reading is the only source. */
 var TANK_IDS=['A','B','C','Veg'];
 function feedEcFor(rm){
-  var c=rcfg(rm), tk=(c.tank||'').trim();
-  if(/^water$/i.test(tk) || FEEDEC[rm]===0) return 0;
-  if(!tk) tk=rm.charAt(0);   /* the building wing, A/B/C — physical plumbing, not a guess */
+  var tk=tankFor(rm);
+  if(!tk) return null;
+  if(/^water$/i.test(tk)) return 0;
   var tanks=(typeof getTanks==='function')?(getTanks()||{}):{};
-  var tr=tk?tanks[tk]:null;
+  var tr=tanks[tk];
   if(tr && tr.ec!=null && !isNaN(+tr.ec)) return +tr.ec;
-  return (FEEDEC[rm]!=null) ? FEEDEC[rm] : null;
+  return null;
 }
 /* Reconstruct the moment a row was captured, from the same Date/Time text
    that goes into the CSV (toLocaleDateString('en-US') / toLocaleTimeString

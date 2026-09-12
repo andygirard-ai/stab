@@ -8,6 +8,6 @@ for(const f of files){
   rows.forEach(r=>{ /* Row notes col not loaded; skip */ });
   L.ROOMS[S.room].bag=rows[0].bag;
   const out=L.buildWorkbook();
-  console.log('\n######## '+f+' ('+rows.length+' rows, bag '+rows[0].bag+', floor '+L.floorFor(S.room)+', feed '+L.FEEDEC[S.room]+')');
+  console.log('\n######## '+f+' ('+rows.length+' rows, bag '+rows[0].bag+', floor '+L.floorFor(S.room)+', tank '+(L.tankFor(S.room)||'none')+')');
   console.log(out);
 }

@@ -946,9 +946,11 @@ function histTs(h){
       S.startedAt=sess.startedAt||Date.now();
       S.triage=sess.triage||[]; S.skips=sess.skips||0; S.unstable=sess.unstable||0;
       S.skipped=sess.skipped||{}; S.access=sess.access||null;
-      /* feed EC/pH: from the session if it has them, else the saved room config */
+      /* feed EC/pH: from the session if it has them (the normal case for a
+         genuinely resumed sweep), else read fresh — never a saved room
+         config constant (Weekend Plan 1.5, corrected 9/12) */
       var rc=roomCfg()[S.room]||{};
-      S.feedEC=(sess.feedEC!=null)?sess.feedEC:(rc.ec!=null?rc.ec:null);
+      S.feedEC=(sess.feedEC!=null)?sess.feedEC:feedEcFor(S.room);
       S.feedPH=(sess.feedPH!=null)?sess.feedPH:(rc.ph!=null?rc.ph:null);
     }else{
       var r0=rows[0]||{};
@@ -3046,10 +3048,13 @@ function showRoomCfg(){
   if(!S.room){ el.classList.add('hide'); return; }
   var saved=roomCfg()[S.room]||{};
   $('cfg_bag').value=String(saved.bag||(ROOMS[S.room]?ROOMS[S.room].bag:2));
-  /* 1.5: blank shows what the room's own tank actually reads today, not a
-     guessed constant — feedEcFor is the one place that decides. */
+  /* 1.5, corrected 9/12: always the live tank reading, never a persisted
+     override — typing here is good for this sweep only, never saved as a
+     new room-level constant (that was exactly the ASSUMED-constant mistake
+     this item exists to end). */
   var live=feedEcFor(S.room);
-  $('cfg_ec').value = saved.ec!=null ? saved.ec : (live!=null?live:'');
+  $('cfg_ec').value = (live!=null?live:'');
+  $('cfg_ec').placeholder = tankFor(S.room) ? '0 = water' : 'no tank assigned';
   $('cfg_ph').value = saved.ph!=null ? saved.ph : '';
   el.classList.remove('hide');
 }
@@ -3062,13 +3067,16 @@ function applyRoomCfg(){
   var ec=(ecTxt==='0'||ecTxt==='w'||ecTxt==='water')?0:parseFloat(ecTxt);
   var ph=parseFloat($('cfg_ph')?$('cfg_ph').value:0);
   ROOMS[S.room].bag=bag;
-  if(!isNaN(ec) && ec>=0){ FEEDEC[S.room]=ec; S.feedEC=ec; }
-  else S.feedEC=feedEcFor(S.room);
+  /* An explicit number here is a one-sweep override, not a saved constant
+     — there is no room-level EC to preserve any more (Weekend Plan 1.5,
+     corrected 9/12). Blank reads the room's own tank. */
+  S.feedEC=(!isNaN(ec) && ec>=0) ? ec : feedEcFor(S.room);
   S.feedPH=(!isNaN(ph)&&ph>0)?ph:null;
   /* merge: this used to replace the whole record, which would drop the
      move-in fields (flower start, strains, drippers, tank) on every Start */
   var keep=roomCfg()[S.room]||{};
-  keep.bag=bag; keep.ec=S.feedEC; keep.ph=S.feedPH;
+  keep.bag=bag; keep.ph=S.feedPH;
+  delete keep.ec;   /* one-sweep only — never saved as a room-level constant */
   saveRoomCfg(S.room, keep);
 }
 /* ---------------- the day (backlog §6.3) ----------------
@@ -3270,7 +3278,9 @@ function loadRoomCfgAll(){
   var a=roomCfg();
   Object.keys(a).forEach(function(k){
     if(ROOMS[k] && a[k].bag) ROOMS[k].bag=a[k].bag;
-    if(a[k].ec!=null && !isNaN(+a[k].ec)) FEEDEC[k]=+a[k].ec;
+    /* a saved feed EC is a one-sweep override from last time, not a
+       constant to carry forward as a room fact (Weekend Plan 1.5,
+       corrected 9/12) — feedEcFor reads the tank fresh every time instead */
   });
 }
 function showRoomHistory(){
@@ -3300,8 +3310,11 @@ function showBrief(){
       (last.low!=null?' · '+last.low+' below floor':'')
     : 'no sweep recorded']);
   var dof=dofNow(S.room);
-  rows.push(['room', (dof===''?'DOF —':'DOF '+dof)+' · '+cfg.bag+' gal · '+cfg.t+' tables'+
-    (FEEDEC[S.room]!=null?' · feed '+(FEEDEC[S.room]||'water'):'')]);
+  var tk=tankFor(S.room), fe=feedEcFor(S.room);
+  var feedTxt=!tk ? 'no tank assigned'
+    : isOnWater(S.room) ? 'on water'
+    : 'tank '+tk+(fe!=null?' · feed '+fe:' · reading pending');
+  rows.push(['room', (dof===''?'DOF —':'DOF '+dof)+' · '+cfg.bag+' gal · '+cfg.t+' tables · '+feedTxt]);
   var sc=schedLine(S.room);
   if(sc){
     var hs=hoursSinceShot(S.room), nx=hoursToNextShot(S.room);
@@ -3390,7 +3403,7 @@ function drawLog(){
     var done=flushDone();
     h='<div class="hl">flush plan · tap a room when it is done</div><div id="fplan">';
     Object.keys(ROOMS).filter(function(k){return !ROOMS[k].kind;}).forEach(function(k){
-      var water=(FEEDEC[k]===0);
+      var water=isOnWater(k);
       var mins=flushMins(k);
       var lbl=k+'  '+(water?'on water — skip':mins+' min')+
         (k==='A2'?'   T1/T2 25 · T3-T12 50':'');

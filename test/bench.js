@@ -1,5 +1,5 @@
 // BENCH is a test fixture room: present in ROOMS, deliberately absent from
-// SCHED, DOF, SCHED_ML, FEEDEC and RMAP. Every lookup over those must
+// SCHED, DOF, SCHED_ML, TANK and RMAP. Every lookup over those must
 // tolerate the gap, read as unknown rather than zero, and BENCH must stay
 // out of the coverage count, the not-seen list and the EOD swept list.
 const {JSDOM,VirtualConsole}=require('jsdom'); const fs=require('fs'), path=require('path');
@@ -29,14 +29,14 @@ function boot(storage){
     ok(w.ROOMS.BENCH.t===4 && w.ROOMS.BENCH.bag===2 && /peat/i.test(w.ROOMS.BENCH.media),
        'BENCH is 4 tables, 2-gal, '+w.ROOMS.BENCH.media);
     ok(!w.SCHED.BENCH && !w.FLOWER_START.BENCH && !w.SCHED_ML.BENCH && !w.RMAP.BENCH &&
-       w.FEEDEC.BENCH===undefined,'BENCH absent from SCHED/FLOWER_START/SCHED_ML/RMAP/FEEDEC as intended');
+       w.TANK.BENCH===undefined,'BENCH absent from SCHED/FLOWER_START/SCHED_ML/RMAP/TANK as intended');
     ok(errors.length===0,'no runtime errors at boot: '+errors.join('|'));
 
     // the four lookups, called directly
     ok(w.dofNow('BENCH')==='','dofNow(BENCH) reads unknown ("") not 0');
     ok(w.hoursSinceShot('BENCH')===null,'hoursSinceShot(BENCH) reads unknown (null) not 0');
     ok(w.floorFor('BENCH')===22,'floorFor(BENCH) falls back to the 2-gal floor: '+w.floorFor('BENCH'));
-    ok(w.FEEDEC.BENCH===undefined,'feed EC lookup is undefined, not NaN');
+    ok(w.feedEcFor('BENCH')===null,'feed EC lookup is unknown, not a guess');
     w.close(); }
 
   // ---- 2. a short BENCH sweep builds a clean workbook block ----

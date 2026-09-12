@@ -2245,23 +2245,31 @@ function rowsFor(w,room,spec){
     w.close(); }
 
   // ============ Weekend Plan 1.5 — feed EC from the tank ============
-  // The four ASSUMED wing-average guesses are gone outright. Feed EC now
-  // comes from the tank a room is assigned to (room config) and the day's
-  // reading for that tank (the day screen) — or 0, when the room is
-  // genuinely on water, and only because an operator said so.
+  // Corrected 9/12: no wing default. Tank assignment is a weekly valve
+  // choice, not a property of the building wing — a first pass that
+  // defaulted an unassigned room to its own wing's tank would have put six
+  // C rooms on the wrong one. A3 and A4 are absent from TANK on purpose:
+  // this week's valve list did not name them, so they read unknown, full
+  // stop, with or without a tank reading on the books.
   { const {w,d,errors}=boot(null); await sleep(50);
-    ok(w.FEEDEC.A3===undefined && w.FEEDEC.A4===undefined && w.FEEDEC.B3===undefined && w.FEEDEC.C3===undefined,
-       'the four ASSUMED constants are gone, not corrected: A3='+w.FEEDEC.A3+' A4='+w.FEEDEC.A4);
-    ok(w.feedEcFor('A3')===null,'and a room with no tank reading yet reads unknown, not a guess');
-    ok(w.feedEcFor('A1')===2.5,'…while a room with a still-confirmed constant falls back to it in the meantime');
+    ok(w.TANK.A3===undefined && w.TANK.A4===undefined,
+       'A3 and A4 carry no assignment this week, on purpose: A3='+w.TANK.A3+' A4='+w.TANK.A4);
+    ok(w.TANK.C3==='A' && w.TANK.C4==='B' && w.TANK.B4==='C' && w.TANK.A7==='water',
+       'the actual valve list, not a wing guess: C3 on '+w.TANK.C3+', C4 on '+w.TANK.C4+
+       ', B4 on '+w.TANK.B4+', A7 '+w.TANK.A7);
+    ok(w.feedEcFor('A3')===null && w.feedEcFor('A1')===null,
+       'and nobody has a reading yet, so both read unknown, not a guess');
     // enter today's A-tank reading on the day screen
     d.getElementById('weekly').click(); await sleep(20);
     ok(!d.getElementById('daysheet').classList.contains('hide'),'the day screen opens');
     d.querySelector('#tankbody .tec[data-id="A"]').value='2.58';
     d.querySelector('#tankbody .tph[data-id="A"]').value='6.1';
     d.getElementById('tanksave').click(); await sleep(20);
-    ok(w.feedEcFor('A3')===2.58,'A3 inherits tank A\'s reading through the plain wing default: '+w.feedEcFor('A3'));
-    ok(w.feedEcFor('A1')===2.58,'and so does A1 — the live reading supersedes its own constant now that one exists');
+    ok(w.feedEcFor('A1')===2.58,'A1 is actually assigned to tank A, so it picks up the reading: '+w.feedEcFor('A1'));
+    ok(w.feedEcFor('C3')===2.58,'so does C3 — same tank, different wing, which is the whole point');
+    ok(w.feedEcFor('A3')===null,
+       'A3 stays unknown even with a tank-A reading on the books — no wing default to leak through: '+w.feedEcFor('A3'));
+    ok(w.feedEcFor('B3')===null,'and B1 through B3 (tank B, no reading yet) stay unknown too: '+w.feedEcFor('B3'));
     d.getElementById('dayclose').click(); await sleep(20);
     // C3, explicitly on water — the acceptance case: 0 because the operator
     // said so, not because a constant did
@@ -2281,6 +2289,25 @@ function rowsFor(w,room,spec){
     ok(!lines.some(l=>/no feed/i.test(typeof l==='string'?l:l.s)),
        'no-feed and dilution stay off for a water room, same as before — feed is 0, not absent');
     ok(errors.length===0,'no runtime errors (1.5 tank feed EC): '+errors.join('|'));
+    w.close(); }
+
+  // a typed override is good for one sweep only — it must not freeze the
+  // tank's live reading into a new room-level constant, which is the exact
+  // mistake the ASSUMED constants were
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.lsSet(w.tanksKey(), JSON.stringify({A:{ec:2.4,time:'9:00'}}));
+    d.querySelector('#rooms .rm[data-room="A1"]').click(); await sleep(20);
+    ok(d.getElementById('cfg_ec').value==='2.4','the quick-config field shows the live tank reading: '+d.getElementById('cfg_ec').value);
+    d.getElementById('cfg_ec').value='9.9';
+    d.getElementById('startbtn').click(); await sleep(20);
+    d.getElementById('confirmback').click(); await sleep(20);
+    ok(w.S.feedEC===9.9,'the typed override applies to this sweep');
+    ok(!w.roomCfg().A1 || w.roomCfg().A1.ec===undefined,
+       'but it is never written back as a room config constant: '+JSON.stringify(w.roomCfg().A1));
+    d.querySelector('#rooms .rm[data-room="A1"]').click(); await sleep(20);
+    ok(d.getElementById('cfg_ec').value==='2.4',
+       'the next visit reads the tank fresh again, not the 9.9 from before: '+d.getElementById('cfg_ec').value);
+    ok(errors.length===0,'no runtime errors (1.5 no frozen constant): '+errors.join('|'));
     w.close(); }
 
   // ============ Weekend Plan 1.6 — stored-sweep backup ============

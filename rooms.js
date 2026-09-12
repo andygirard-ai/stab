@@ -42,7 +42,7 @@ var ROOMS={
  /* Not a production room. A bench fixture for testing the probe and the
     app against a known bag. kind:'test' keeps it out of the coverage
     count, the not-seen list and the EOD swept list, and it is deliberately
-    absent from SCHED, FLOWER_START, SCHED_ML, FEEDEC and RMAP — every lookup that
+    absent from SCHED, FLOWER_START, SCHED_ML, TANK and RMAP — every lookup that
     reads those must tolerate a room that is missing, and read as unknown
     rather than invent a zero. */
  BENCH:{t:4,bag:2,media:'peat mix',kind:'test'}
@@ -80,18 +80,27 @@ var SCHED={A1:['01:15',120,2],A2:['13:15',120,2],A3:['01:15',120,5],A4:['13:15',
  B3:['01:15',120,5],B4:['01:15',120,3],B5:['01:15',120,2],B6:['01:15',120,2],C1:['13:15',120,2],
  C2:['13:15',120,2],C3:['13:15',120,5],C4:['13:15',120,4],C5:['13:15',120,3],C6:['13:15',120,2]};
 
-/* Feed EC target by room; 0 = on water. This is a fallback now, read only
-   when a room has no tank reading for the day (Weekend Plan 1.5) — feed EC
-   belongs to the tank, not the room, and a room without a live reading
-   should say so rather than guess. A7 is the only room confirmed on water
-   (harvest Monday). A3, A4, B3 and C3 used to carry a wing-average constant
-   here marked ASSUMED, corrected 9/10/2026 and now removed outright: those
-   rooms read from their tank (Today -> tank readings) via the tank
-   assignment in room config, or the setup screen's per-sweep override, or
-   they read as unknown — never a guessed number again. */
-var FEEDEC={A1:2.5,A2:2.5,A5:2.6,A6:2.6,A7:0,
-            B1:2.5,B2:2.5,B4:2.5,B5:2.5,B6:2.5,
-            C1:2.5,C2:2.5,C4:2.5,C5:2.5,C6:2.5};
+/* Tank assignment by room; 'water' = the room is on water, not fed.
+   Corrected 9/12/2026: every room has A, B and C master valves, and which
+   one actually feeds it is a choice that changes week to week — it is not
+   a property of the building wing. A first pass at this (Weekend Plan 1.5)
+   defaulted an unassigned room to its own wing's tank, which would have
+   put six C rooms on the wrong one (tank A feeds three of them, tank B
+   the other three). There is no default here for that reason.
+   A room absent from this map has no tank assignment. feedEcFor and the
+   CHECK dilution rule read that as unknown, not a guess, and the setup
+   screen says "no tank assigned" — A3 and A4 are absent on purpose: this
+   week's valve list did not name them, so the honest state is unassigned,
+   not a wing guess. Room config's cfg_tank always overrides this per room
+   at move-in, the same as bag size and strain map.
+   Seeded from this week's actual assignment: tank A feeds A1, A2, A5, A6
+   and C1, C2, C3; tank B feeds B1, B2, B3, B5, B6 and C4, C5, C6; tank C
+   feeds B4 for late flower; A7 is on water. There is no separate feed-EC
+   constant any more — the tank's own daily reading (Today -> tank
+   readings) is the only source. */
+var TANK={A1:'A',A2:'A',A5:'A',A6:'A',A7:'water',
+          B1:'B',B2:'B',B3:'B',B4:'C',B5:'B',B6:'B',
+          C1:'A',C2:'A',C3:'A',C4:'B',C5:'B',C6:'B'};
 /* Flower start date per room. DOF computes from this forever, so this is a
    move-in edit, not a weekly one — the old DOF-plus-reference-date pair drifted
    the moment a room was replanted and nobody re-typed it, which is how B3 read
