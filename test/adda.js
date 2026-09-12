@@ -2789,12 +2789,31 @@ function rowsFor(w,room,spec){
     ok(/2\/3 fired/.test(r.line) && /manual run/.test(r.line),'the line reads both facts: '+r.line);
     w.close(); }
 
+  // matchDeviceForTable on its own: room + table, case and spacing loose
+  // the way schedHeader already is, a shared-valve header fanning out to
+  // both its tables, and a device name that doesn't parse as a header at
+  // all is simply not a candidate — never an exact string anywhere here
+  { const {w}=boot(null);
+    const devices=[{id:'d1',name:'A1 Table 11+12'},{id:'d2',name:'c3 table 4'},{id:'d3',name:'Substrate Moisture #20004907'}];
+    ok(w.matchDeviceForTable(devices,'A1',11)===devices[0] && w.matchDeviceForTable(devices,'A1',12)===devices[0],
+       'a shared-valve device header fans out to both its tables, same as the schedule parser');
+    ok(w.matchDeviceForTable(devices,'C3',4)===devices[1],'room and case both fold before comparing');
+    ok(w.matchDeviceForTable(devices,'A1',5)===null,'no device claims that table — not a guess, not the shared one');
+    ok(w.matchDeviceForTable(devices,'B1',4)===null,
+       'a device name that never parses as a room+table header at all is not a candidate: '+w.matchDeviceForTable(devices,'B1',4));
+    w.close(); }
+
   // 3.2 wired end to end: a zoned table resolves to a Growlink device by
-  // name, the device log is fetched for that device only, and the result
-  // is reported per table
+  // room + table number (the schedule parser's own schedHeader, not an
+  // exact string against the 3.5 zone label — confirmed by Andy 9/12
+  // after the first pass here matched on the zone label directly), the
+  // device log is fetched for that device only, and the result is
+  // reported per table
   { const orgId='org1';
     const rooms=[{id:'r-b1',name:'B-1',roomType:0}];   // Growlink's own hyphenated name
-    const devices=[{id:'d-t4',name:'B-1'},{id:'d-t5',name:'B-2'}];
+    // device names in schedHeader's own format — case and spacing this
+    // loose is exactly what it already tolerates for schedule headers
+    const devices=[{id:'d-t4',name:'b1 table 4'},{id:'d-t5',name:'B1 Table 5'}];
     const calls=[];
     const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
       calls.push(url);
@@ -2805,7 +2824,7 @@ function rowsFor(w,room,spec){
         const body=JSON.parse(opts.body);
         ok(body.deviceIds.length===1 && body.deviceIds[0]==='d-t4',
            'only the one zoned table\'s device is asked for, not the whole room: '+JSON.stringify(body.deviceIds));
-        return Promise.resolve({ok:true, json:()=>Promise.resolve({devices:[{id:'d-t4',name:'B-1',logs:[]}]})});
+        return Promise.resolve({ok:true, json:()=>Promise.resolve({devices:[{id:'d-t4',name:'b1 table 4',logs:[]}]})});
       }
       return Promise.reject(new Error('unexpected call: '+url));
     });

@@ -25,6 +25,97 @@ The whole thing takes under two minutes and needs no phone.
 
 ---
 
+## Workflow
+
+**Nothing goes to `main` red.** The full suite runs clean, with zero
+pending edits, immediately before every commit and every merge — not
+"passed a few edits ago." A version bump gets its own final clean run,
+never a free ride on the run before it. A `main` that's red for even one
+commit is a `main` a second session can't trust without re-running
+everything itself.
+
+**Fixtures come from real data, never an invented shape.** A schedule
+paste, a device log, a CSV — reconstruct it byte-for-byte from what was
+actually pasted or actually returned (`fixtures/9-11/` is nine real
+Growlink screens, rebuilt down to the tab after the header fields and the
+missing `Mins` unit on one real flush). When the real thing genuinely
+isn't available yet, build the fixture against the *documented* shape and
+mark it `SYNTHETIC` in the filename (`fixtures/9-11/A7_devices_data_log_SYNTHETIC.json`)
+so nobody mistakes it for ground truth later, and say so in
+`WINDOW_REPORT.md` rather than let a synthetic pass read like a real one.
+
+**A decision only Andy can make goes to `QUESTIONS.md`, not into a
+guess.** An assumption with no way to verify it from the repo alone gets
+written down — what's assumed, why it's the most defensible reading,
+and how the code fails honestly (by name, not silently) if it's wrong —
+never shipped as if it were confirmed. Move it to `QUESTIONS.md`'s
+Resolved section, with how it was answered, the day it's settled; don't
+delete the record of having asked.
+
+**Every window of work gets its own entry in `WINDOW_REPORT.md`** —
+what shipped, what's blocked and why, what's deliberately out of scope
+and why that's a legitimate stopping point rather than an oversight.
+Written after the suite is green, not before.
+
+---
+
+## What kept going wrong
+
+Five patterns, each one repeated enough times to be worth writing down
+rather than relearning the next time it looks like a good idea.
+
+**Columns by name, never position.** Appending a CSV column broke a
+hard-coded positional write twice — once in the export's own synthetic
+rows (the skipped-table and no-readings placeholders), once across three
+separate tests that assumed a column's index instead of looking it up.
+Every column is resolved by `head.indexOf(name)` at write time now, never
+counted by hand — a new column can be inserted anywhere without moving
+anyone else's index.
+
+**One class on every segmented button, and a test that asserts it.** The
+depth-control buttons (Profile) once shipped with no `.seg` class at
+all — no styling, so tapping it looked like nothing happened and the
+choice silently stuck. It shipped because that version's test drove
+app state directly (`S.profile=...`) instead of clicking the real DOM, so
+nothing ever noticed the button was inert. The suite now enumerates every
+button in every segmented group, asserts each one carries the class that
+styles it, and separately asserts the stylesheet actually styles that
+class in both states — a new unstyled control fails the suite instead of
+shipping invisible.
+
+**One edit per script, verified by reading back.** A patch that cut
+through a nested closing brace — `})();` matched before the one actually
+intended — truncated the file silently; nothing but running the suite
+would have caught it, and a second edit made before that run compounds
+whatever the first one broke. Read the result back (or run the syntax
+check) before making the next edit to the same file, never chain edits
+on faith.
+
+**The route truth table stays verbatim in the test suite.** The aisle
+walk-pairing logic was wrong on three separate axes across three
+versions — table parity, then walk index, then direction — each "fix"
+only correct for the one direction and side that happened to get walked
+that week. The fix was a four-row truth table taken from the spec,
+encoded verbatim in both `pure.js`'s own comment and the test suite's
+literal expected-output array, named explicitly as the oracle: whatever
+disagrees with it is wrong, however reasonable it sounds. The table is
+never edited to make a new change look correct — if a change disagrees
+with the table, the change is wrong until proven otherwise, not the
+table.
+
+**No conclusion from absence of evidence.** The clearest case: the probe
+firmware's own binary names `get -batt` and `batteryLevel` in plain text,
+but the live GATT dump of a real probe shows no standard battery service
+at all. Both facts are true, and the mistake was treating the second as
+an answer to the first — the reading exists, it was just never going to
+be where a standard implementation would put it, and it took looking on
+the actual UART the firmware already used for everything else to find
+it. The same discipline applies everywhere a document goes silent on a
+question: silence in one source is not proof of absence in the system —
+it's a reason to look somewhere else, not a reason to stop looking.
+
+---
+
 ## The hardware
 
 The probe is an **Aroya Solus** — a rebadged **METER ZSC** Bluetooth interface attached to a **TEROS 12** substrate sensor.

@@ -2983,16 +2983,11 @@ function renderZoneCoverage(rm){
    Growlink_Skill.md, received 9/12) — the earlier Bearer-token guess
    this window shipped with is gone, not patched. Room naming (Growlink
    says "A-1" where Stab says "A1"), the CFS room id, the Batch Tank
-   number map, and where activeRun actually lives were all confirmed by
-   Andy the same day and are no longer flagged as guesses anywhere below.
-
-   One thing is still not a fact, because nothing received so far says
-   it either way and there is no way to test it without live account
-   access: whether a device's own `name` is the zone label from the 3.5
-   paste ("B-1") rather than the numeric id printed in front of it. It's
-   the most sensible reading of how the two systems fit together, not a
-   random pick, and it's flagged in a comment right where it's used
-   (`matchDeviceForZone`), not asserted as confirmed. */
+   number map, where activeRun actually lives, and how to match a device
+   to a table (room + table, the way the schedule parser does — never an
+   exact string against the 3.5 zone label, which was this window's own
+   first guess) were all confirmed by Andy and are no longer flagged as
+   guesses anywhere below. */
 var GROWLINK_BASE_URL='https://api.developer.growlink.com';
 function growlinkCfg(){
   try{ return JSON.parse(localStorage.getItem('stab_growlink')||'{}'); }catch(e){ return {}; }
@@ -3204,24 +3199,28 @@ function growlinkDevices(rm, force){
     });
   });
 }
-/* Flagged assumption (see the block comment above growlinkCfg): a
-   device's own `name` is the zone label from the 3.5 paste ("B-1"), not
-   the numeric id printed in front of it in that paste ("#20003605") —
-   that number is what Growlink's own device list export shows next to
-   the name, not the GUID this API's device.id actually is, so there is
-   no way to skip this name match and go straight to an id. */
-function matchDeviceForZone(devices, zoneLabel){
-  var z=String(zoneLabel||'').toLowerCase();
-  for(var i=0;i<devices.length;i++)
-    if(String((devices[i]||{}).name||'').toLowerCase()===z) return devices[i];
+/* Confirmed by Andy 9/12: match a device by room + table number, the
+   same way the schedule parser does — never an exact string against the
+   3.5 zone label. A device's own `name` gets read through schedHeader
+   (pure.js), the exact function that already turns "A1 Table 11+12"
+   into {room, tables}, tolerant of the same case and spacing variance
+   Growlink's schedule screens print. A device whose name doesn't parse
+   as a room+table header at all is not a candidate, not a guess. */
+function matchDeviceForTable(devices, room, table){
+  for(var i=0;i<devices.length;i++){
+    var hd=schedHeader((devices[i]||{}).name);
+    if(hd && hd.room.toLowerCase()===String(room).toLowerCase() && hd.tables.indexOf(table)>=0)
+      return devices[i];
+  }
   return null;
 }
 /* Did last night fire (Weekend Plan 3.2). Ties each zoned table (3.5) to
    its Growlink device, pulls the last 24h of that device's runs, and
    hands the comparison to nightFireLine (pure.js) against this app's own
-   schedule for the same table. A table with no zone saved, or whose zone
-   doesn't match any device in the room, is skipped rather than guessed
-   at — reported by its absence from the result, not a fabricated line.
+   schedule for the same table. A table with no zone saved, or whose
+   device can't be matched by room + table, is skipped rather than
+   guessed at — reported by its absence from the result, not a
+   fabricated line.
 
    Known limit, confirmed by the guide (§7.3) and by the real A7 T3
    finding from 9/11: a device still running when the window ends has no
@@ -3238,9 +3237,8 @@ function fetchNightFire(rm){
   return growlinkDevices(rm).then(function(devices){
     var tables=[], deviceIds=[], byTableId={};
     for(var t=1;t<=ROOMS[rm].t;t++){
-      var zone=zoneFor(rm,t);
-      if(!zone) continue;
-      var dev=matchDeviceForZone(devices, zone.zone);
+      if(!zoneFor(rm,t)) continue;
+      var dev=matchDeviceForTable(devices, rm, t);
       if(!dev) continue;
       tables.push(t); byTableId[t]=dev.id; deviceIds.push(dev.id);
     }

@@ -1,37 +1,32 @@
 # Questions for Andy
 
-**2.2's real reconciliation found a live bug: P2 has never contributed to
-hours-since-shot.** Fixed the half that was a clear bug — `schedPhaseOn`
+**Open, marked legacy (asked 9/12) — what decides when P2 starts?**
+2.2's real reconciliation found a live bug: P2 has never contributed to
+hours-since-shot. Fixed the half that was a clear bug — `schedPhaseOn`
 required a P2 start time that Growlink's own Copilot screens never print
 (confirmed against the real 9/11 fixtures), so a live P2 was silently read
 as parked everywhere: the diff, the change log, the verification screen.
 That's fixed now. But P2's *own* first-shot clock time — the thing
 `shotTimes` needs to fold it into hours-since-shot, the inverted-profile
 check, and everything else gated on that number — isn't printed anywhere
-either, and I don't know Copilot's triggering rule for it (a fixed offset
-from P1's last shot? a clock time the screen just doesn't show? something
-threshold-triggered?). Guessing it would put an invented time into the
-one number the inverted-profile warning depends on, which is exactly
-backwards from what this weekend has been correcting. So: hours-since-shot
-still reflects P1 only, same as it always effectively did — now a flagged
-gap instead of a silent one (`schedSeries` in pure.js). What actually
-decides when P2 starts?
-
-**One remaining assumption, testable only with live account access, not
-guessable further from here:**
-
-- **A device's own `name` is the zone label from the 3.5 paste ("B-1"),
-  not the numeric id printed in front of it in that paste
-  ("#20003605").** That number is what Growlink's device list export
-  shows next to the name, not the GUID `device.id` the API actually
-  needs — there's no way to skip the name match and go straight to an
-  id. Used by 3.2 to turn a zoned table into the device whose log to
-  read. `matchDeviceForZone` fails by name, not silently, if it's wrong;
-  the synthetic A7 fixture (`fixtures/9-11/*_SYNTHETIC.json`, see
-  `WINDOW_REPORT.md`) is built against the documented log shape either
-  way and doesn't depend on this guess.
+either, and Copilot's triggering rule for it was never confirmed.
+**Andy, 9/12: leave it open — every Copilot room converts to Simple Timer
+on 9/16, after which P2 stops existing, so the triggering rule isn't
+worth chasing down for a control type this app will stop seeing in days.**
+Left exactly as it was: hours-since-shot still reflects P1 only, a
+flagged gap in `schedSeries` (pure.js), not resolved and not going to be.
 
 ## Resolved
+
+**3.2 — matching a device to a table (asked 9/12, answered same day).**
+The first pass guessed a device's own `name` was the zone label from the
+3.5 paste ("B-1"), matched by exact string. Andy: match room + table
+number the way the schedule parser does, never exact strings.
+`matchDeviceForTable` now reads a device's name through `schedHeader`
+(pure.js) — the same function that already turns "A1 Table 11+12" into
+`{room, tables}` for a schedule paste, tolerant of the same case and
+spacing variance — and compares the parsed room and table directly, not
+a string. `matchDeviceForZone` is gone, not kept as a fallback.
 
 **Window 3 — the whole Growlink API surface (asked 9/12, answered same day
 with `docs/Growlink_Skill.md`).** Base URL
