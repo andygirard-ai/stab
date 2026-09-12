@@ -653,7 +653,7 @@ function histTs(h){
     dataCounts();
     $('dangerword').value=''; armDanger();
     var gc=growlinkCfg();
-    $('gl_key').value=gc.key||''; $('gl_base').value=gc.baseUrl||'';
+    $('gl_key').value=gc.key||''; $('gl_base').value=gc.baseUrl||GROWLINK_BASE_URL;
     renderGrowlinkStatus();
     $('setsheet').classList.remove('hide');
   }
@@ -2134,6 +2134,11 @@ $('tanksave').onclick=function(){
   lsSet(tanksKey(), JSON.stringify(t));
   toast('tank readings saved');
 };
+/* Batch tank turnover (Weekend Plan 3.3) — reads the last three days'
+   worth of fill from Growlink, next to the tank entry this replaces no
+   part of: EC/pH/ORP are still typed in by hand, this only adds how
+   much each tank actually took on. */
+if($('tankglbtn')) $('tankglbtn').onclick=renderTankFill;
 $('cfgclose').onclick=function(){ $('cfgsheet').classList.add('hide'); };
 $('cfgsave').onclick=function(){
   if(!saveRoomSetup()) return;
@@ -2962,13 +2967,26 @@ function renderZoneCoverage(rm){
   el.textContent=n+' of '+ROOMS[rm].t+' tables have a zone'+(n?'':' — nothing pasted yet');
 }
 /* ---------------- Growlink, read-only (Weekend Plan 3.1) ----------------
-   Nothing here fires a valve — every call is a GET. The key and base URL
-   are typed in on this screen and kept in this device's own storage only,
-   never in source, same rule the original spec put on every other key
-   this app has ever touched. auth header and base URL are unverified
-   against the real API — Bearer plus a JSON body is the ordinary REST
-   default, not a confirmed fact about Growlink's own service; both are
-   one line to correct in growlinkGet once the real shape is known. */
+   Nothing here fires a valve — every call is a GET, or a POST that only
+   ever queries. `PUT .../device/{id}/state` is the one endpoint that
+   commands hardware and it does not appear anywhere in this file.
+
+   Base URL, the auth header, and every endpoint and response shape below
+   are taken verbatim from Growlink's own developer API guide (docs/
+   Growlink_Skill.md, received 9/12) — the earlier Bearer-token guess
+   this window shipped with is gone, not patched. Room naming (Growlink
+   says "A-1" where Stab says "A1"), the CFS room id, the Batch Tank
+   number map, and where activeRun actually lives were all confirmed by
+   Andy the same day and are no longer flagged as guesses anywhere below.
+
+   One thing is still not a fact, because nothing received so far says
+   it either way and there is no way to test it without live account
+   access: whether a device's own `name` is the zone label from the 3.5
+   paste ("B-1") rather than the numeric id printed in front of it. It's
+   the most sensible reading of how the two systems fit together, not a
+   random pick, and it's flagged in a comment right where it's used
+   (`matchDeviceForZone`), not asserted as confirmed. */
+var GROWLINK_BASE_URL='https://api.developer.growlink.com';
 function growlinkCfg(){
   try{ return JSON.parse(localStorage.getItem('stab_growlink')||'{}'); }catch(e){ return {}; }
 }
@@ -2977,33 +2995,71 @@ function growlinkStatus(){
   try{ return JSON.parse(localStorage.getItem('stab_growlink_status')||'null'); }catch(e){ return null; }
 }
 function saveGrowlinkStatus(s){ lsSet('stab_growlink_status', JSON.stringify(s)); }
-function growlinkGet(path, params){
+function growlinkOrgId(){ var s=growlinkStatus(); return (s && s.ok && s.orgId) || null; }
+/* A list endpoint's own wrapper key, or a bare array (guide §2.3: both
+   are valid shapes and which one comes back is not guaranteed). */
+function unwrapList(data, key){
+  if(Array.isArray(data)) return data;
+  return (data && data[key]) || [];
+}
+/* Guide §2.2: keys may arrive PascalCase (Id/Name) or camelCase, and can
+   differ in casing between a discovery response and a live one for the
+   same field. Lower-cases the first letter of every key, recursively, so
+   every reader in this file can assume camelCase without checking twice.
+   Applied once, to every response, rather than at each call site. */
+function normalizeKeys(v){
+  if(Array.isArray(v)) return v.map(normalizeKeys);
+  if(v && typeof v==='object'){
+    var out={};
+    Object.keys(v).forEach(function(k){
+      var nk=k.charAt(0).toLowerCase()+k.slice(1);
+      out[nk]=normalizeKeys(v[k]);
+    });
+    return out;
+  }
+  return v;
+}
+function growlinkRequest(method, path, body){
   if(typeof fetch!=='function') return Promise.reject(new Error('no fetch in this browser'));
   var cfg=growlinkCfg();
   if(!cfg.key) return Promise.reject(new Error('no API key'));
-  if(!cfg.baseUrl) return Promise.reject(new Error('no base URL'));
-  var url=cfg.baseUrl.replace(/\/+$/,'')+path;
+  var base=(cfg.baseUrl||GROWLINK_BASE_URL).replace(/\/+$/,'');
+  /* Uom-* headers (guide §3): the five numeric preferences sent with
+     every call. Stuck at the values Stab already assumes everywhere
+     else — EC for TDS (6), Fahrenheit (1), gallons (42) — rather than
+     exposed as a picker nobody asked for; the guide's own advice not to
+     do unit math client-side means these must travel on every request
+     regardless, not just the ones this window happens to use. */
+  var headers={'Gl-Api-Key':cfg.key, 'Accept':'application/json',
+    'Uom-Temp':'1', 'Uom-Vpd':'8', 'Uom-Tds':'6', 'Uom-Light':'16', 'Uom-Volume':'42'};
+  var opts={method:method||'GET', headers:headers};
+  if(body!=null){ headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+  return fetch(base+path, opts).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+t.slice(0,200)); });
+    /* Every call this file makes is a GET or a query POST — the guide's
+       own warning about write endpoints returning no body (§2.4) does
+       not apply here, since nothing that writes is called from here. */
+    return r.json().then(normalizeKeys);
+  });
+}
+function growlinkGet(path, params){
   var q=Object.keys(params||{}).map(function(k){
     return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
   }).join('&');
-  if(q) url+='?'+q;
-  return fetch(url, {headers:{Authorization:'Bearer '+cfg.key, Accept:'application/json'}})
-    .then(function(r){
-      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+t.slice(0,200)); });
-      return r.json();
-    });
+  return growlinkRequest('GET', path+(q?'?'+q:''));
 }
-/* The connectivity probe. /devices/data/log is the one endpoint the
-   window names with certainty (3.2 needs it anyway); "org resolved" reads
-   whatever the response itself carries as an org/account field, on the
-   assumption a multi-tenant API says which account answered — there is no
-   separate org-lookup endpoint confirmed, so this does not invent one. */
+function growlinkPost(path, body){ return growlinkRequest('POST', path, body||{}); }
+/* The connectivity probe — GET /api/v2/organizations, the guide's own
+   key-validation call (§1): 401 means invalid, a 2xx with an empty list
+   means the key is valid but linked to nothing. The recommended flow
+   (§2.6) defaults to the first organization, so that id is what every
+   other org-scoped call below uses. */
 function testGrowlinkConnection(){
   var cfg=growlinkCfg();
   if(!cfg.key){ renderGrowlinkStatus(); return Promise.resolve(); }
-  return growlinkGet('/devices/data/log',{limit:1}).then(function(data){
-    var org=(data && (data.org || data.orgId || (data.data&&(data.data.org||data.data.orgId)))) || null;
-    saveGrowlinkStatus({ok:true, org:org, at:Date.now()});
+  return growlinkGet('/api/v2/organizations').then(function(data){
+    var orgs=unwrapList(data,'organizations');
+    saveGrowlinkStatus({ok:true, orgs:orgs, orgId:(orgs[0]&&orgs[0].id)||null, at:Date.now()});
     renderGrowlinkStatus();
   }).catch(function(e){
     saveGrowlinkStatus({ok:false, error:String((e&&e.message)||e), at:Date.now()});
@@ -3017,17 +3073,195 @@ function renderGrowlinkStatus(){
   var s=growlinkStatus();
   var h='<div class="sn">key present</div>';
   if(!s) h+='<div class="sn">not tested yet</div>';
-  else if(s.ok) h+='<div class="sn">org '+esc(s.org||'resolved, no org field in the reply')+
-    ' · last call '+new Date(s.at).toLocaleString('en-US')+'</div>';
+  else if(s.ok){
+    if(!s.orgs || !s.orgs.length) h+='<div class="sn">valid key, but no organizations linked</div>';
+    else h+='<div class="sn">org '+esc((s.orgs[0]&&(s.orgs[0].name||s.orgs[0].id))||'')+
+      (s.orgs.length>1?' (+'+(s.orgs.length-1)+' more)':'')+
+      ' · last call '+new Date(s.at).toLocaleString('en-US')+'</div>';
+  }
   else h+='<div class="sn bad">last error: '+esc(s.error)+' · '+new Date(s.at).toLocaleString('en-US')+'</div>';
   el.innerHTML=h;
 }
+/* Room discovery, cached per the guide's own advice (§4: "fetch once per
+   screen and cache — metadata never changes between data polls"). A key
+   only ever sees one organization from this screen, so the cache needs
+   no further keying than that. */
+function growlinkRoomsCache(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_rooms')||'null'); }catch(e){ return null; }
+}
+function growlinkRooms(force){
+  var c=growlinkRoomsCache();
+  if(c && !force) return Promise.resolve(c);
+  var orgId=growlinkOrgId();
+  if(!orgId) return Promise.reject(new Error('not connected'));
+  return growlinkGet('/api/v2/organization/'+encodeURIComponent(orgId)+'/rooms').then(function(data){
+    var rooms=unwrapList(data,'rooms');
+    lsSet('stab_growlink_rooms', JSON.stringify(rooms));
+    return rooms;
+  });
+}
+/* Growlink names a room "A-1", "B-5" — a hyphen between the wing letter
+   and the table-count number — where Stab keys the same room "A1", "B5"
+   (confirmed by Andy 9/12, not a guess any more). The org also carries
+   legacy rooms with names like "A2 substrate" and "A7, Veg B, C, Dry A,
+   B, and Cure C" that must never match a real room by accident — exact
+   equality against the hyphenated form is what keeps them out, since
+   neither legacy name equals "A-2" or "A-7" outright. */
+function growlinkApiRoomName(rm){
+  var m=/^([A-Za-z]+)(\d+)$/.exec(String(rm||''));
+  return m ? m[1]+'-'+m[2] : String(rm||'');
+}
+function growlinkRoomFor(rooms, rm){
+  var want=growlinkApiRoomName(rm).toLowerCase();
+  for(var i=0;i<rooms.length;i++)
+    if(String((rooms[i]||{}).name||'').toLowerCase()===want) return rooms[i];
+  return null;
+}
+function growlinkRoomIdFor(rooms, rm){
+  var room=growlinkRoomFor(rooms, rm);
+  return room ? room.id : null;
+}
+/* Batch tank turnover (Weekend Plan 3.3). Batch Tank sensors live in the
+   org's CFS room — id confirmed by Andy 9/12, not discovered by a
+   RoomType guess (an earlier pass here walked every Fertigation-type
+   room looking for the sensor; that guesswork is gone, not layered
+   under this). The name match excludes the fill valve, which shares the
+   same "Batch Tank #n" prefix as the level sensor in the org's own
+   naming (confirmed against growlink_room_export.csv, 9/12). */
+var GROWLINK_CFS_ROOM_ID='1101903f-b6d5-43e7-b0e7-2617a6bd9d61';
+function findTankSensor(sensors, num){
+  var re=new RegExp('^batch tank #'+num+'(\\s|\\(|$)','i');
+  for(var i=0;i<sensors.length;i++){
+    var n=String((sensors[i]||{}).name||'');
+    if(re.test(n) && n.toLowerCase().indexOf('fill valve')<0) return sensors[i];
+  }
+  return null;
+}
+function growlinkTankSensor(letter){
+  var num=BATCH_TANK_NUM[letter];
+  if(!num) return Promise.reject(new Error('no Batch Tank number known for '+letter));
+  return growlinkGet('/api/v2/room/'+encodeURIComponent(GROWLINK_CFS_ROOM_ID)+'/sensors').then(function(data){
+    var s=findTankSensor(unwrapList(data,'sensors'), num);
+    if(!s) return Promise.reject(new Error('Batch Tank #'+num+' sensor not found in the CFS room'));
+    return s;
+  });
+}
+function fetchTankFill(letter){
+  var orgId=growlinkOrgId();
+  if(!orgId) return Promise.reject(new Error('not connected'));
+  return growlinkTankSensor(letter).then(function(sensor){
+    var end=new Date(), start=new Date(end.getTime()-3*86400000);
+    return growlinkPost('/api/v2/organization/'+encodeURIComponent(orgId)+'/sensors/data/chart',
+      {sensorIds:[sensor.id], start:start.toISOString(), end:end.toISOString(), includeDayNight:false});
+  }).then(function(data){
+    var series=(data && data.series) || [];
+    var pts=[];
+    if(series[0] && series[0].data) series[0].data.forEach(function(p){
+      if(p && p.y!=null) pts.push({at:new Date(p.x), level:+p.y});
+    });
+    return tankFillByDay(pts);
+  });
+}
+function renderTankFill(){
+  var el=$('tankglstatus'); if(!el) return;
+  if(!growlinkCfg().key){ el.innerHTML=''; return; }
+  if(!growlinkOrgId()){ el.innerHTML='<div class="sn">connect Growlink in Settings first</div>'; return; }
+  el.innerHTML='<div class="sn">reading…</div>';
+  Promise.all(TANK_IDS.map(function(id){
+    return fetchTankFill(id).then(function(byDay){ return {id:id, byDay:byDay, err:null}; })
+      .catch(function(e){ return {id:id, byDay:null, err:String((e&&e.message)||e)}; });
+  })).then(function(results){
+    el.innerHTML=results.map(function(r){
+      if(r.err) return '<div class="sn bad">'+esc(r.id)+': '+esc(r.err)+'</div>';
+      var days=Object.keys(r.byDay).sort(function(a,b){ return new Date(a)-new Date(b); });
+      var line=days.map(function(d){ return d.slice(0,5)+' '+r.byDay[d].toFixed(1); }).join(' · ');
+      return '<div class="sn">'+esc(r.id)+': '+(line||'no data')+'</div>';
+    }).join('');
+  });
+}
+/* Device discovery per room, cached the same way rooms are (Weekend
+   Plan 3.2). */
+function growlinkDevicesCache(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_devices')||'{}'); }catch(e){ return {}; }
+}
+function growlinkDevices(rm, force){
+  var c=growlinkDevicesCache();
+  if(c[rm] && !force) return Promise.resolve(c[rm]);
+  return growlinkRooms().then(function(rooms){
+    var roomId=growlinkRoomIdFor(rooms, rm);
+    if(!roomId) return Promise.reject(new Error('no Growlink room named '+growlinkApiRoomName(rm)));
+    return growlinkGet('/api/v2/room/'+encodeURIComponent(roomId)+'/devices').then(function(data){
+      var devices=unwrapList(data,'devices');
+      c[rm]=devices; lsSet('stab_growlink_devices', JSON.stringify(c));
+      return devices;
+    });
+  });
+}
+/* Flagged assumption (see the block comment above growlinkCfg): a
+   device's own `name` is the zone label from the 3.5 paste ("B-1"), not
+   the numeric id printed in front of it in that paste ("#20003605") —
+   that number is what Growlink's own device list export shows next to
+   the name, not the GUID this API's device.id actually is, so there is
+   no way to skip this name match and go straight to an id. */
+function matchDeviceForZone(devices, zoneLabel){
+  var z=String(zoneLabel||'').toLowerCase();
+  for(var i=0;i<devices.length;i++)
+    if(String((devices[i]||{}).name||'').toLowerCase()===z) return devices[i];
+  return null;
+}
+/* Did last night fire (Weekend Plan 3.2). Ties each zoned table (3.5) to
+   its Growlink device, pulls the last 24h of that device's runs, and
+   hands the comparison to nightFireLine (pure.js) against this app's own
+   schedule for the same table. A table with no zone saved, or whose zone
+   doesn't match any device in the room, is skipped rather than guessed
+   at — reported by its absence from the result, not a fabricated line.
+
+   Known limit, confirmed by the guide (§7.3) and by the real A7 T3
+   finding from 9/11: a device still running when the window ends has no
+   period reported for that run at all — not a short one, none — until
+   it closes. Widening how far back this looks doesn't fix that; only
+   cross-checking live device state (§6.2, not built here) would. So a
+   table absent from the result here can mean either no zone/device
+   match or a run still open at query time — nightFireLine can't tell
+   the two apart from the log alone, and neither can this. */
+function fetchNightFire(rm){
+  var orgId=growlinkOrgId();
+  if(!orgId) return Promise.reject(new Error('not connected'));
+  if(!ROOMS[rm]) return Promise.reject(new Error('unknown room '+rm));
+  return growlinkDevices(rm).then(function(devices){
+    var tables=[], deviceIds=[], byTableId={};
+    for(var t=1;t<=ROOMS[rm].t;t++){
+      var zone=zoneFor(rm,t);
+      if(!zone) continue;
+      var dev=matchDeviceForZone(devices, zone.zone);
+      if(!dev) continue;
+      tables.push(t); byTableId[t]=dev.id; deviceIds.push(dev.id);
+    }
+    if(!deviceIds.length) return Promise.reject(new Error('no zoned table in '+rm+' matched a Growlink device'));
+    var end=new Date(), start=new Date(end.getTime()-24*3600000);
+    return growlinkPost('/api/v2/organization/'+encodeURIComponent(orgId)+'/devices/data/log',
+      {deviceIds:deviceIds, start:start.toISOString(), end:end.toISOString()})
+    .then(function(data){
+      var byDevId={};
+      unwrapList(data,'devices').forEach(function(d){ byDevId[d.id]=d.logs||[]; });
+      var out={};
+      tables.forEach(function(t){
+        var expected=shotTimes(rm,t,end).filter(function(d){ return d>=start && d<=end; });
+        out[t]=nightFireLine(expected, byDevId[byTableId[t]]||[]);
+      });
+      return out;
+    });
+  });
+}
 /* activeRun, per room (Weekend Plan 3.4) — currentDayNo, totalNoOfDays,
-   currentGrowthStage, the field names off the discovery page. Never a
-   photoperiod for A3-A7: stripped right here, the one place an activeRun
-   response enters storage, so no downstream reader — this version or a
-   later one — can pick a bad photoperiod up by accident. Endpoint path
-   is unverified against the real API; see QUESTIONS.md. */
+   currentGrowthStage (1 Veg, 2 Early, 3 Mid, 4 Late). Confirmed by Andy
+   9/12: `activeRun` is a field on the room object from the rooms
+   listing itself (GET .../organization/{orgId}/rooms), not a separate
+   endpoint — the first guess at `/room/{id}/activeRun` is gone, not
+   kept as a fallback alongside this. Never a photoperiod for any room:
+   the confirmed shape carries no such field, and saveActiveRun only
+   ever copies the three named keys, so nothing else on the room object
+   can smuggle one in regardless. */
 function getActiveRuns(){
   try{ return JSON.parse(localStorage.getItem('stab_activeruns')||'{}'); }catch(e){ return {}; }
 }
@@ -3038,8 +3272,11 @@ function saveActiveRun(rm, data){
   lsSet('stab_activeruns', JSON.stringify(a));
 }
 function fetchActiveRun(rm){
-  return growlinkGet('/room/'+encodeURIComponent(rm)+'/activeRun').then(function(data){
-    saveActiveRun(rm, data);
+  return growlinkRooms().then(function(rooms){
+    var room=growlinkRoomFor(rooms, rm);
+    if(!room) return Promise.reject(new Error('no Growlink room named '+growlinkApiRoomName(rm)));
+    if(!room.activeRun) return Promise.reject(new Error('no active run on file for '+growlinkApiRoomName(rm)));
+    saveActiveRun(rm, room.activeRun);
     return getActiveRuns()[rm];
   });
 }
@@ -3084,6 +3321,18 @@ function mmss(sec){
   var m=Math.floor(sec/60), s=Math.round(sec%60);
   return m+':'+(s<10?'0':'')+s;
 }
+/* H:MM, for an interval — the diff and the verification screen both
+   used to show this as a rounded decimal hour ("1.3h"), which reads as
+   a small numeric tweak and hides what actually changed: a real fixture
+   from 9/11 moved A2's interval 2:00 → 1:15, and 1.25h rounds to "1.3h"
+   under toFixed(1) either way, indistinguishable from an interval that
+   really was 1h18m. mmss already sets the convention for a duration;
+   this is the same convention for the coarser unit. */
+function hmm(sec){
+  if(sec==null) return '—';
+  var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60);
+  return h+':'+(m<10?'0':'')+m;
+}
 /* Every field difference on one table between two schedule imports —
    Weekend Plan 2.1. The old version stopped at the first field that
    differed, so a paste that moved both the start time and the shot count
@@ -3105,7 +3354,7 @@ function schedTableDiffParts(rm, o, t){
      (a.frequency!=null && b.frequency!=null && a.frequency!==b.frequency))
     parts.push(mmss(a.duration)+'×'+(a.frequency||'—')+' → '+mmss(b.duration)+'×'+(b.frequency||'—'));
   if(a.interval!=null && b.interval!=null && a.interval!==b.interval)
-    parts.push((a.interval/3600).toFixed(1)+'h → '+(b.interval/3600).toFixed(1)+'h');
+    parts.push(hmm(a.interval)+' → '+hmm(b.interval));
   var oP2=!!o.P2, nP2=!!t.P2;
   if(oP2 && !nP2) parts.push('P2 parked');
   else if(!oP2 && nP2) parts.push('P2 added');
@@ -3309,11 +3558,11 @@ function drawSchedParse(){
     h+='<tr'+(bad?' class="bad"':'')+'><td>'+t.table+(t.shared?'<span class="sh">+</span>':'')+'</td>'+
        '<td>'+(p.start?fmt12(+p.start.split(':')[0],p.start.split(':')[1]):'—')+'</td>'+
        '<td>'+schedFmt(p.duration)+'</td>'+
-       '<td>'+(p.interval?(p.interval/3600).toFixed(1)+'h':'—')+'</td>'+
+       '<td>'+hmm(p.interval)+'</td>'+
        '<td>'+(p.frequency||'—')+'</td>'+
        '<td>'+schedFmt(t.runtimeSec)+(bad?' ⚠':'')+'</td></tr>';
     if(t.P2) h+='<tr class="p2"><td>P2</td><td>'+(t.P2.start||'—')+'</td><td>'+schedFmt(t.P2.duration)+
-       '</td><td>'+(t.P2.interval?(t.P2.interval/3600).toFixed(1)+'h':'—')+'</td><td>'+(t.P2.frequency||'—')+'</td><td></td></tr>';
+       '</td><td>'+hmm(t.P2.interval)+'</td><td>'+(t.P2.frequency||'—')+'</td><td></td></tr>';
   });
   h+='</table>';
   var nOff=r.tables.filter(function(t){ return t.inactive; }).length;
@@ -3505,6 +3754,17 @@ $('zoneread').onclick=function(){
     r.entries.map(function(e){ return e.table; }).sort(function(a,b){return a-b;}).join(', T')+'</div>'+
     (r.warnings.length?'<div class="sn bad">'+r.warnings.map(esc).join('<br>')+'</div>':'');
   $('zonepaste').value='';
+};
+if($('nightfirebtn')) $('nightfirebtn').onclick=function(){
+  if(!S.room) return;
+  var el=$('nightfirebody'); if(!el) return;
+  el.innerHTML='<div class="sn">checking…</div>';
+  fetchNightFire(S.room).then(function(results){
+    var tbls=Object.keys(results).map(Number).sort(function(a,b){ return a-b; });
+    el.innerHTML=tbls.map(function(t){ return '<div class="sn">T'+t+': '+esc(results[t].line)+'</div>'; }).join('');
+  }).catch(function(e){
+    el.innerHTML='<div class="sn bad">'+esc(String((e&&e.message)||e))+'</div>';
+  });
 };
 function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 /* The floor is one number and everything downstream reads it: the feel

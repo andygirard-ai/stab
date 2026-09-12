@@ -184,41 +184,135 @@ Setup gets a paste box and a coverage line ("N of T tables have a
 zone"). A paste naming a different room than the one open is named and
 rejected, the same shape check schedule pastes already do.
 
-## Built, not wired
-
-**3.3 Batch tank turnover — pure half only.** `tankFillByDay(points)`
-sums positive deltas over 0.3 per day from an `{at, level}` series;
-verified against a synthetic fixture reproducing the 9/9–9/11
-fill/flush-day/fill pattern from the accept criterion. Not connected to
-a real fetch or to the 1.5 tank-entry UI, because the plan's Batch Tank
-#1/#2/#3/#5 never says which number is A, which is B, which is C, and
-which is Veg — guessing that mapping risks silently crediting the wrong
-room's water to the wrong tank, which is worse than not showing it.
-Asked in `QUESTIONS.md`.
-
-## Not started
-
-**3.2 Did last night fire.** Needs `/devices/data/log`'s actual response
-shape — specifically how a manually-triggered flush is distinguished
-from a scheduled P1/P2 shot — to build the A7 T3 9/11 fixture (pre-flush
-runoff present, two 28-minute flushes producing nothing) honestly rather
-than against an invented envelope. Asked in `QUESTIONS.md` alongside the
-rest of the open API specifics; scoped for a future window to
-scheduled-shot comparison only, with manual-task matching flagged as a
-separate gap once the shape is known.
-
-## What's on branch (Window 3)
+## What's on branch (Window 3, first pass)
 
 One commit beyond Window 2: `8a6c64c` (v58). Merged to `main` same day.
 
-## Blocked
+## Blocked (as of v58)
 
 3.2 in full, and 3.3's live wiring, on the Growlink API specifics listed
 in `QUESTIONS.md` (base URL, auth header format, two response shapes,
 the `activeRun` endpoint path, and the tank-number-to-letter map).
 Nothing else.
 
+---
+
+# Window 3 correction — Growlink API, against the real guide
+
+Andy sent `docs/Growlink_Skill.md` (Growlink's own developer API
+reference) and `growlink_room_export.csv` the same day. Every item v58
+had built against a guess or left unwired is now built against a
+confirmed fact instead; 2.2's reconciliation, run against real fixtures
+for the first time, caught two real bugs no synthetic fixture ever had
+a chance to. Suite: **996 → 1049 passing, all green.** Branch
+`claude/new-session-ri155r`, v59.
+
+## Corrected
+
+**3.1 — base URL, auth header, response shapes.** `https://api.developer.growlink.com`,
+`Gl-Api-Key` (not `Bearer`), five `Uom-*` headers on every call,
+`/api/v2/organizations` as the key-validation call. `normalizeKeys()`
+now runs on every response — the guide's own §2.2 says keys can arrive
+PascalCase or camelCase and differ in casing between a discovery
+response and a live one for the same field.
+
+**3.3 — wired end to end.** Batch Tank sensors are read from the CFS
+room directly (`1101903f-b6d5-43e7-b0e7-2617a6bd9d61`, confirmed by
+Andy), not discovered by the RoomType-search guesswork v58 shipped with.
+The #1/#2/#3/#5(veg) → A/B/C/Veg map, already confirmed empirically
+against `growlink_room_export.csv` in v58, is now also confirmed
+directly by Andy — the reconstruction stands as the record of *how* it
+was confirmed, not just that it was. The day screen's **Read Growlink
+fill** button reads all four tanks' three-day fill and shows it next to
+the 1.5 tank-entry fields, read-only.
+
+**3.4 — activeRun relocated, not re-guessed.** `currentDayNo`,
+`totalNoOfDays`, `currentGrowthStage` turned out to be a field on the
+room object from the rooms listing itself, not a separate endpoint —
+`fetchActiveRun` reads it off `growlinkRooms()` now. A room present in
+the listing with no `activeRun` on it, or absent from the listing
+outright, fails by name rather than a silent zero.
+
+**Room naming.** Growlink names a room `"A-1"` where Stab says `"A1"` —
+`growlinkApiRoomName` transforms before every room lookup (3.2's device
+discovery, 3.4's activeRun), matched by exact equality specifically
+because the org also carries legacy rooms (`"A2 substrate"`, `"A7, Veg
+B, C, Dry A, B, and Cure C"`) that must never match by accident.
+
+## Shipped
+
+**3.2 Did last night fire.** `fetchNightFire(rm)` ties each zoned table
+(3.5) to its Growlink device by name, pulls the last 24h of that
+device's log, and hands the comparison to `nightFireLine` (pure.js)
+against this app's own schedule for the same table — only scheduled
+periods count toward fired/missed, a manual run is reported alongside,
+never folded into either. Reachable from Room Setup, next to the zone
+paste. Verified against a **SYNTHETIC** fixture
+(`fixtures/9-11/A7_devices_data_log_SYNTHETIC.json` — the real API key
+lives on the phone, not the repo) reproducing the actual 9/11 A7 T3
+finding per Andy's note: a run still open at window end is never
+reported, so the device's *absence* from the response is the finding,
+not a parsing gap. Andy will drop the real Monday log in over the same
+filename to replace it.
+*Scope note, still open:* whether a device's own `name` is the zone
+label from the 3.5 paste (`"B-1"`) rather than the numeric id printed in
+front of it — the one thing neither the guide nor Andy's message
+confirms, and there's no way to test it without live account access.
+`matchDeviceForZone` fails by name, not silently, if it's wrong. Asked
+in `QUESTIONS.md`.
+
+## Found by 2.2's reconciliation
+
+The plan's own 2.2 fixture request — real before/after schedule pastes
+for A2, A3, C2, C3, with a README carrying the expected diff table so
+this could assert on numbers rather than eyeball — arrived alongside the
+Growlink guide. Run against it, `schedDiff`/`schedTableDiffParts`
+reconciled every group the README names, mL figures within the expected
+under-1% of the README's own rounded dripper-rate approximation (63,
+95 mL/min vs. this app's calibrated 31.54 mL/min/dripper — the more
+precise of the two, not a second disagreement). Getting there surfaced
+two real bugs:
+
+**Interval diff readability.** `2:00 → 1:15` rendered as `2.0h → 1.3h`
+— a rounded decimal that reads as a small numeric tweak and hides what
+actually changed. Fixed with a new `hmm()` formatter (H:MM, the same
+convention `mmss` already sets for durations), applied to the diff line
+and the verification screen's two interval columns.
+
+**A live P2 has read as parked on every real schedule this app has ever
+parsed.** `schedPhaseOn` required a P2 start time; Growlink's own
+Copilot screens never print one for P2 — confirmed against the real A3
+9/11 fixture, where P2's own timers section has Duration, Interval and
+Frequency but no Start Time field at all, unlike P1, which always has
+one. That silently nulled every active P2: invisible to the diff, the
+change log, and the verification screen, the whole time. Caught only
+because a real fixture replaced the synthetic one that had invented a
+start time for P2 (`'02:26'`, misreading the duration `2:26` as a clock
+time) to make the old, wrong check pass.
+Fixed by dropping the start requirement from `schedPhaseOn`.
+`schedSeries` still excludes a startless phase from the shot-time series
+it feeds `hoursSinceShot`, deliberately: P2's real trigger rule — a
+fixed offset from P1, a clock time Growlink just doesn't print here,
+something else — isn't confirmed by anything received so far, and
+guessing one would put an invented time into the one number the
+inverted-profile warning is gated on. Hours-since-shot still reflects
+P1 only, same as it always effectively did before this fix — now a
+flagged gap in `QUESTIONS.md` instead of a silent one.
+
+## What's on branch (Window 3 correction)
+
+One commit beyond the first Window 3 pass: v59. `docs/Growlink_Skill.md`
+and `fixtures/9-11/` (nine real schedule screens, a README, and the
+SYNTHETIC A7 device-log fixture) are new on branch. Merges to `main`
+alongside Window 4, per Andy's instruction this round.
+
+## Blocked
+
+Nothing. The one open item (device-name-to-zone-label matching) is
+flagged, not blocking — 3.2 fails honestly by name if it's wrong, and
+doesn't stop anything else from shipping.
+
 ## Not started
 
 Window 4 (Evan's runoff entry mode, demand computation, stale-median
-greying).
+greying) — up next, same session.

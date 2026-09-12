@@ -1,0 +1,253 @@
+C3 table 1	C3 table 1 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 2	C3 table 2 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 3	C3 table 3 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 4	C3 table 4 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 5	C3 table 5 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 6	C3 table 6 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 7	C3 table 7 Moisture	
+Simple Timer
+
+14m 0s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+7
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 8	C3 table 8 Moisture	
+Simple Timer
+
+14m 0s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+7
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 9	C3 table 9 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 10	C3 table 10 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C3 table 11	C3 table 11 Moisture	
+Simple Timer
+
+10m 30s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+5
+Mins
+15
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+

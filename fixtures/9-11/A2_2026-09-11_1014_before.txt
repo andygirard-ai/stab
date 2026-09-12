@@ -1,0 +1,473 @@
+A2 Table 1	A2 1 Back Moisture	
+
+Copilot
+
+34m 18s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+17
+Mins
+9
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 2	A2 2 Back Moisture	
+
+Copilot
+
+34m 18s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+17
+Mins
+9
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 3	A2 3 Back Moisture	
+
+Copilot
+
+1h 12m 0s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+36
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 4	A2 4 Back Moisture	
+
+Copilot
+
+1h 12m 0s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+36
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 5	A2 5 Back Moisture	
+
+Copilot
+
+1h 8m 34s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+34
+Mins
+17
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 6	A2 6 Back Moisture	
+
+Copilot
+
+1h 8m 34s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+34
+Mins
+17
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 7	A2 7 Back Moisture	
+
+Copilot
+
+1h 8m 34s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+34
+Mins
+17
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 8	A2 8 Back Moisture	
+
+Copilot
+
+1h 8m 34s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+34
+Mins
+17
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 9	A2 9 Back Moisture	
+
+Copilot
+
+1h 8m 34s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+34
+Mins
+17
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 10	A2 10 Back Moisture	
+
+Copilot
+
+1h 12m 0s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+36
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration
+A2 Table 11+12	A2 11 Back Moisture	
+
+Copilot
+
+1h 12m 0s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+36
+Mins
+0
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+25
+Mins
+0
+Secs
+Duration

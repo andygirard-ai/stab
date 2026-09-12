@@ -2561,9 +2561,24 @@ function rowsFor(w,room,spec){
     ok(errors.length===0,'no runtime errors (3.5 room setup): '+errors.join('|'));
     w.close(); }
 
+  // Growlink names a room "A-1" where Stab says "A1" (confirmed by Andy
+  // 9/12) — and the org carries legacy rooms ("A2 substrate", "A7, Veg
+  // B, C, Dry A, B, and Cure C") that must never match by accident.
+  { const {w}=boot(null);
+    ok(w.growlinkApiRoomName('A1')==='A-1' && w.growlinkApiRoomName('B12')==='B-12',
+       'the wing letter and table-count number get a hyphen: '+w.growlinkApiRoomName('A1'));
+    const rooms=[{id:'legacy1',name:'A2 substrate'},{id:'legacy2',name:'A7, Veg B, C, Dry A, B, and Cure C'},
+                 {id:'real-a2',name:'A-2'}];
+    ok(w.growlinkRoomIdFor(rooms,'A2')==='real-a2','the real room is matched, not either legacy one');
+    ok(w.growlinkRoomIdFor(rooms,'A7')===null,'a legacy-only name for A7 is not a match at all — no room, not a wrong one');
+    w.close(); }
+
   // ============ Weekend Plan 3.1 — Growlink connection status ============
   // Read-only: every call in this window is a GET, and nothing here is the
-  // one PUT that fires a valve. Missing key -> one line, nothing else runs.
+  // one PUT that fires a valve. Base URL, header name and the validation
+  // endpoint (/api/v2/organizations) are Growlink's own developer API
+  // guide (received 9/12), not the Bearer-token guess this shipped with
+  // first. Missing key -> one line, nothing else runs.
   { const {w,d,errors}=bootWithFetch(null, ()=>Promise.reject(new Error('should not be called')));
     await sleep(50);
     d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
@@ -2574,37 +2589,51 @@ function rowsFor(w,room,spec){
     ok(errors.length===0,'tapping test with no key does not call fetch at all: '+errors.join('|'));
     w.close(); }
 
-  // a key with no base URL, or a base URL with no key, is still "no key"
-  // as far as the status line is concerned — both are required to run
-  { const {w,d,errors}=bootWithFetch(null, ()=>Promise.reject(new Error('should not be called')));
+  // a key alone is enough to test — the base URL has a working default
+  // (the settings screen pre-fills it, but the request itself never
+  // needs the field touched)
+  { let called=null;
+    const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
+      called={url,opts};
+      return Promise.resolve({ok:true, json:()=>Promise.resolve({organizations:[]})});
+    });
     await sleep(50);
     d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    ok(d.getElementById('gl_base').value==='https://api.developer.growlink.com',
+       'the base URL field pre-fills with the real default: '+d.getElementById('gl_base').value);
     d.getElementById('gl_key').value='abc123';
     d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
     ok(/key present/.test(d.getElementById('growlinkstatus').textContent) &&
        /not tested yet/.test(d.getElementById('growlinkstatus').textContent),
        'a key with nothing tried yet: '+d.getElementById('growlinkstatus').textContent);
-    d.getElementById('gl_test').click(); await sleep(20);
-    ok(errors.length===0,'and testing without a base URL fails inside growlinkGet, not by calling fetch: '+errors.join('|'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    ok(!!called && called.url==='https://api.developer.growlink.com/api/v2/organizations',
+       'a key alone reaches the real validation endpoint with no base URL typed: '+(called&&called.url));
+    ok(/no organizations linked/.test(d.getElementById('growlinkstatus').textContent),
+       'a valid key with an empty org list says so, not "org undefined": '+d.getElementById('growlinkstatus').textContent);
+    ok(errors.length===0,'no runtime errors (3.1 default base URL): '+errors.join('|'));
     w.close(); }
 
-  // a successful test resolves the org from the reply and stamps the time
+  // a successful test resolves the first organization and stamps the time
   { let called=null;
     const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
       called={url,opts};
-      return Promise.resolve({ok:true, json:()=>Promise.resolve({data:[],org:'Acme Farms'})});
+      return Promise.resolve({ok:true, json:()=>Promise.resolve(
+        {organizations:[{id:'org1',name:'Acme Farms'},{id:'org2',name:'Second Org'}]})});
     });
     await sleep(50);
     d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
     d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
-    d.getElementById('gl_base').value='https://api.growlink.com';
-    d.getElementById('gl_base').dispatchEvent(new w.Event('change'));
     d.getElementById('gl_test').click(); await sleep(30);
-    ok(!!called && /\/devices\/data\/log/.test(called.url),'the probe call hits the one endpoint this window names for certain: '+called.url);
-    ok(called.opts.headers.Authorization==='Bearer abc123','the key travels as a bearer token');
+    ok(!!called && called.url==='https://api.developer.growlink.com/api/v2/organizations',
+       'the probe call hits the guide\'s own key-validation endpoint: '+(called&&called.url));
+    ok(called.opts.headers['Gl-Api-Key']==='abc123','the key travels as Gl-Api-Key, not a bearer token');
+    ok(called.opts.headers['Uom-Tds']==='6','the Uom-* preference headers ride along on every call');
     ok(/org Acme Farms/.test(d.getElementById('growlinkstatus').textContent),
-       'and the reply\'s own org field shows up: '+d.getElementById('growlinkstatus').textContent);
+       'the first organization is the one shown: '+d.getElementById('growlinkstatus').textContent);
+    ok(/\+1 more/.test(d.getElementById('growlinkstatus').textContent),'a second org is named as more, not silently dropped');
     ok(/last call/.test(d.getElementById('growlinkstatus').textContent),'with a timestamp');
+    ok(w.growlinkOrgId&&w.growlinkOrgId()==='org1','the first org\'s id is what later org-scoped calls will use');
     ok(errors.length===0,'no runtime errors (3.1 success): '+errors.join('|'));
     w.close(); }
 
@@ -2613,8 +2642,6 @@ function rowsFor(w,room,spec){
     await sleep(50);
     d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
     d.getElementById('gl_key').value='wrong'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
-    d.getElementById('gl_base').value='https://api.growlink.com';
-    d.getElementById('gl_base').dispatchEvent(new w.Event('change'));
     d.getElementById('gl_test').click(); await sleep(30);
     ok(/last error/.test(d.getElementById('growlinkstatus').textContent) && /401/.test(d.getElementById('growlinkstatus').textContent),
        'a rejected key says so, with the status: '+d.getElementById('growlinkstatus').textContent);
@@ -2631,6 +2658,35 @@ function rowsFor(w,room,spec){
        'photoperiod is stripped on the way into storage, not read from later — never trusted, for any room');
     ok(w.dofNow('BENCH')==='','a room with neither an activeRun nor a flower start still reads unknown');
     ok(errors.length===0,'no runtime errors (3.4 activeRun): '+errors.join('|'));
+    w.close(); }
+
+  // 3.4 wired end to end: activeRun comes off the room object in the
+  // rooms listing, confirmed 9/12 — there is no separate endpoint any
+  // more. A room absent from the response, or present with no activeRun
+  // on it, fails by name rather than by a silent zero.
+  { const orgId='org1';
+    const rooms=[
+      {id:'r-c3', name:'C-3', activeRun:{CurrentDayNo:14, TotalNoOfDays:63, CurrentGrowthStage:3}},
+      {id:'r-a3', name:'A-3'}];   // A3 carries no activeRun at all — an idle/unassigned room
+    const {w,d,errors}=bootWithFetch(null, (url) => {
+      if(/organizations$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({organizations:[{id:orgId,name:'Acme Farms'}]})});
+      if(/\/rooms$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({rooms})});
+      return Promise.reject(new Error('unexpected call: '+url));
+    });
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    let ok1=null, err1=null;
+    await w.fetchActiveRun('C3').then(r=>ok1=r).catch(e=>err1=e);
+    ok(ok1 && ok1.currentDayNo===14,'PascalCase CurrentDayNo normalizes and lands in storage: '+JSON.stringify(ok1));
+    let err2=null;
+    await w.fetchActiveRun('A3').catch(e=>err2=e);
+    ok(err2 && /no active run/.test(err2.message),'a room with no activeRun on it fails by name, not a silent zero: '+(err2&&err2.message));
+    let err3=null;
+    await w.fetchActiveRun('A4').catch(e=>err3=e);
+    ok(err3 && /no Growlink room named A-4/.test(err3.message),'a room missing from the listing fails with its own translated name: '+(err3&&err3.message));
+    ok(errors.length===0,'no runtime errors (3.4 wired): '+errors.join('|'));
     w.close(); }
 
   // ============ Weekend Plan 3.3 — batch tank turnover ============
@@ -2652,6 +2708,231 @@ function rowsFor(w,room,spec){
     ok(byDay['9/10/2026']===0,'9/10, the flush day, reads 0 — present in the data, not missing: '+byDay['9/10/2026']);
     ok(Math.round(byDay['9/11/2026'])===31,'9/11 fill: '+byDay['9/11/2026']);
     ok(Object.keys(byDay).length===3,'three days, none dropped for having nothing to report');
+    w.close(); }
+
+  // the Batch Tank # -> letter mapping, confirmed against real fill data,
+  // not asserted from thin air
+  { const {w}=boot(null);
+    ok(w.BATCH_TANK_NUM.A===1 && w.BATCH_TANK_NUM.B===2 && w.BATCH_TANK_NUM.C===3 && w.BATCH_TANK_NUM.Veg===5,
+       'A/B/C/Veg map to Batch Tank #1/#2/#3/#5: '+JSON.stringify(w.BATCH_TANK_NUM));
+    w.close(); }
+
+  // 3.3 wired end to end: connect, read the CFS room's sensors by the
+  // known id (no room-listing search any more — Andy named the room
+  // directly), find each tank's sensor by name (skipping the fill
+  // valve, which shares the same prefix), pull its chart, and render
+  // the fill line — all off a scripted fetch standing in for the real API
+  { const orgId='org1';
+    const cfsId='1101903f-b6d5-43e7-b0e7-2617a6bd9d61';
+    const sensors=[
+      {Id:'s-fill1',Name:'Batch Tank #1 - Fill Valve'}, {id:'s-1',name:'Batch Tank #1'},
+      {id:'s-2',name:'Batch Tank #2'}, {id:'s-3',name:'Batch Tank #3'},
+      {id:'s-5',name:'Batch Tank #5 (veg)'}];
+    const calls=[];
+    const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
+      calls.push(url);
+      if(/organizations$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({organizations:[{id:orgId,name:'Acme Farms'}]})});
+      if(new RegExp('/room/'+cfsId+'/sensors$').test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({sensors})});
+      if(/\/sensors\/data\/chart$/.test(url)){
+        const body=JSON.parse(opts.body);
+        const num=/#(\d)/.exec(sensors.find(s=>s.id===body.sensorIds[0]).name)[1];
+        return Promise.resolve({ok:true, json:()=>Promise.resolve({series:[{name:'x',data:[
+          {x:'2026-09-09T00:00:00Z',y:50}, {x:'2026-09-11T06:00:00Z',y:50+ (+num)}]}]})});
+      }
+      return Promise.reject(new Error('unexpected call: '+url));
+    });
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    d.getElementById('setclose').click();
+    d.getElementById('weekly').click();
+    await sleep(20);
+    d.getElementById('tankglbtn').click();
+    await sleep(80);
+    const status=d.getElementById('tankglstatus').textContent;
+    ok(/A:/.test(status) && /B:/.test(status) && /C:/.test(status) && /Veg:/.test(status),
+       'all four tanks report, by letter: '+status);
+    ok(calls.every(u=>!/\/rooms$/.test(u)),'no room-listing search any more — the CFS room id is used directly: '+calls.join(', '));
+    ok(calls.filter(u=>u.indexOf(cfsId)>=0).length>=1,'the sensors call hits the known CFS room id');
+    ok(errors.length===0,'no runtime errors (3.3 wired): '+errors.join('|'));
+    w.close(); }
+
+  // the fill-valve sensor is named with a PascalCase Id/Name in this
+  // fixture on purpose — normalizeKeys has to lower-case it before
+  // findTankSensor's own name match ever sees it, or the exclusion
+  // silently stops working
+  { const {w}=boot(null);
+    const normalized=w.normalizeKeys({Id:'x', Name:'Batch Tank #1 - Fill Valve'});
+    ok(normalized.id==='x' && normalized.name==='Batch Tank #1 - Fill Valve',
+       'PascalCase keys normalize to camelCase: '+JSON.stringify(normalized));
+    ok(w.findTankSensor([{Id:'s1',Name:'Batch Tank #2'}].map(w.normalizeKeys),2).id==='s1',
+       'and a normalized sensor is still found by findTankSensor');
+    w.close(); }
+
+  // ============ Weekend Plan 3.2 — did last night fire ============
+  // nightFireLine (pure.js): only scheduled periods count toward fired/
+  // missed; a manual run sitting next to them is reported, not counted
+  // against the schedule either way.
+  { const {w}=boot(null);
+    const t=(h,m)=>new Date(2026,8,12,h,m).toISOString();
+    const expected=[new Date(2026,8,12,1,15), new Date(2026,8,12,3,45), new Date(2026,8,12,6,15)];
+    const logs=[
+      {on:t(1,17), off:t(1,22), onDurationInSeconds:300, isManual:false},   // matches shot 1, a couple minutes late
+      {on:t(6,10), off:t(6,15), onDurationInSeconds:300, isManual:false},   // matches shot 3
+      {on:t(9,0), off:t(9,28), onDurationInSeconds:1680, isManual:true},    // a manual flush, no matching shot
+    ];
+    const r=w.nightFireLine(expected, logs);
+    ok(r.fired===2 && r.expected===3,'two of three scheduled shots matched a log period: '+r.fired+'/'+r.expected);
+    ok(r.missed.length===1 && r.missed[0].getHours()===3,'the 3:45 shot with no nearby period is the miss, named by time');
+    ok(r.manual===1,'the manual flush is counted separately, not folded into fired or missed');
+    ok(/2\/3 fired/.test(r.line) && /manual run/.test(r.line),'the line reads both facts: '+r.line);
+    w.close(); }
+
+  // 3.2 wired end to end: a zoned table resolves to a Growlink device by
+  // name, the device log is fetched for that device only, and the result
+  // is reported per table
+  { const orgId='org1';
+    const rooms=[{id:'r-b1',name:'B-1',roomType:0}];   // Growlink's own hyphenated name
+    const devices=[{id:'d-t4',name:'B-1'},{id:'d-t5',name:'B-2'}];
+    const calls=[];
+    const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
+      calls.push(url);
+      if(/organizations$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({organizations:[{id:orgId,name:'Acme Farms'}]})});
+      if(/\/rooms$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({rooms})});
+      if(/\/devices$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({devices})});
+      if(/\/devices\/data\/log$/.test(url)){
+        const body=JSON.parse(opts.body);
+        ok(body.deviceIds.length===1 && body.deviceIds[0]==='d-t4',
+           'only the one zoned table\'s device is asked for, not the whole room: '+JSON.stringify(body.deviceIds));
+        return Promise.resolve({ok:true, json:()=>Promise.resolve({devices:[{id:'d-t4',name:'B-1',logs:[]}]})});
+      }
+      return Promise.reject(new Error('unexpected call: '+url));
+    });
+    await sleep(50);
+    d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
+    d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
+    d.getElementById('gl_test').click(); await sleep(30);
+    d.getElementById('setclose').click();
+    w.S.room='B1';
+    w.saveZones('B1',[{device:'20003605',room:'B1',table:4,zone:'B-1'}]);
+    d.getElementById('cfgbtn').click(); await sleep(20);
+    d.getElementById('nightfirebtn').click();
+    await sleep(80);
+    const body=d.getElementById('nightfirebody').textContent;
+    ok(/T4:/.test(body),'the zoned table reports by its own number: '+body);
+    ok(errors.length===0,'no runtime errors (3.2 wired): '+errors.join('|'));
+    w.close(); }
+
+  // A7 9/11 accept scenario, against a SYNTHETIC devices/data/log fixture
+  // (fixtures/9-11/A7_devices_data_log_SYNTHETIC.json) — the key needed
+  // for the real call lives on the phone, not the repo, so this is built
+  // against the documented response shape instead and marked SYNTHETIC in
+  // its filename; Andy replaces it with the real 9/11 A7 log Monday. Per
+  // his 9/12 note, the real finding IS the device's absence from the
+  // response — T3 had pre-flush runoff and two 28-minute manual flushes
+  // that still show as nothing here, because a run still open at window
+  // end is never reported. T1/T2/T4 carry ordinary completed scheduled
+  // runs, off the same fixture, so this also proves the healthy case
+  // isn't accidentally reported as a miss too.
+  { const {w}=boot(null);
+    const log=JSON.parse(fs.readFileSync(path.join(__dirname,'..','fixtures','9-11','A7_devices_data_log_SYNTHETIC.json'),'utf8'));
+    const byDevId={}; log.devices.forEach(d=>{ byDevId[d.id]=d.logs; });
+    const ref=new Date(2026,8,11,20,0,0);   // late on 9/11, after A7's four daily shots
+    const expected=w.shotTimes('A7',3,ref).filter(t=>t>=new Date(ref.getTime()-24*3600000) && t<=ref);
+    ok(expected.length===4,'A7\'s real weekly-file schedule gives four shots to check against: '+expected.length);
+    const t3=w.nightFireLine(expected, byDevId['SYNTHETIC-A7-T3']||[]);
+    ok(t3.fired===0 && t3.expected===4,'T3: absent from the response reads as a real miss, not a pass: '+t3.line);
+    const t1=w.nightFireLine(expected, byDevId['SYNTHETIC-A7-T1']);
+    ok(t1.fired===4 && t1.expected===4,'T1: present with four completed runs reads as fully fired: '+t1.line);
+    w.close(); }
+
+  // ============ Weekend Plan 2.2 — reconciliation against real 9/11 ============
+  // fixtures/9-11 is not synthetic: nine screens rebuilt byte-for-byte from
+  // the operator's real pastes that day, with a README carrying the
+  // expected diff table so this asserts on numbers rather than eyeballing.
+  // This exercise is what caught two real bugs neither synthetic fixture
+  // ever could: an interval diff that rendered "2.0h → 1.3h" for what was
+  // actually 2:00 → 1:15 (fixed — schedTableDiffParts now uses hmm(), not
+  // a rounded decimal), and a live P2 that read as parked on every real
+  // schedule this app has ever seen, because Growlink's own Copilot screen
+  // never prints a Start Time for P2 and schedPhaseOn used to require one
+  // (fixed — see the comment on schedPhaseOn in pure.js). The mL figures
+  // below differ from the README's own by under 1% throughout — the
+  // README's dripper-rate notes round to whole numbers (63, 95 mL/min);
+  // this app's DRIP_FLOW constants carry the real calibrated rate
+  // (31.54 mL/min/dripper), which is the more precise of the two, not a
+  // second disagreement to chase.
+  const fxDir=path.join(__dirname,'..','fixtures','9-11');
+  function fxParse(w,name){ return w.parseSchedule(fs.readFileSync(path.join(fxDir,name),'utf8')); }
+  function fxDiff(w,rm,beforeFile,afterFile){
+    const b=fxParse(w,beforeFile), a=fxParse(w,afterFile);
+    const brm=b.rooms.find(r=>r.room===rm), arm=a.rooms.find(r=>r.room===rm);
+    return {before:b, after:a, brm, arm,
+      diffs: (brm&&arm) ? w.schedDiff(rm,{tables:brm.tables},{tables:arm.tables}) : null};
+  }
+
+  // A2 — README: T1/T2 17:09×2 → 8:35×4; T5-T9 34:17×2 → 17:09×4;
+  // T3/T4/T10/T11+12 36:00×2 → 18:00×4; interval 2:00 → 1:15 on all.
+  { const {w,errors}=boot(null);
+    const r=fxDiff(w,'A2','A2_2026-09-11_1014_before.txt','A2_2026-09-11_1415_after.txt');
+    ok(r.before.warnings.length===0 && r.after.warnings.length===0,
+       'both real A2 screens parse clean, no warnings: '+r.before.warnings.concat(r.after.warnings).join(' | '));
+    ok(r.diffs.length===12,'all twelve A2 tables changed: '+r.diffs.length);
+    ok(r.diffs.every(d=>/2:00 → 1:15/.test(d)),'every table carries the same interval move, in H:MM: '+r.diffs[0]);
+    ok(/^T1 17:09×2 → 8:35×4/.test(r.diffs[0]) && /^T2 17:09×2 → 8:35×4/.test(r.diffs[1]),
+       'T1/T2 group: '+r.diffs[0]);
+    ok(/^T5 34:17×2 → 17:09×4/.test(r.diffs[4]),'T5-T9 group: '+r.diffs[4]);
+    ok(/^T3 36:00×2 → 18:00×4/.test(r.diffs[2]) && !/mL/.test(r.diffs[2]),
+       'T3/T4/T10/T11+12 group: same daily total, so no mL line: '+r.diffs[2]);
+    ok(errors.length===0,'no runtime errors (2.2 A2): '+errors.join('|'));
+    w.close(); }
+
+  // C2 — README: T1-T5,T8-T11 6:33×2 → 6:33×3; T6/T7 6:33×2 → 7:22×3;
+  // flush 20/15 → 0:01 on all Copilot tables (T4/T5/T9 are Simple Timer
+  // and carry no flush section at all — the README's own scoping, not a
+  // gap in the paste).
+  { const {w,errors}=boot(null);
+    const r=fxDiff(w,'C2','C2_2026-09-11_1014_before.txt','C2_2026-09-11_1640_after.txt');
+    ok(r.before.warnings.length===0 && r.after.warnings.length===0,'both real C2 screens parse clean');
+    ok(r.diffs.length===11,'all eleven C2 tables changed: '+r.diffs.length);
+    const byT={}; r.diffs.forEach(d=>{ byT[+/^T(\d+)/.exec(d)[1]]=d; });
+    ok(/flush 20:00 → 0:01/.test(byT[1]),'a Copilot table gets the flush line: '+byT[1]);
+    ok(!/flush/.test(byT[4]),'a Simple Timer table (T4) has no flush section to change: '+byT[4]);
+    ok(/6:33×2 → 7:22×3/.test(byT[6]),'T6/T7 are the wider-duration group: '+byT[6]);
+    ok(errors.length===0,'no runtime errors (2.2 C2): '+errors.join('|'));
+    w.close(); }
+
+  // C3 — README: T2/T3/T4/T5/T6/T7/T8/T9 change, each its own way;
+  // T1/T10/T11 unchanged outright.
+  { const {w,errors}=boot(null);
+    const r=fxDiff(w,'C3','C3_2026-09-11_1014_before.txt','C3_2026-09-11_1330_after.txt');
+    ok(r.before.warnings.length===0 && r.after.warnings.length===0,'both real C3 screens parse clean');
+    const changed=r.diffs.map(d=>+/^T(\d+)/.exec(d)[1]);
+    ok(changed.join(',')==='2,3,4,5,6,7,8,9','exactly the tables the README names changed, in order: '+changed.join(','));
+    ok(![1,10,11].some(t=>changed.includes(t)),'T1/T10/T11 produce no diff line at all — genuinely unchanged, not just unlisted');
+    const byT={}; r.diffs.forEach(d=>{ byT[+/^T(\d+)/.exec(d)[1]]=d; });
+    ok(/5:15×2 → 10:30×3/.test(byT[3]),'T3 goes to three shots: '+byT[3]);
+    w.close(); }
+
+  // A3 — README's own three-state case: off with P2 still live and wrong
+  // (1014 -> 1620), then the real fix (1620 -> 1630): P1 doubles, P2
+  // parks, flush collapses. The middle state exists because a diff has to
+  // catch it, not just the two endpoints.
+  { const {w,errors}=boot(null);
+    const off=fxParse(w,'A3_2026-09-11_1014_off_P2live.txt');
+    const wrong=fxParse(w,'A3_2026-09-11_1620_active_P2live_WRONG.txt');
+    const final=fxParse(w,'A3_2026-09-11_1630_final.txt');
+    [off,wrong,final].forEach(r=>ok(r.warnings.length===0,'A3 screen parses clean: '+r.warnings.join('|')));
+    const rOff=off.rooms.find(r=>r.room==='A3'), rWrong=wrong.rooms.find(r=>r.room==='A3'), rFinal=final.rooms.find(r=>r.room==='A3');
+    const d1=w.schedDiff('A3',{tables:rOff.tables},{tables:rWrong.tables});
+    ok(d1.length===12 && d1.every(x=>/off → on/.test(x) && /0 → 625 mL/.test(x)),
+       'first diff: the room switched on, still at the wrong P1 — nothing else moved: '+d1[0]);
+    const d2=w.schedDiff('A3',{tables:rWrong.tables},{tables:rFinal.tables});
+    ok(d2.length===12 && d2.every(x=>/8:56×2 → 17:52×2/.test(x) && /P2 parked/.test(x) &&
+       /flush 45:00 → 0:01/.test(x) && /625 → 1251 mL/.test(x)),
+       'second diff: P1 doubles to the intended volume, P2 parks, flush collapses — all three at once: '+d2[0]);
+    ok(errors.length===0,'no runtime errors (2.2 A3): '+errors.join('|'));
     w.close(); }
 
   // ============ §4 the verification screen ============

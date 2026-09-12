@@ -1,0 +1,413 @@
+C2 Table 1	C2 table 1 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration
+C2 Table 2	C2 table 2 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration
+C2 Table 3	C2 table 3 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration
+C2 Table 4	---	
+Simple Timer
+
+13m 6s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C2 Table 5	---	
+Simple Timer
+
+13m 6s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C2 Table 6	C2 table 6 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+15
+Mins
+0
+Secs
+Duration
+C2 Table 7	C2 table 7 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+15
+Mins
+0
+Secs
+Duration
+C2 Table 8	C2 table 8 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration
+C2 Table 9	---	
+Simple Timer
+
+13m 6s	
+Recycle Timer
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+Create new timer
+
+C2 Table 10	C2 table 10 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration
+C2 Table 11	C2 table 11 Moisture	
+
+Copilot
+
+13m 6s	
+P1 timers
+
+
+01:15:00 PM
+Start Time
+6
+Mins
+33
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+20
+Mins
+0
+Secs
+Duration

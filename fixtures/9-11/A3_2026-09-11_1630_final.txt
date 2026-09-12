@@ -1,0 +1,473 @@
+A3 Table 1	A3 1 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 2	A3 2 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 3	A3 3 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 4	A3 4 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 5	A3 5 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 6	A3 6 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 7	A3 7 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 8	A3 8 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 9	A3 9 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 10	A3 10 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration
+A3 table 11+12	A3 11 Back Moisture	
+
+Copilot
+
+35m 44s	
+P1 timers
+
+
+01:15:00 AM
+Start Time
+17
+Mins
+52
+Secs
+Duration
+2
+Hrs
+0
+Mins
+Interval
+2
+Frequency
+P2 timers
+
+0
+Mins
+1
+Secs
+Duration
+0
+Hrs
+1
+Mins
+Interval
+1
+Frequency
+Flush timers
+
+0
+Mins
+1
+Secs
+Duration

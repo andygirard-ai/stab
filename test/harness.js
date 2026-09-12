@@ -10,7 +10,7 @@ const pre=`var S={room:null,rows:[],notes:{},free:{},feedEC:null,feedPH:null,sid
 var DEMO=false; var HIST=[]; function getHist(){return HIST;}
 var TANKS={}; function getTanks(){return TANKS;}`;
 const code=pre+'\n'+roomsSrc+'\n'+pureSrc+
-'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,TANK,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},setTanks:function(t){TANKS=t;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes,PEGS,ACCESS,SKIPWHY,tableSkipped,skipReason,skippedList,sweepStamp,rowNoteLines,buildRowNotes,buildRoomNotes,roomHead,roomPara,strainFor,strainListFor,rowDateTime,reRoomRows,feedEcFor,tankFor,isOnWater,TANK_IDS,parseZoneList,zoneFor,tankFillByDay};';
+'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,TANK,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},setTanks:function(t){TANKS=t;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes,PEGS,ACCESS,SKIPWHY,tableSkipped,skipReason,skippedList,sweepStamp,rowNoteLines,buildRowNotes,buildRoomNotes,roomHead,roomPara,strainFor,strainListFor,rowDateTime,reRoomRows,feedEcFor,tankFor,isOnWater,TANK_IDS,parseZoneList,zoneFor,tankFillByDay,BATCH_TANK_NUM,nightFireLine};';
 fs.writeFileSync(path.join(__dirname,'lib.js'),code);
 module.exports=require('./lib.js');
 // CSV loader -> S.rows shape used by doCommit

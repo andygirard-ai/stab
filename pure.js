@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v58';
+var VER='v59';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -69,7 +69,19 @@ function schedSeries(room, table){
       if(t.inactive) return [];
       var out=[];
       [t.P1,t.P2].forEach(function(ph){
-        if(schedPhaseOn(ph))
+        /* schedPhaseOn no longer requires a start time (P2 never prints
+           one — see the comment on schedPhaseOn), but a series with no
+           clock time to start from has nothing for shotTimes to walk
+           from either. P1 always has one. P2's real trigger rule —
+           a fixed offset from P1, a clock time Growlink just doesn't
+           print here, something else — is not confirmed by anything
+           received so far, so an active P2 with no start is left out
+           of the shot-time series rather than guessed into one:
+           hours-since-shot, and everything gated on it, still reflects
+           P1 only, same as before this file's P2 detection was fixed.
+           A genuine gap, now a flagged one instead of a silent one —
+           see QUESTIONS.md. */
+        if(schedPhaseOn(ph) && ph.start)
           out.push({start:ph.start, intervalMin:(ph.interval||0)/60, count:ph.frequency});
       });
       if(out.length) return out;
@@ -212,9 +224,21 @@ function schedHeader(line){
    1-minute interval and a frequency of 1. Read literally that is a second
    daily series delivering about a millilitre, which would move
    hours-since-shot and show up on the verification screen as a real shot.
-   A phase under two seconds is off. */
+   A phase under two seconds is off.
+
+   Never require a start time here — confirmed against a real 9/11
+   Copilot screen (fixtures/9-11/A3_..._1620...): P2 prints Duration,
+   Interval and Frequency but no Start Time field at all, unlike P1,
+   which always has one. Requiring `.start` here (as an earlier version
+   did) meant a live P2 was silently read as parked on every real
+   schedule this app has ever seen — the diff, the change log and the
+   verification screen all missed it, caught only once real fixtures
+   replaced the synthetic one that had invented a start time for P2 to
+   make the old check pass. Whether P2's own first shot has a
+   computable absolute time is a separate question, handled where
+   schedSeries builds the shot-time series, not here. */
 function schedPhaseOn(ph){
-  return !!(ph && ph.start && ph.frequency && ph.duration!=null && ph.duration>1);
+  return !!(ph && ph.frequency && ph.duration!=null && ph.duration>1);
 }
 /* The second tab-separated field on a header line is the sensor mapping —
    "C4 Table 1 moisture", "A1 11 Back Moisture", "Substrate Moisture
@@ -288,6 +312,52 @@ function tankFillByDay(points){
     if(d>0.3) byDay[sorted[i].at.toLocaleDateString('en-US')]+=d;
   }
   return byDay;
+}
+/* Which Growlink Batch Tank number is which of Stab's own tank ids
+   (Weekend Plan 3.3) — confirmed 9/12 against growlink_room_export.csv,
+   not guessed: running tankFillByDay on each of the five Batch Tank
+   columns for 9/9-9/11 leaves exactly one candidate per letter. #1 alone
+   reproduces the ~31/31/31 the plan's accept criterion calls A; #3 alone
+   reproduces the 25.9/0/24.8 flush-day dip it calls C; #2 is what is left
+   for B, matching on two of the three days (54.6 on 9/9 is a real second
+   fill that day, not a mismatch); #5 needs no inference — Growlink's own
+   sensor name is "Batch Tank #5 (veg)". #4 carries no fill valve and
+   sits flat at 0 across the same window — unused by any of Stab's four
+   tanks, so it has no entry here. */
+var BATCH_TANK_NUM={A:1,B:2,C:3,Veg:5};
+/* Did last night fire (Weekend Plan 3.2). Compares this app's own
+   schedule (shotTimes, already in this file) against the device log's
+   completed on/off periods for the same table's valve. Only scheduled
+   periods (isManual false) count toward "fired" — the developer API
+   guide's own device-log section says isManual describes how a run
+   started, not what kind of task it was, so a manual flush sitting next
+   to a night of scheduled shots is not evidence the schedule missed one;
+   it is reported alongside instead. A log period matches an expected
+   shot when its "on" timestamp falls within 30 minutes of it — the same
+   slop this file allows a schedule paste elsewhere — and each period
+   can only satisfy one expected shot, so an early double-report in the
+   log can't paper over a real miss right after it. */
+function nightFireLine(expected, logs){
+  var scheduled=(logs||[]).filter(function(l){ return !l.isManual; });
+  var manual=(logs||[]).filter(function(l){ return l.isManual; });
+  var used=scheduled.slice(), fired=0, missed=[];
+  expected.forEach(function(t){
+    var best=-1, bestDiff=30*60000;
+    used.forEach(function(l,i){
+      if(l==null) return;
+      var diff=Math.abs(new Date(l.on).getTime()-t.getTime());
+      if(diff<=bestDiff){ bestDiff=diff; best=i; }
+    });
+    if(best>=0){ fired++; used[best]=null; }
+    else missed.push(t);
+  });
+  var n=expected.length;
+  var line=fired+'/'+n+' fired';
+  if(missed.length) line+=' · missed '+missed.map(function(t){
+    return t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }).join(', ');
+  if(manual.length) line+=' · '+manual.length+' manual run'+(manual.length===1?'':'s')+' alongside';
+  return {fired:fired, expected:n, missed:missed, manual:manual.length, line:line};
 }
 /* The blob leads with "all schedules as of 9/11/26 10:14am". Kept, because
    it says how stale the schedule is independently of when it was pasted —

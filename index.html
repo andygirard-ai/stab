@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v58</title>
+<title>Stab v59</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -542,7 +542,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v58</b></div>
+  <div class="brand">Substrate sweep · <b>v59</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -680,7 +680,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v58</div>
+  <div class="v">stab v59</div>
   <div id="stats"></div>
   <div class="act2"><button id="reroom">Re-room this sweep</button></div>
   <div class="wbh">Checks · read here, never pasted</div>
@@ -841,6 +841,11 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     Clears at midnight; enter it once a day, when it changes.</div>
   <div id="tankbody"></div>
   <div class="act2"><button id="tanksave">Save tank readings</button></div>
+  <div class="tiny">Batch tank turnover (Weekend Plan 3.3) — how much
+    each tank actually took on over the last three days, from Growlink.
+    Read-only; does not touch the EC/pH/ORP entry above.</div>
+  <div class="act2"><button id="tankglbtn">Read Growlink fill</button></div>
+  <div id="tankglstatus"></div>
   <div class="lgact">
     <button id="dayclose">Close</button>
   </div>
@@ -893,6 +898,15 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <button id="zoneread" class="fp">Read it</button>
   <div id="zonebody"></div>
 
+  <div class="lbl">Did last night fire (Weekend Plan 3.2)</div>
+  <div class="tiny">Compares last night's shots against Growlink's own
+    device log, table by table. Needs a zone saved for the table (above)
+    and a working connection (Settings) — a table with no zone, or one
+    whose zone doesn't match a device here, is left out rather than
+    guessed at.</div>
+  <button id="nightfirebtn" class="fp">Check</button>
+  <div id="nightfirebody"></div>
+
   <div class="lgact">
     <button id="cfgsave">Save room setup</button>
     <button id="cfgclose">Close</button>
@@ -908,13 +922,13 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <div id="dcounts" class="tiny"></div>
 
   <div class="lbl">Growlink (Weekend Plan 3.1)</div>
-  <div class="tiny">Read-only. Nothing in the app calls this yet except
-    the test below — no valve ever fires from this screen or any other.
-    The key lives here, never in source: it is typed in on this device and
-    kept in its storage only.</div>
+  <div class="tiny">Read-only — every call this app makes is a GET, or a
+    POST that only ever queries. No valve ever fires from this screen or
+    any other. The key lives here, never in source: it is typed in on
+    this device and kept in its storage only.</div>
   <div class="cfg" style="grid-template-columns:1fr">
-    <div><label>API key</label><input id="gl_key" type="password" placeholder="paste the key"></div>
-    <div><label>base URL</label><input id="gl_base" placeholder="https://api.growlink.com"></div>
+    <div><label>API key</label><input id="gl_key" type="password" placeholder="from the Growlink portal, Builder → Authentication"></div>
+    <div><label>base URL</label><input id="gl_base" placeholder="https://api.developer.growlink.com"></div>
   </div>
   <div id="growlinkstatus" class="tiny"></div>
   <div id="dbtns"><button class="dbtn" id="gl_test">Test connection</button></div>
@@ -986,8 +1000,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=58"></script>
-<script src="pure.js?v=58"></script>
-<script src="app.js?v=58"></script>
+<script src="rooms.js?v=59"></script>
+<script src="pure.js?v=59"></script>
+<script src="app.js?v=59"></script>
 </body>
 </html>

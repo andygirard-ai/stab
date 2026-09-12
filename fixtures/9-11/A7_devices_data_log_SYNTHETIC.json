@@ -1,0 +1,35 @@
+{
+  "_note": "SYNTHETIC — built against the documented /devices/data/log response shape (docs/Growlink_Skill.md §7.3), not a real API response. Andy will pull the real A-7 log Monday and drop it in to replace this file (keep the filename so fetchNightFire's own reconciliation test picks it up unchanged). Represents the 9/11 accept scenario: A7 T3 had pre-flush runoff present and two 28-minute manual flushes that produced nothing. Per Andy's 9/12 message, that is exactly what a still-open-at-window-end run looks like in this endpoint: T3's device is left out of the devices array entirely, not present with empty logs — 'a run still open at window end is not reported.' T1, T2 and T4 are included with ordinary completed scheduled runs so the fixture also exercises the healthy case, not just the miss.",
+  "devices": [
+    {
+      "id": "SYNTHETIC-A7-T1",
+      "name": "A-1",
+      "logs": [
+        {"on": "2026-09-11T09:15:00Z", "off": "2026-09-11T09:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T11:15:00Z", "off": "2026-09-11T11:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T13:15:00Z", "off": "2026-09-11T13:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T15:15:00Z", "off": "2026-09-11T15:17:52Z", "onDurationInSeconds": 172, "isManual": false}
+      ]
+    },
+    {
+      "id": "SYNTHETIC-A7-T2",
+      "name": "A-2",
+      "logs": [
+        {"on": "2026-09-11T09:15:00Z", "off": "2026-09-11T09:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T11:15:00Z", "off": "2026-09-11T11:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T13:15:00Z", "off": "2026-09-11T13:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T15:15:00Z", "off": "2026-09-11T15:17:52Z", "onDurationInSeconds": 172, "isManual": false}
+      ]
+    },
+    {
+      "id": "SYNTHETIC-A7-T4",
+      "name": "A-4",
+      "logs": [
+        {"on": "2026-09-11T09:15:00Z", "off": "2026-09-11T09:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T11:15:00Z", "off": "2026-09-11T11:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T13:15:00Z", "off": "2026-09-11T13:17:52Z", "onDurationInSeconds": 172, "isManual": false},
+        {"on": "2026-09-11T15:15:00Z", "off": "2026-09-11T15:17:52Z", "onDurationInSeconds": 172, "isManual": false}
+      ]
+    }
+  ]
+}
