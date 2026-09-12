@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v56';
+var VER='v57';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -573,10 +573,36 @@ function flowerStartFor(rm){
   var c=rcfg(rm);
   return c.flowerStart || FLOWER_START[rm] || '';
 }
-function strainFor(rm, t){
+function strainFor(rm, t, atDate){
   var c=rcfg(rm), k=String(t);
-  if(c.strains && c.strains[k]) return c.strains[k];
-  return (RMAP[rm]||{})[k] || ['',''];
+  var raw=(c.strains && c.strains[k]) ? c.strains[k] : ((RMAP[rm]||{})[k] || ['','']);
+  var name=applyRename(raw[0], atDate);
+  return (name===raw[0]) ? raw : [name, raw[1]];
+}
+/* Strain rename with an effective date (Weekend Plan 2.3, §6.5). A rename
+   is a lookup-time transform, not a rewrite of every room's strain map —
+   one entry changes what strainFor returns everywhere that name appears,
+   old -> new, across every room at once, without touching room config or
+   rooms.js. A row already captured is unaffected either way: doCommit
+   bakes strainFor's result into the row the moment it is read, so a row
+   taken before the effective date keeps the old name and one taken after
+   gets the new one automatically. atDate lets a re-roomed row (1.2)
+   recompute against the date it was actually taken rather than today,
+   which is the same "exports use the name current at the row's
+   timestamp" rule applied to a row moving rooms instead of moving in
+   time. getRenames is late-bound the same way getSched and getTanks are. */
+function applyRename(name, atDate){
+  if(!name) return name;
+  var renames=(typeof getRenames==='function')?(getRenames()||[]):[];
+  if(!renames.length) return name;
+  var d=atDate||new Date();
+  var cur=name;
+  renames.filter(function(r){
+    return r.old && r.new && r.effectiveDate && new Date(r.effectiveDate+'T00:00:00')<=d;
+  }).sort(function(a,b){
+    return a.effectiveDate<b.effectiveDate?-1:(a.effectiveDate>b.effectiveDate?1:0);
+  }).forEach(function(r){ if(r.old===cur) cur=r.new; });
+  return cur;
 }
 /* Distinct strains in table order, for the room-confirmation step (Weekend
    Plan 1.1). Sourced through strainFor, which reads room config before the
@@ -590,6 +616,18 @@ function strainListFor(rm){
     if(name && out.indexOf(name)<0) out.push(name);
   }
   return out;
+}
+/* Every distinct strain name across every real room, current names (a
+   rename already applied shows only its new side) — for the rename tool
+   (2.3) to offer as the "old name" choice, so a rename is picked off the
+   facility, never retyped by hand into a fresh source of typos. */
+function allStrainNames(){
+  var set={};
+  Object.keys(ROOMS).forEach(function(rm){
+    if(ROOMS[rm].kind) return;
+    strainListFor(rm).forEach(function(n){ set[n]=true; });
+  });
+  return Object.keys(set).sort();
 }
 /* Which tank actually feeds a room. Room config's cfg_tank, set at move-in,
    always wins; under it is TANK, this week's seeded assignment from
@@ -644,7 +682,7 @@ function reRoomRows(rows, newRoom){
   return rows.map(function(r){
     var out={}; Object.keys(r).forEach(function(k){ out[k]=r[k]; });
     var t=(typeof r.table==='number')?r.table:parseInt(r.table,10);
-    var si=strainFor(newRoom, t);
+    var si=strainFor(newRoom, t, rowDateTime(r));
     var h=hoursSinceShot(newRoom, rowDateTime(r), t);
     out.room=newRoom;
     out.strain=si[0]; out.flags=si[1];

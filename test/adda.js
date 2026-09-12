@@ -1415,10 +1415,10 @@ function rowsFor(w,room,spec){
     ok(!w.getSched().B5.changed,'a first import is not a change');
     w.saveSched('B5', mk('01:15',4));
     ok(w.getSched().B5.changed,'a different frequency is');
-    ok(/T1 x3→x4/.test(w.getSched().B5.changed.diffs.join(' ')),
+    ok(/T1 4:44×3 → 4:44×4/.test(w.getSched().B5.changed.diffs.join(' ')),
        'and the diff says what moved: '+w.getSched().B5.changed.diffs.join(' · '));
     w.saveSched('B5', mk('02:30',4));
-    ok(/T1 01:15→02:30/.test(w.getSched().B5.changed.diffs.join(' ')),'a moved start too');
+    ok(/T1 1:15 AM → 2:30 AM/.test(w.getSched().B5.changed.diffs.join(' ')),'a moved start too');
     const row=w.dayCoverage().filter(r=>r.room==='B5')[0];
     ok(row.postShotDue,'so the room is waiting on a post-change read');
     d.getElementById('weekly').click(); await sleep(30);
@@ -1449,7 +1449,6 @@ function rowsFor(w,room,spec){
     w.hoursSinceShot=()=>1.6;
     d.getElementById('exit').click(); await sleep(60);
     ok(!w.getSched().B2.changed,'one taken 1.6 h after the shot does — that is the confirmation'); }
-
 
   // ============ plants are per table, not per room ============
   // Field report 9/11: "plants-per-table is locked to the room; it needs to
@@ -2356,6 +2355,153 @@ function rowsFor(w,room,spec){
     ok(w.tankFor('C5')==='C','a room config this phone never had comes in');
     ok(w.tankFor('B2')==='A','and one it already had is not clobbered by the import');
     ok(errors.length===0,'no runtime errors (1.6 restore): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 2.1 — diff-as-verification ============
+  // A table with two simultaneous changes (a moved P1 shot AND a P2 that
+  // got parked) used to report only the first one found. Mirrors A3's
+  // 9/11 pattern in shape, if not the exact real numbers: P1 moved, P2
+  // parked, in one table, one paste.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('A3',{savedAt:Date.now()-3600e3, room:'A3', tables:[
+      {table:9, room:'A3', P1:{start:'01:15', duration:536, interval:7200, frequency:5},
+       P2:{start:'02:26', duration:146, frequency:7}, flush:{duration:2700}, runtimeSec:2680}]});
+    d.querySelector('#rooms .rm[data-room="A3"]').click(); await sleep(20);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value=schedBlock('A3 Table 9','Copilot','89m 20s',
+      ['Recycle Timer','01:15:00 AM','Start Time','17','Mins','52','Secs','Duration',
+       '2','Hrs','Interval','5','Frequency']);
+    d.getElementById('schedparse').click(); await sleep(20);
+    const body=d.getElementById('schedbody').textContent;
+    ok(/1 table changed/.test(body),'the screen leads with what changed: '+body.slice(0,60));
+    ok(/8:56/.test(body) && /17:52/.test(body),
+       'the shot move shows in M:SS on both sides: '+body.slice(0,200));
+    ok(/P2 parked/.test(body),'and the P2 that dropped out is named, not silently lost: '+body.slice(0,200));
+    ok(!d.getElementById('schedok').classList.contains('hide'),'still offers to save');
+    d.getElementById('schedok').click(); await sleep(20);
+    const rec=w.getSched().A3;
+    ok(rec.changed && /T9 /.test(rec.changed.diffs.join(' ')),'and the change is recorded against T9');
+    ok(/P2 parked/.test(rec.changed.diffs.join(' ')) && /→/.test(rec.changed.diffs.join(' ')),
+       'carrying both the shot-length move and the P2 parking, not just one: '+rec.changed.diffs.join(' | '));
+    ok(errors.length===0,'no runtime errors (2.1 diff): '+errors.join('|'));
+    w.close(); }
+
+  // an unchanged table collapses; the verification screen does not repeat
+  // eleven identical rows back at him
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('B5',{savedAt:Date.now()-3600e3, room:'B5', tables:[
+      {table:1, room:'B5', P1:{start:'01:15', duration:284, interval:9000, frequency:3}, P2:null, flush:null, runtimeSec:852},
+      {table:2, room:'B5', P1:{start:'01:15', duration:284, interval:9000, frequency:4}, P2:null, flush:null, runtimeSec:1136}]});
+    d.querySelector('#rooms .rm[data-room="B5"]').click(); await sleep(20);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value=B5_ONE+'\n'+schedBlock('B5 Table 2','Simple Timer','18m 56s',P1_284);
+    d.getElementById('schedparse').click(); await sleep(20);
+    const body=d.getElementById('schedbody').textContent;
+    ok(/1 table changed/.test(body) && /1 unchanged/.test(body),
+       'T1 moved (x3→x4), T2 did not, and the screen says so plainly rather than repeating both rows: '+body.slice(0,80));
+    ok(errors.length===0,'no runtime errors (2.1 collapse): '+errors.join('|'));
+    w.close(); }
+
+  // a genuine first import has nothing to diff against, and says so rather
+  // than reporting every table as "changed"
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="B5"]').click(); await sleep(20);
+    d.getElementById('schedbtn').click(); await sleep(20);
+    d.getElementById('schedpaste').value=B5_ONE;
+    d.getElementById('schedparse').click(); await sleep(20);
+    ok(/first import/.test(d.getElementById('schedbody').textContent),
+       'a first import is not dressed up as a change: '+d.getElementById('schedbody').textContent.slice(0,80));
+    w.close(); }
+
+  // ============ Weekend Plan 2.2 — change log per room ============
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('C4',{savedAt:Date.now()-7200e3, room:'C4', tables:[
+      {table:6, room:'C4', P1:{start:'13:15', duration:600, interval:7200, frequency:4}, P2:null, flush:null, runtimeSec:2400}]});
+    ok(w.getSchedLog().length===0,'a first import logs nothing — there is nothing to log against yet');
+    w.saveSched('C4',{savedAt:Date.now(), room:'C4', tables:[
+      {table:6, room:'C4', P1:{start:'13:15', duration:600, interval:7200, frequency:5}, P2:null, flush:null, runtimeSec:3000}]});
+    const log=w.getSchedLog().filter(e=>e.room==='C4');
+    ok(log.length===1 && log[0].table===6,'the second import logs exactly the one table that moved');
+    ok(log[0].before.P1.frequency===4 && log[0].after.P1.frequency===5,
+       'carrying the full before and after, not just a formatted string');
+    const csv=w.buildSchedLogCsv('C4').split('\n');
+    ok(csv[0]==='Date,P1 On,Duration,Interval,Frequency,P2 On,Duration,Interval,Frequency,'+
+       'P3 On,P3 Duration,P3 Interval,P3 Frequency,Total Runtime,Runtime (min),Volume,Notes',
+       'the exact 17-column Room Schedule History header: '+csv[0]);
+    const cells=csv[1].split(',').map(c=>c.replace(/^"|"$/g,''));
+    ok(cells[1]==='1:15 PM' && cells[2]==='10:00' && cells[4]==='5',
+       'P1 On/Duration/Frequency read off the after-state: '+cells.slice(0,5).join('|'));
+    ok(cells[5]==='OFF' && cells[9]==='OFF','P2 and P3 (the flush timer) both read OFF — this table carries neither');
+    ok(cells[13]==='50:00' && cells[14]==='50.0',
+       'total runtime in both M:SS and minutes: '+cells[13]+' / '+cells[14]);
+    ok(errors.length===0,'no runtime errors (2.2 change log): '+errors.join('|'));
+    w.close(); }
+
+  // the export button on the schedule sheet
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.saveSched('C4',{savedAt:Date.now()-7200e3, room:'C4', tables:[
+      {table:6, room:'C4', P1:{start:'13:15', duration:600, interval:7200, frequency:4}, P2:null, flush:null, runtimeSec:2400}]});
+    w.saveSched('C4',{savedAt:Date.now(), room:'C4', tables:[
+      {table:6, room:'C4', P1:{start:'13:15', duration:600, interval:7200, frequency:5}, P2:null, flush:null, runtimeSec:3000}]});
+    d.querySelector('#rooms .rm[data-room="C4"]').click(); await sleep(20);
+    let sent=null; w.shareOrCopy=(text,name,label)=>{ sent={text,name,label}; };
+    d.getElementById('schedlogexport').click(); await sleep(20);
+    ok(!!sent && /^Date,P1 On/.test(sent.text),
+       'exporting calls the same share/copy path with the 17-column layout');
+    ok(/C4.*schedule_history/.test(sent.name),'named for the room: '+sent.name);
+    ok(errors.length===0,'no runtime errors (2.2 export button): '+errors.join('|'));
+    w.close(); }
+
+  // ============ Weekend Plan 2.3 — strain rename (§6.5) ============
+  // Old -> new, effective a date, across every room at once — a lookup-time
+  // transform, not a rewrite of every room's strain map. Nothing is
+  // pre-seeded: the three pending renames wait for Andy to say Monday.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    ok(w.getRenames().length===0,'nothing renamed yet — the three pending ones are not pre-loaded');
+    ok(w.strainFor('C3','1')[0]==='Kabuki Sour','C3 T1 starts as Kabuki Sour');
+    const today=new Date().toISOString().slice(0,10);
+    w.saveRename({old:'Kabuki Sour', new:'Sunset Sour', effectiveDate:today, savedAt:Date.now()});
+    ok(w.strainFor('C3','1')[0]==='Sunset Sour','effective today, every C3/C5 table carrying it reads the new name');
+    ok(w.strainFor('C5','1')[0]==='Sunset Sour','including C5, which also grows it — one entry, every room');
+    ok(w.strainFor('C3','1',new Date(Date.now()-86400000))[0]==='Kabuki Sour',
+       'but a date before the rename still reads the old name');
+    // a rename dated in the future has not happened yet
+    const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
+    w.saveRename({old:'Triangle Kush', new:'Rhombus Kush', effectiveDate:tomorrow, savedAt:Date.now()});
+    ok(w.strainFor('C3','10')[0]==='Triangle Kush','a rename dated tomorrow has not taken effect yet');
+    ok(w.strainListFor('C3').indexOf('Sunset Sour')>=0 && w.strainListFor('C3').indexOf('Kabuki Sour')<0,
+       'the room confirmation strain list (1.1) reflects it too: '+w.strainListFor('C3').join(', '));
+    ok(errors.length===0,'no runtime errors (2.3 applyRename): '+errors.join('|'));
+    w.close(); }
+
+  // a row keeps the name that was live when it was taken — re-rooming an
+  // old row does not retroactively rename it just because today's live
+  // lookup would
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const before=new Date(Date.now()-172800000).toISOString().slice(0,10);   // 2 days ago
+    w.saveRename({old:'Kabuki Sour', new:'Sunset Sour', effectiveDate:new Date().toISOString().slice(0,10), savedAt:Date.now()});
+    const oldRow={date:new Date(Date.now()-172800000).toLocaleDateString('en-US'),
+      time:'14:00:00', room:'A1', table:1, position:'front', depth:'reference',
+      plant:'', strain:'', flags:'', hrs:'2.0', mode:'sweep', dir:'up', bag:2, media:'Bio365',
+      side:'standard', vwc:30, ec:2, bulk:0.5, tmp:22, flag:false, raw:''};
+    const rr=w.reRoomRows([oldRow],'C3');
+    ok(rr[0].strain==='Kabuki Sour',
+       'a row taken before the rename keeps the old name even when re-roomed today: '+rr[0].strain+' ('+before+')');
+    ok(errors.length===0,'no runtime errors (2.3 re-room + rename): '+errors.join('|'));
+    w.close(); }
+
+  // the settings tool: pick an existing strain, name it, date it, see it listed
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.getElementById('renamebtn').click(); await sleep(20);
+    ok(!d.getElementById('renamesheet').classList.contains('hide'),'the rename sheet opens');
+    const opts=[...d.querySelectorAll('#rn_old option')].map(o=>o.value);
+    ok(opts.indexOf('Kabuki Sour')>=0,'old-name choices come off the facility\'s own strains, not free text: '+opts.slice(0,5).join(', '));
+    d.getElementById('rn_old').value='Kabuki Sour';
+    d.getElementById('rn_new').value='Sunset Sour';
+    d.getElementById('rn_save').click(); await sleep(20);
+    ok(/Sunset Sour/.test(d.getElementById('renamelist').textContent),'it shows up in the list on file');
+    ok(w.getRenames().length===1 && w.getRenames()[0].old==='Kabuki Sour','and it is actually saved');
+    ok(errors.length===0,'no runtime errors (2.3 settings tool): '+errors.join('|'));
     w.close(); }
 
   // ============ §4 the verification screen ============

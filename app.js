@@ -863,6 +863,19 @@ function histTs(h){
   };
   $('backupgo').onclick=runBackup;
   $('backupgo2').onclick=runBackup;
+  $('renamebtn').onclick=openRenameSheet;
+  $('renameclose').onclick=function(){ $('renamesheet').classList.add('hide'); };
+  $('rn_save').onclick=function(){
+    var oldName=$('rn_old').value, newName=($('rn_new').value||'').trim(),
+        eff=$('rn_date').value;
+    if(!oldName){ toast('pick the strain to rename'); return; }
+    if(!newName){ toast('type the new name'); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(eff)){ toast('pick an effective date'); return; }
+    saveRename({old:oldName, new:newName, effectiveDate:eff, savedAt:Date.now(), op:S.op||''});
+    $('rn_new').value='';
+    renderRenames();
+    toast(oldName+' -> '+newName+' effective '+eff);
+  };
   $('backupimport').onclick=function(){
     var pasted=($('backuppaste').value||'').trim();
     if(pasted){ importBackupText(pasted); return; }
@@ -2137,6 +2150,13 @@ $('schedok').onclick=function(){
             : 'schedule saved for '+S.room+' · '+r.tables.length+' tables');
 };
 $('schedclose').onclick=function(){ $('schedsheet').classList.add('hide'); SCHEDPARSE=null; };
+$('schedlogexport').onclick=function(){
+  if(!S.room){ toast('pick a room first'); return; }
+  var n=getSchedLog().filter(function(e){ return e.room===S.room; }).length;
+  if(!n){ toast('no logged changes for '+S.room+' yet'); return; }
+  shareOrCopy(buildSchedLogCsv(S.room), S.room+'_schedule_history_'+fnameDate()+'.csv',
+    S.room+' change log ('+n+')');
+};
 $('targetcancel').onclick=function(){ $('targetsheet').classList.add('hide'); TP.forRow=null; };
 $('exit').onclick=function(){
   if(S.rows.length){
@@ -2899,6 +2919,36 @@ function tanksKey(){ return 'stab_tanks_'+new Date().toLocaleDateString('en-US')
 function getTanks(){
   try{ return JSON.parse(localStorage.getItem(tanksKey())||'{}'); }catch(e){ return {}; }
 }
+/* Strain renames (Weekend Plan 2.3, §6.5). Late-bound like getSched, so
+   pure.js's applyRename reaches this without knowing about storage. Built
+   now; the three pending renames are not entered until Andy says Monday —
+   this list starts and stays empty until someone actually uses the tool. */
+function getRenames(){
+  try{ return JSON.parse(localStorage.getItem('stab_renames')||'[]'); }catch(e){ return []; }
+}
+function saveRename(entry){
+  var a=getRenames(); a.push(entry); lsSet('stab_renames', JSON.stringify(a));
+}
+function openRenameSheet(){
+  var sel=$('rn_old'); if(!sel) return;
+  sel.innerHTML=allStrainNames().map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join('');
+  $('rn_new').value='';
+  var t=new Date();
+  $('rn_date').value=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);
+  renderRenames();
+  $('renamesheet').classList.remove('hide');
+}
+function renderRenames(){
+  var el=$('renamelist'); if(!el) return;
+  var list=getRenames().slice().sort(function(a,b){ return b.savedAt-a.savedAt; });
+  if(!list.length){ el.innerHTML='<div class="renamerow">nothing renamed yet</div>'; return; }
+  var today=new Date().toISOString().slice(0,10);
+  el.innerHTML=list.map(function(r){
+    var pending=r.effectiveDate>today;
+    return '<div class="renamerow"><b>'+esc(r.old)+'</b> → <b>'+esc(r.new)+'</b> · effective '+
+      esc(r.effectiveDate)+(pending?' <span class="pend">(pending)</span>':' (active)')+'</div>';
+  }).join('');
+}
 function saveSched(rm,rec){
   var a=getSched(), was=a[rm];
   /* §6.4: a room whose shot structure just changed needs a reading 1-2 h
@@ -2906,27 +2956,119 @@ function saveSched(rm,rec){
      bag. Nobody remembers which rooms those are by Thursday, so the diff
      against the previous import is kept and the room says so until a sweep
      lands in that window. */
-  var diffs=schedDiff(was, rec);
+  var diffs=schedDiff(rm, was, rec);
   if(diffs.length) rec.changed={at:Date.now(), diffs:diffs};
   else if(was && was.changed) rec.changed=was.changed;
   a[rm]=rec; lsSet('stab_sched',JSON.stringify(a));
+  logSchedDiff(rm, was, rec);
 }
-function schedDiff(was, now){
+/* M:SS, for a diff and the workbook's Room Schedule History export (§2.2)
+   — "Durations M:SS text". schedFmt (5m 15s) is the per-table detail
+   screen's own format and stays as it is; this is a different reading. */
+function mmss(sec){
+  if(sec==null) return '—';
+  var m=Math.floor(sec/60), s=Math.round(sec%60);
+  return m+':'+(s<10?'0':'')+s;
+}
+/* Every field difference on one table between two schedule imports —
+   Weekend Plan 2.1. The old version stopped at the first field that
+   differed, so a paste that moved both the start time and the shot count
+   silently dropped the second change. This reports all of it: start, P1
+   shot×frequency (with the mL that shot delivers, since a duration or
+   frequency change is the volume conversation), interval, P2 appearing/
+   parking/changing, the flush timer, and on/off. Returns the parts array
+   (for the diff screen, which wants them separable) or null when nothing
+   actually differs. */
+function schedTableDiffParts(rm, o, t){
+  if(!o || !t) return null;
+  var parts=[];
+  if(!!o.inactive!==!!t.inactive) parts.push(t.inactive?'on → off':'off → on');
+  var a=o.P1||{}, b=t.P1||{};
+  if(a.start && b.start && a.start!==b.start)
+    parts.push(fmt12(+a.start.split(':')[0],a.start.split(':')[1])+' → '+
+               fmt12(+b.start.split(':')[0],b.start.split(':')[1]));
+  if((a.duration!=null && b.duration!=null && a.duration!==b.duration) ||
+     (a.frequency!=null && b.frequency!=null && a.frequency!==b.frequency))
+    parts.push(mmss(a.duration)+'×'+(a.frequency||'—')+' → '+mmss(b.duration)+'×'+(b.frequency||'—'));
+  if(a.interval!=null && b.interval!=null && a.interval!==b.interval)
+    parts.push((a.interval/3600).toFixed(1)+'h → '+(b.interval/3600).toFixed(1)+'h');
+  var oP2=!!o.P2, nP2=!!t.P2;
+  if(oP2 && !nP2) parts.push('P2 parked');
+  else if(!oP2 && nP2) parts.push('P2 added');
+  else if(oP2 && nP2 && (o.P2.start!==t.P2.start || o.P2.duration!==t.P2.duration || o.P2.frequency!==t.P2.frequency))
+    parts.push('P2 '+mmss(o.P2.duration)+'×'+(o.P2.frequency||'—')+' → '+mmss(t.P2.duration)+'×'+(t.P2.frequency||'—'));
+  var of=(o.flush&&o.flush.duration!=null)?o.flush.duration:null;
+  var nf=(t.flush&&t.flush.duration!=null)?t.flush.duration:null;
+  if(of!==nf && (of!=null||nf!=null)) parts.push('flush '+mmss(of)+' → '+mmss(nf));
+  if(!parts.length) return null;
+  /* the volume conversation, once anything about P1's daily runtime moved */
+  if(o.runtimeSec!=null && t.runtimeSec!=null && o.runtimeSec!==t.runtimeSec){
+    var mo=mlPerPlant(rm,t.table,o.runtimeSec/60), mn=mlPerPlant(rm,t.table,t.runtimeSec/60);
+    if(mo!=null && mn!=null) parts.push(mo+' → '+mn+' mL');
+  }
+  return parts;
+}
+function schedDiff(rm, was, now){
   if(!was || !was.tables || !now || !now.tables) return [];
   var old={}, out=[];
   was.tables.forEach(function(t){ old[t.table]=t; });
   now.tables.forEach(function(t){
-    var o=old[t.table]; if(!o) return;
-    var a=o.P1||{}, b=t.P1||{};
-    if(a.start!==b.start && a.start && b.start) out.push('T'+t.table+' '+a.start+'→'+b.start);
-    else if(a.duration!==b.duration && a.duration!=null && b.duration!=null)
-      out.push('T'+t.table+' shot '+schedFmt(a.duration)+'→'+schedFmt(b.duration));
-    else if(a.frequency!==b.frequency && a.frequency && b.frequency)
-      out.push('T'+t.table+' x'+a.frequency+'→x'+b.frequency);
-    else if(a.interval!==b.interval && a.interval && b.interval)
-      out.push('T'+t.table+' every '+(a.interval/3600).toFixed(1)+'h→'+(b.interval/3600).toFixed(1)+'h');
+    var parts=schedTableDiffParts(rm, old[t.table], t);
+    if(parts) out.push('T'+t.table+' '+parts.join(' · '));
   });
   return out;
+}
+/* ---------------- change log, per room (Weekend Plan 2.2) ----------------
+   Every table-level schedule change, kept forever — not just the "still
+   needs a post-change read" flag saveSched already tracks — for exporting
+   into the workbook's own Room Schedule History layout. One entry per
+   table that actually changed, storing the full before/after snapshots
+   rather than a pre-formatted string, so the export renders straight from
+   the data schedTableDiffParts already agrees on. */
+function getSchedLog(){
+  try{ return JSON.parse(localStorage.getItem('stab_schedlog')||'[]'); }catch(e){ return []; }
+}
+function logSchedDiff(rm, was, now){
+  if(!was || !was.tables || !now || !now.tables) return;
+  var old={}; was.tables.forEach(function(t){ old[t.table]=t; });
+  var log=getSchedLog(), added=false;
+  now.tables.forEach(function(t){
+    var o=old[t.table];
+    if(!schedTableDiffParts(rm, o, t)) return;
+    log.push({ts:Date.now(), room:rm, table:t.table, op:S.op||'', note:'', before:o, after:t});
+    added=true;
+  });
+  if(added) lsSet('stab_schedlog', JSON.stringify(log));
+}
+/* The workbook's own Room Schedule History layout. Growlink's three phase
+   types are P1, P2 and flush; the workbook calls the third one P3 — same
+   timer, different name. P3 On reads OFF when a table carries no flush
+   timer at all, same as the spec asks for P3 specifically; the others get
+   the neutral '—' schedFmt/mmss already uses for "not applicable" rather
+   than invent a second convention. */
+function schedLogRow(e){
+  var t=e.after||{}, p1=t.P1||{}, p2=t.P2||null, p3=t.flush||null;
+  var onTxt=function(ph){ return ph ? (ph.start?fmt12(+ph.start.split(':')[0],ph.start.split(':')[1]):'—') : 'OFF'; };
+  /* toFixed already returns the text with its trailing zero; wrapping it
+     back through Number (as an earlier draft did) silently strips it, so
+     50.0 minutes exports as "50" instead — the exact drift a workbook
+     paste should never introduce. */
+  var hrs=function(sec){ return sec!=null?(sec/3600).toFixed(2):''; };
+  var vol=(t.runtimeSec!=null)?mlPerPlant(e.room,e.table,t.runtimeSec/60):null;
+  return [new Date(e.ts).toLocaleDateString('en-US'),
+    onTxt(p1), mmss(p1.duration), hrs(p1.interval), (p1.frequency!=null?p1.frequency:''),
+    onTxt(p2), mmss(p2&&p2.duration), hrs(p2&&p2.interval), (p2&&p2.frequency!=null?p2.frequency:''),
+    onTxt(p3), mmss(p3&&p3.duration), hrs(p3&&p3.interval), (p3&&p3.frequency!=null?p3.frequency:''),
+    mmss(t.runtimeSec), (t.runtimeSec!=null?(t.runtimeSec/60).toFixed(1):''),
+    (vol==null?'':vol), e.note||''];
+}
+function buildSchedLogCsv(rm){
+  var head='Date,P1 On,Duration,Interval,Frequency,P2 On,Duration,Interval,Frequency,'+
+    'P3 On,P3 Duration,P3 Interval,P3 Frequency,Total Runtime,Runtime (min),Volume,Notes\n';
+  var rows=getSchedLog().filter(function(e){ return !rm || e.room===rm; })
+    .sort(function(a,b){ return a.ts-b.ts; })
+    .map(function(e){ return schedLogRow(e).map(csvq).join(','); });
+  return head+rows.join('\n');
 }
 /* The post-shot window is 1 to 2 hours after P1. A sweep that lands in it
    is the confirmation the change was waiting for, so the flag clears. */
@@ -2962,11 +3104,20 @@ function openSchedule(){
 }
 function drawSchedRooms(r){
   var unknown=r.rooms.filter(function(g){ return !ROOMS[g.room]; });
+  var sched=getSched();
+  /* Weekend Plan 2.1: the paste is a diff, not just a reading, even at
+     nineteen rooms — a room nobody touched this week collapses to "same",
+     and the ones that actually moved are what the screen is for. */
+  var changedRooms=0;
+  r.rooms.forEach(function(g){
+    if(ROOMS[g.room] && schedDiff(g.room, sched[g.room], {tables:g.tables}).length) changedRooms++;
+  });
   var h='<div class="sn">'+r.rooms.length+' rooms · '+r.tables.length+' tables'+
-    (r.asOf?' · as of '+esc(r.asOf):'')+'</div>';
+    (r.asOf?' · as of '+esc(r.asOf):'')+
+    (changedRooms?' · '+changedRooms+' changed since last import':'')+'</div>';
   if(unknown.length) h+='<div class="sn bad">not rooms this app knows: '+
     unknown.map(function(g){ return esc(g.room); }).join(', ')+' — they will be skipped</div>';
-  h+='<table class="sched"><tr><th>room</th><th>tables</th><th>first shot</th><th>state</th></tr>';
+  h+='<table class="sched"><tr><th>room</th><th>tables</th><th>first shot</th><th>state</th><th>changed</th></tr>';
   r.rooms.forEach(function(g){
     var known=!!ROOMS[g.room];
     var off=g.tables.filter(function(t){ return t.inactive; }).length;
@@ -2976,10 +3127,12 @@ function drawSchedRooms(r){
          : bad ? bad+' misread'
          : g.warnings.length ? 'short paste'
          : (off?off+' off':'ok');
-    var cls=!known?' class="off"':(bad||g.warnings.length)?' class="bad"':'';
+    var diffs=known?schedDiff(g.room, sched[g.room], {tables:g.tables}):[];
+    var chg=!known?'—':!sched[g.room]?'first import':diffs.length?diffs.length+' table'+(diffs.length>1?'s':''):'same';
+    var cls=!known?' class="off"':(bad||g.warnings.length)?' class="bad"':(diffs.length?' class="chg"':'');
     h+='<tr'+cls+'><td>'+esc(g.room)+'</td><td>'+g.tables.length+'</td>'+
        '<td>'+(live&&live.P1.start?fmt12(+live.P1.start.split(':')[0],live.P1.start.split(':')[1]):'—')+'</td>'+
-       '<td>'+st+'</td></tr>';
+       '<td>'+st+'</td><td>'+chg+'</td></tr>';
   });
   h+='</table>';
   if(r.warnings.length) h+='<div class="sn bad">'+r.warnings.map(esc).join('<br>')+'</div>';
@@ -2991,6 +3144,26 @@ function schedFmt(sec){
   if(sec==null) return '—';
   var m=Math.floor(sec/60), r=Math.round(sec%60);
   return m+'m'+(r?' '+r+'s':'');
+}
+/* Weekend Plan 2.1: the paste is a diff, not just a reading. Unchanged
+   tables collapse into a count; a changed table gets its own line, in the
+   same format the change log and saveSched's post-shot flag already use —
+   one diff engine, three consumers. */
+function schedDiffSection(rm, freshTables){
+  var stored=getSched()[rm];
+  if(!stored || !stored.tables || !stored.tables.length)
+    return '<div class="sn">first import for this room — nothing to compare against</div>';
+  var diffLines=schedDiff(rm, stored, {tables:freshTables});
+  if(!diffLines.length)
+    return '<div class="sn">no change from the import saved '+
+      (stored.savedAt?new Date(stored.savedAt).toLocaleDateString('en-US'):'earlier')+'</div>';
+  var changed={}; diffLines.forEach(function(l){ var m=l.match(/^T(\S+)/); if(m) changed[m[1]]=true; });
+  var nChanged=Object.keys(changed).length, nUnchanged=freshTables.length-nChanged;
+  var h='<div class="sn chg">'+nChanged+' table'+(nChanged>1?'s':'')+' changed since '+
+    (stored.savedAt?new Date(stored.savedAt).toLocaleDateString('en-US'):'the last import')+
+    (nUnchanged>0?' · '+nUnchanged+' unchanged':'')+'</div>';
+  h+=diffLines.map(function(l){ return '<div class="schedchg">'+esc(l)+'</div>'; }).join('');
+  return h;
 }
 function drawSchedParse(){
   var r=SCHEDPARSE;
@@ -3007,6 +3180,7 @@ function drawSchedParse(){
   var wrongRoom=(r.room && r.room!==S.room);
   var h='';
   if(wrongRoom) h+='<div class="sn bad">that paste says '+r.room+', you are on '+S.room+'</div>';
+  else h+=schedDiffSection(S.room, r.tables);
   h+='<div class="sn">'+r.tables.length+' table'+(r.tables.length>1?'s':'')+' read'+
      (r.warnings.length?' · '+r.warnings.length+' thing'+(r.warnings.length>1?'s':'')+' to look at':'')+'</div>';
   h+='<table class="sched"><tr><th>T</th><th>start</th><th>shot</th><th>every</th><th>x</th><th>total</th></tr>';

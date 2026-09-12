@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v56</title>
+<title>Stab v57</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -376,6 +376,11 @@ table.sched tr.bad td{color:var(--warn)}
 table.sched tr.off td{color:var(--dimmer);font-style:italic}
 table.sched tr.p2 td{color:var(--dimmer);font-size:11px}
 table.sched .sh{color:var(--live)}
+/* Weekend Plan 2.1: a changed room/table on the verification screen */
+table.sched tr.chg td{color:var(--live)}
+.sn.chg{color:var(--live)}
+.schedchg{font-family:var(--mono);font-size:12px;color:var(--live);padding:4px 0;
+  border-bottom:1px solid var(--line)}
 /* ---------- the day (backlog §6.3) ---------- */
 #daysheet{position:fixed;inset:0;background:var(--bg);z-index:24;display:flex;flex-direction:column;
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
@@ -399,6 +404,18 @@ table.sched .sh{color:var(--live)}
 .dtag.win{background:var(--warn);color:#2A1503}
 .dtag.late{background:var(--low);color:#2A0606}
 #weekly{cursor:pointer}
+
+/* ---------- strain rename (Weekend Plan 2.3) ---------- */
+#renamesheet{position:fixed;inset:0;background:var(--bg);z-index:26;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#renametop{font-size:22px;font-weight:700;margin-bottom:2px}
+#renamesub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.5}
+#renamesheet select,#renamesheet input{width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:9px;padding:13px 10px;font-family:var(--mono);font-size:16px;color:var(--ink)}
+.renamerow{font-family:var(--mono);font-size:12px;color:var(--dim);padding:8px 0;
+  border-bottom:1px solid var(--line);line-height:1.5}
+.renamerow b{color:var(--ink)}
+.renamerow .pend{color:var(--warn)}
 
 /* ---------- backup nudge (Weekend Plan 1.6) ---------- */
 #backupnudge{background:var(--surface);border:1px solid var(--warn);border-radius:11px;padding:13px;margin-bottom:14px}
@@ -523,7 +540,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v56</b></div>
+  <div class="brand">Substrate sweep · <b>v57</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -661,7 +678,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v56</div>
+  <div class="v">stab v57</div>
   <div id="stats"></div>
   <div class="act2"><button id="reroom">Re-room this sweep</button></div>
   <div class="wbh">Checks · read here, never pasted</div>
@@ -758,10 +775,31 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <textarea id="schedpaste" rows="5" placeholder="paste the Growlink schedule screen"></textarea>
   <button id="schedparse" class="fp">Read it</button>
   <div id="schedbody"></div>
+  <div class="act2"><button id="schedlogexport">Export change log for this room</button></div>
   <div class="lgact">
     <button id="schedok" class="hide">Save schedule</button>
     <button id="schedclose">Close</button>
   </div>
+</div>
+
+<div id="renamesheet" class="hide">
+  <div id="renametop">Strain rename</div>
+  <div id="renamesub">Old name to new, effective a date — every room
+    carrying the old name reads the new one from that date on. A row
+    already logged is untouched; it keeps the name that was live when it
+    was read.</div>
+  <div class="cfg" style="grid-template-columns:1fr">
+    <div><label>old name</label>
+      <select id="rn_old"></select></div>
+    <div><label>new name</label>
+      <input id="rn_new" placeholder="new name"></div>
+    <div><label>effective</label>
+      <input id="rn_date" type="date"></div>
+  </div>
+  <button id="rn_save" class="fp">Save rename</button>
+  <div class="wbh">Renames on file</div>
+  <div id="renamelist"></div>
+  <div class="act2"><button id="renameclose">Close</button></div>
 </div>
 
 <div id="reroomsheet" class="hide">
@@ -868,6 +906,12 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     <textarea id="backuppaste" class="hide" rows="3" placeholder="or paste the exported text here, then tap Restore again"></textarea>
   </div>
 
+  <div class="lbl">Strain rename (Weekend Plan 2.3, §6.5)</div>
+  <div class="tiny">Old name to new, effective a given date, across every
+    room at once — a row already logged keeps whatever name was live when
+    it was read; nothing is rewritten after the fact.</div>
+  <div id="dbtns"><button class="dbtn" id="renamebtn">Rename a strain</button></div>
+
   <div class="lbl">Position history · for the other phone</div>
   <div id="dbtns">
     <button class="dbtn" id="expprev">Export position history</button>
@@ -918,8 +962,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=56"></script>
-<script src="pure.js?v=56"></script>
-<script src="app.js?v=56"></script>
+<script src="rooms.js?v=57"></script>
+<script src="pure.js?v=57"></script>
+<script src="app.js?v=57"></script>
 </body>
 </html>
