@@ -2982,6 +2982,135 @@ function rowsFor(w,room,spec){
        'and names the mismatch: '+d.getElementById('schedbody').textContent.slice(0,50));
     w.close(); }
 
+  // ============ Weekend Plan 4.1 — runoff entry mode ============
+  // Evan, no probe: room -> table -> mL/EC/pH/note, through the Log
+  // screen's existing runoff tab. No real Friday C5 session survives
+  // anywhere in the repo to replay literally — this reconstructs the
+  // shape the plan's own accept line names (T2 6.0+/6.1 280ml|T8 dry)
+  // plus a flush-day table (T5) exercising the pre/1st-flush/post/
+  // 2nd-flush/post sequence the plan also names, both through the real
+  // Log screen UI rather than by calling the pure builder directly.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    w.S.room='C5';
+    function logRunoff(table,pass,vol,ec,ph,note,fstart,fmin){
+      w.openLog('runoff');
+      d.getElementById('lg_table').value=table;
+      d.getElementById('lg_pass').value=String(pass);
+      d.getElementById('lg_vol').value=vol;
+      d.getElementById('lg_ec').value=ec||'';
+      d.getElementById('lg_ph').value=ph||'';
+      d.getElementById('lg_note').value=note||'';
+      d.getElementById('lg_fstart').value=fstart||'';
+      d.getElementById('lg_fmin').value=fmin||'';
+      d.getElementById('logsave').click();
+    }
+    // T8: dry, one pass, nothing else
+    logRunoff(8,1,'dry');
+    // T2: the plan's own example, verbatim
+    logRunoff(2,1,'280','6.0+','6.1');
+    // T5: a flush-day table — pre-sample, 1st flush, post, 2nd flush, post
+    logRunoff(5,1,'220','5.8','6.0');
+    logRunoff(5,2,'340','5.2','6.1','','10:05','28');
+    logRunoff(5,3,'365','4.9','6.2','','10:45','28');
+    ok(w.getEv().filter(e=>e.kind==='runoff' && e.room==='C5').length===5,
+       'five runoff entries logged for C5 today: '+w.getEv().filter(e=>e.kind==='runoff').length);
+    const note=w.buildRoomNotes();
+    ok(note.indexOf('T2 6.0+/6.1 280ml')>=0,
+       'the plan\'s own example reproduces exactly: '+note);
+    ok(note.indexOf('T8 dry')>=0,'a dry table reads as dry, not a blank or a zero: '+note);
+    ok(note.indexOf('T5 5.8/6.0 220ml · 1st flush 10:05 28min · 5.2/6.1 340ml · 2nd flush 10:45 28min · 4.9/6.2 365ml')>=0,
+       'the flush-day table carries the whole sequence in order: '+note);
+    ok(/T2[\s\S]*\|[\s\S]*T5[\s\S]*\|[\s\S]*T8/.test(note),
+       'tables join in numeric order, T2 before T5 before T8: '+note);
+    ok(errors.length===0,'no runtime errors (4.1 replay): '+errors.join('|'));
+    w.close(); }
+
+  // a note survives even when everything else on the pass is blank, and
+  // an unlabeled meter-maxed EC ("+") is carried through untouched —
+  // nothing in this path ever parses EC as a number
+  { const {w}=boot(null);
+    const line=w.runoffNotesLine([{table:3,pass:1,vol:'150',ec:'6.2+',ph:'5.9'}]);
+    ok(line==='T3 6.2+/5.9 150ml','a meter-maxed EC passes through with its plus sign intact: '+line);
+    const dry=w.runoffNotesLine([{table:9,pass:1,vol:''}]);
+    ok(dry==='T9 dry','an empty volume reads the same as a typed "dry": '+dry);
+    w.close(); }
+
+  // ============ Weekend Plan 4.2 — demand ============
+  // Delivered mL against a real fixture (sched_A1_2026-09-10.txt, the same
+  // real 9/10 Growlink paste Window 2's own tests already use) — a
+  // non-flush day, per the accept line — minus a logged runoff sample.
+  // Both terms are per-plant/per-bag: FC mL is a single bag's own water
+  // content, so mixing in a whole-table total would put demand and the
+  // dryback calibration on two different scales.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    const r=w.parseSchedule(fs.readFileSync(path.join(__dirname,'sched_A1_2026-09-10.txt'),'utf8'));
+    w.saveSched('A1',{savedAt:Date.now(), room:'A1', tables:r.rooms.find(x=>x.room==='A1').tables});
+    w.saveRoomCfg('A1',{plants:60});
+    // T1 prints 16m14s = 8:07x2 (974s total P1 runtime), 4 drippers,
+    // 17.5 mL/min/dripper -> round(16.2333 * 4 * 17.5) = 1136 mL/plant
+    const before=w.demandFor('A1',1);
+    ok(before===1136,'delivered mL alone, nothing logged yet: '+before);
+    w.S.room='A1';
+    w.openLog('runoff');
+    d.getElementById('lg_table').value='1';
+    d.getElementById('lg_pass').value='1';
+    d.getElementById('lg_vol').value='400';
+    d.getElementById('lg_ec').value='4.5'; d.getElementById('lg_ph').value='6.0';
+    d.getElementById('logsave').click();
+    const after=w.demandFor('A1',1);
+    ok(after===1136-400,'demand nets out the logged runoff: '+after+' (1136 - 400)');
+    // T2 shares T1's own duration tier (487s x2 = 974s) in the real fixture,
+    // so it has its own real number too, not a fallback and not null
+    ok(w.demandFor('A1',2)===1136,'a second table on the same tier gets the same delivered figure, independently: '+w.demandFor('A1',2));
+    // T9 is on the room's longest tier: 771s x2 = 1542s -> round(25.7*4*17.5) = 1799
+    ok(w.demandFor('A1',9)===1799,'a different duration tier computes independently, not off T1\'s number: '+w.demandFor('A1',9));
+    ok(errors.length===0,'no runtime errors (4.2 demand): '+errors.join('|'));
+    w.close(); }
+
+  // FC mL / FC ref VWC: the dryback-in-mL reading the plan's own example
+  // names, and the honest "unknown" when only one of the two is set
+  { const {w}=boot(null);
+    w.saveRoomCfg('C3',{fcMl:2800, fcRefVwc:52});
+    // the plan's own example says "≈ 860 mL" — 862 is the exact figure
+    // that approximation rounds from (16 x 2800/52 = 861.5...), not a
+    // second disagreement to chase
+    ok(w.drybackMl('C3',54,38)===862,'54 -> 38 reads 862 mL, matching the plan\'s own ≈860: '+w.drybackMl('C3',54,38));
+    w.saveRoomCfg('A3',{fcMl:2400});   // ref VWC never entered
+    ok(w.drybackMl('A3',54,38)===null,'FC mL alone, with no reference point, is not a calibration: '+w.drybackMl('A3',54,38));
+    ok(w.drybackMl('B5',54,38)===null,'a room with neither field set reads unknown, not a guessed default');
+    w.close(); }
+
+  // ============ Weekend Plan 4.3 — stale median greying ============
+  // §5.7: the median-vs-last line greys out when the prior sweep it is
+  // comparing against is more than four days old — a different kind of
+  // fact than yesterday's, and the done screen should look like it.
+  { const old=Date.now()-6*86400000;
+    const hist=[{room:'B5',ts:old,when:new Date(old).toLocaleString('en-US'),med:44,mode:'sweep'}];
+    const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
+    start(w,d,'B5',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,50,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    const stats=d.getElementById('stats').innerHTML;
+    ok(/class="stalemed"/.test(stats),'a prior sweep six days back greys the delta: '+stats.slice(0,200));
+    ok(/— stale/.test(stats),'and says so in words, not just in color: '+stats.slice(0,200));
+    ok(errors.length===0,'no runtime errors (4.3 stale): '+errors.join('|'));
+    w.close(); }
+
+  // the same room, a prior sweep from earlier today: no greying at all
+  { const recent=Date.now()-3*3600000;
+    const hist=[{room:'B5',ts:recent,when:new Date(recent).toLocaleString('en-US'),med:44,mode:'sweep'}];
+    const {w,d,errors}=boot({'stab_hist':JSON.stringify({v:1,items:hist})}); await sleep(50);
+    start(w,d,'B5',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,50,900); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(60);
+    const stats=d.getElementById('stats').innerHTML;
+    ok(!/stalemed/.test(stats),'three hours back is not stale — no grey class at all: '+stats.slice(0,200));
+    ok(/Δ/.test(stats),'the delta itself still prints: '+stats.slice(0,200));
+    ok(errors.length===0,'no runtime errors (4.3 fresh): '+errors.join('|'));
+    w.close(); }
+
   console.log(out.join('\n'));
   process.exit(out.some(l=>l.startsWith('FAIL'))?1:0);
 })().catch(e=>{ console.log('HARNESS EXCEPTION',e); console.log(e.stack); process.exit(2); });

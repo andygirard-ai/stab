@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v59';
+var VER='v60';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -903,6 +903,56 @@ function mlPlantToday(rm, t){
   if(row.runtimeSec==null) return null;
   return mlPerPlant(rm, (t==null?row.table:t), row.runtimeSec/60);
 }
+/* Demand (Weekend Plan 4.2): what a plant actually took up today, net of
+   what came back out. Both halves live at the same scale — a single
+   bag — on purpose: FC mL (below) is a per-bag water content (2800 for
+   one 2-gal Bio365 bag, not a whole table of them), and runoff mL is
+   what Evan collects from a table's own sample, the same single-bag
+   reading the workbook's Notes column already carries. mlPlantToday is
+   the per-plant delivered figure this file already computes;
+   mlTableToday multiplies by plant count and would silently put the two
+   terms on different scales. A dry table subtracts nothing, since there
+   was nothing to subtract. Null when delivered mL itself is unknown,
+   same as mlPlantToday already reads for an uncovered table — demand
+   cannot be more certain than the number it is built from. */
+function runoffMlForTable(room, table){
+  var all=(typeof getEv==='function')?(getEv()||[]):[];
+  var d0=new Date(); d0.setHours(0,0,0,0);
+  var sum=0;
+  all.forEach(function(e){
+    if(e.kind!=='runoff' || e.room!==room || String(e.table)!==String(table) || e.ts<d0.getTime()) return;
+    if(e.vol && !/^dry$/i.test(e.vol)){ var v=parseFloat(e.vol); if(!isNaN(v)) sum+=v; }
+  });
+  return sum;
+}
+function demandFor(room, table){
+  var delivered=mlPlantToday(room, table);
+  return delivered==null ? null : delivered-runoffMlForTable(room,table);
+}
+/* Field capacity calibration (Weekend Plan 4.2) — FC mL (the substrate's
+   own water content at field capacity: 2800 for a 2-gal Bio365 bag) and
+   FC ref VWC (~52, the VWC% that corresponds to it), both per-room
+   overrides in room config, the same rcfg pattern as floor and tank.
+   Together they turn a VWC delta into an mL estimate — dryback_mL =
+   ΔVWC × (FC mL / FC ref VWC), the linear-near-that-point assumption the
+   plan's own example confirms: 54 → 38 ≈ 860 mL is exactly
+   (54-38) × (2800/52). A room with either field unset reads unknown, not
+   a guessed default — FC mL is bag- and media-specific and the field
+   capacity band itself moves with days in flower (see CLAUDE.md), so
+   there is no single constant this file could fall back to safely. */
+function fcMlFor(rm){
+  var c=rcfg(rm);
+  return (c.fcMl!=null && c.fcMl!=='' && !isNaN(+c.fcMl)) ? +c.fcMl : null;
+}
+function fcRefVwcFor(rm){
+  var c=rcfg(rm);
+  return (c.fcRefVwc!=null && c.fcRefVwc!=='' && !isNaN(+c.fcRefVwc)) ? +c.fcRefVwc : null;
+}
+function drybackMl(rm, fromVwc, toVwc){
+  var ml=fcMlFor(rm), ref=fcRefVwcFor(rm);
+  if(ml==null || !ref || fromVwc==null || toVwc==null) return null;
+  return Math.round((fromVwc-toVwc)*(ml/ref));
+}
 /* DOF from the API where set (Weekend Plan 3.4) — activeRun.currentDayNo,
    the field rooms.js has always named as the real source of truth for the
    day-of-cycle count, now actually read when a room has one on file.
@@ -1703,9 +1753,65 @@ function roomPara(){
    What survives is an exception a person has to act on: a dead bag, or a
    table that read nothing when its neighbours did. The analysis lives in
    the CSV and on the done screen, which is where it belongs. */
+/* Runoff entry mode (Weekend Plan 4.1) — Evan's on-ramp, no probe: room,
+   table, mL, EC, pH, a note, logged through the same event log shots and
+   faults already use (getEv, late-bound exactly like getHist). Writes the
+   workbook's own Notes format, the thing this file's note cells were
+   already described as being "used for flush times and saucer pickups"
+   before this window ever touched them: "T2 6.0+/6.1 280ml|T8 dry" — EC
+   (a trailing + means the meter maxed, typed straight into the field,
+   never parsed as a number here or anywhere else this app touches EC)
+   over pH, then the volume, or "dry" when none came back at all.
+
+   pass 1/2/3 (already on every runoff event, unrelated to this feature)
+   carries the flush-day sequence for free: pass 1 is the pre-flush
+   sample, pass 2 is taken after the 1st flush, pass 3 after the 2nd —
+   so a flush timing attached to pass 2's own event describes the flush
+   that happened between pass 1 and pass 2, and the one on pass 3
+   describes the flush between pass 2 and pass 3. A non-flush day never
+   populates flush timing at all and reads exactly like the old
+   single-pass form always did. */
+function runoffTableLine(events){
+  var byPass={};
+  events.forEach(function(e){ byPass[+e.pass||1]=e; });
+  var passes=Object.keys(byPass).map(Number).sort(function(a,b){ return a-b; });
+  if(!passes.length) return null;
+  var parts=[];
+  passes.forEach(function(p,i){
+    var e=byPass[p];
+    if(i>0 && e.flush && (e.flush.start || e.flush.min!=null))
+      parts.push((e.flush.which===2?'2nd':'1st')+' flush'+
+        (e.flush.start?' '+e.flush.start:'')+(e.flush.min!=null?' '+e.flush.min+'min':''));
+    if(!e.vol || /^dry$/i.test(e.vol)) parts.push('dry');
+    else parts.push((e.ec||'—')+'/'+(e.ph||'—')+' '+e.vol+'ml');
+  });
+  return parts.join(' · ');
+}
+function runoffNotesLine(events){
+  var byTable={};
+  events.forEach(function(e){ (byTable[e.table]=byTable[e.table]||[]).push(e); });
+  var tables=Object.keys(byTable).sort(function(a,b){ return (+a)-(+b); });
+  var lines=tables.map(function(t){
+    var line=runoffTableLine(byTable[t]);
+    return line?('T'+t+' '+line):null;
+  }).filter(Boolean);
+  return lines.join('|');
+}
+/* Today's runoff line for a room, pulled off the shared event log —
+   late-bound the same way getHist and getSched are, so pure.js never
+   knows storage exists. Empty when nobody has logged runoff for this
+   room today, not a guess. */
+function todaysRunoffFor(room){
+  var all=(typeof getEv==='function')?(getEv()||[]):[];
+  var d0=new Date(); d0.setHours(0,0,0,0);
+  var evs=all.filter(function(e){ return e.kind==='runoff' && e.room===room && e.ts>=d0.getTime(); });
+  return evs.length?runoffNotesLine(evs):null;
+}
 var ROOMNOTE_MAX=4;
 function roomNoteExceptions(){
   var out=[];
+  var runoff=todaysRunoffFor(S.room);
+  if(runoff) out.push(runoff);
   var dead=S.rows.filter(function(r){ return r.zeroEc; });
   if(dead.length){
     out.push('dead bag'+(dead.length>1?'s':'')+' '+dead.map(function(r){

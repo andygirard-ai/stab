@@ -312,7 +312,75 @@ Nothing. The one open item (device-name-to-zone-label matching) is
 flagged, not blocking — 3.2 fails honestly by name if it's wrong, and
 doesn't stop anything else from shipping.
 
-## Not started
+---
 
-Window 4 (Evan's runoff entry mode, demand computation, stale-median
-greying) — up next, same session.
+# Window 4 report — Evan, and demand
+
+All three items shipped. Suite: **1049 → 1071 passing, all green.**
+Branch `claude/new-session-ri155r`, v60.
+
+## Shipped
+
+**4.1 Runoff entry mode.** No probe: room, table, mL, EC, pH, a note,
+through the Log screen's existing `runoff` tab (extended, not replaced —
+its `pass` field already carried what a flush day needs, since pass 1 is
+the pre-flush sample, pass 2 is taken after the 1st flush, pass 3 after
+the 2nd). Two new optional fields, flush start and flush minutes, attach
+to whichever pass follows a flush. `runoffNotesLine` (pure.js) writes
+the workbook's own Notes format exactly: `T2 6.0+/6.1 280ml|T8 dry`
+(the plan's own example, reproduced verbatim by a real replay of the Log
+screen) — EC with an optional trailing `+` for a maxed meter, never
+parsed as a number anywhere this touches EC; `dry` for a table with
+nothing to report; tables joined by `|`, in numeric order. Surfaces
+automatically in `buildRoomNotes()` — the same shared note cell the
+file's own comment already described as "used for flush times and
+saucer pickups" before this window ever touched it — so Evan's entries
+reach the workbook even on a day nobody ran the probe in that room.
+*Scope note:* no real Friday C5 session survives anywhere in the repo to
+replay literally, despite the accept line naming one — confirmed absent
+by search, not assumed. The test replays the plan's own literal example
+(`T2`/`T8`) plus a constructed flush-day table (`T5`) through the real
+UI instead, which is honest about what it is: built to exercise the
+mechanism the accept line describes, not a reproduction of a session
+that isn't in the repo.
+
+**4.2 Demand.** `demandFor(room, table)` = `mlPlantToday` (already
+computed, per-plant) minus today's runoff for that table (4.1). Both
+terms deliberately at the same scale — a single bag — because `FC mL`
+is a per-bag water content (2800 for one 2-gal Bio365 bag, not a whole
+table of them); `mlTableToday` would have multiplied by plant count and
+put demand and the dryback calibration on two different scales without
+either number looking wrong on its own. Two new room-config fields, `FC
+mL` and `FC ref VWC`, follow the exact pattern floor/tank/plants already
+use — unset reads unknown, never a guessed default, since field capacity
+is bag- and media-specific and moves with days in flower. `drybackMl`
+turns a VWC delta into an mL estimate; the plan's own example (54 → 38 ≈
+860 mL) reproduces at 862 mL exactly, the precise figure that
+approximation rounds from. Room Setup gets a live readout under the two
+new fields. Tested against the real `sched_A1_2026-09-10.txt` fixture
+(the same one Window 2's own tests already use) rather than a synthetic
+schedule — a real non-flush day, per the accept line, even though the
+literal 9/9–9/10 probe-reading CSVs it names aren't in the repo either.
+
+**4.3 Stale median greying.** The done screen's median delta (`Δ +2.1
+vs 9/8`) greys out — a new `.stalemed` class, deliberately not reusing
+`.stale` (already means "needs attention," a warning color, on the room
+setup button and the data-age pill; this is the opposite, a
+deliberately muted one) — when the prior sweep it's comparing against
+is more than four days old, and says "— stale" in words, not only in
+color. A real bug caught building this: the containing function
+(`finish()`) already declares a local `var histTs` (a timestamp for the
+*new* entry being saved), which shadows the outer `histTs()` helper
+function for the whole scope via `var` hoisting — calling it threw
+`histTs is not a function` in testing before it ever reached a real
+device. Fixed by inlining the same fallback logic under a distinct name
+rather than fighting the shadow.
+
+## What's on branch (Window 4)
+
+One commit beyond the Window 3 correction: v60. Merges to `main` in the
+same push as the Window 3 correction, per Andy's instruction.
+
+## Blocked
+
+Nothing.

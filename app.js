@@ -2535,7 +2535,14 @@ function finish(){
   var html='reference median <b class="big">'+(m==null?'--':m.toFixed(1)+'%')+'</b>';
   if(prev && m!=null){
     var dm=m-prev.med;
-    html+=' &nbsp;Δ '+(dm>=0?'+':'')+dm.toFixed(1)+' vs '+(prev.when?prev.when.split(',')[0]:'last');
+    /* Not histTs(prev) — this function declares its own local var histTs
+       further down (the new history entry's own timestamp), which shadows
+       the outer histTs() function for this whole scope via hoisting. Same
+       fallback logic, inlined, rather than fight the shadow. */
+    var prevHistTs=prev.ts||Date.parse(prev.when||'')||0;
+    var old4=(Date.now()-prevHistTs)/86400000>4;
+    html+=' &nbsp;<span'+(old4?' class="stalemed"':'')+'>Δ '+(dm>=0?'+':'')+dm.toFixed(1)+' vs '+
+      (prev.when?prev.when.split(',')[0]:'last')+(old4?' — stale':'')+'</span>';
   }
   html+='<br>';
   if(v.length) html+='range '+v[0].toFixed(1)+' – '+v[v.length-1].toFixed(1)+'%<br>';
@@ -3700,6 +3707,8 @@ function openRoomSetup(){
   $('cfg_floor').value=(floorIsSet(S.room)?c.floor:'');
   $('cfg_plants').value=(c.plants!=null?c.plants:'');
   $('cfg_tank').value=c.tank||'';
+  $('cfg_fcml').value=(c.fcMl!=null?c.fcMl:'');
+  $('cfg_fcref').value=(c.fcRefVwc!=null?c.fcRefVwc:'');
   var st=roomState(S.room);
   [].forEach.call(document.querySelectorAll('#cfg_state .rst'),function(b){
     b.classList.toggle('on', b.dataset.st===st);
@@ -3712,6 +3721,9 @@ function openRoomSetup(){
   $('cfg_bag2').onchange=drawCfgFloor;
   drawCfgFloor();
   drawCfgDof();
+  $('cfg_fcml').oninput=drawCfgFc;
+  $('cfg_fcref').oninput=drawCfgFc;
+  drawCfgFc();
   var h='<table class="cfgt"><tr><th>T</th><th>strain</th><th>plants</th><th>drip</th><th>under</th></tr>';
   for(var t=1;t<=ROOMS[S.room].t;t++){
     var si=strainFor(S.room,t), under=(si[1]||'').indexOf('U')>=0;
@@ -3797,6 +3809,18 @@ function drawCfgDof(){
     (dof<0?' <span class="low">— that date is in the future</span>':'')+
     (dof>90?' <span class="low">— over 90 days, check it</span>':'');
 }
+/* Demand (Weekend Plan 4.2) — FC mL and FC ref VWC together turn a VWC
+   delta into an mL estimate: dryback_mL = ΔVWC × (FC mL / FC ref VWC).
+   Both fields, not one — a bag/media specific water content with no
+   reference point to scale it from is not a calibration, just a number. */
+function drawCfgFc(){
+  var el=$('cfg_fcnote'); if(!el) return;
+  var ml=parseFloat($('cfg_fcml').value), ref=parseFloat($('cfg_fcref').value);
+  if(!$('cfg_fcml').value && !$('cfg_fcref').value){ el.innerHTML=''; return; }
+  if(isNaN(ml)||ml<=0||isNaN(ref)||ref<=0){ el.innerHTML='<span class="low">FC mL and FC ref VWC both want a number, or leave both blank</span>'; return; }
+  el.innerHTML='≈ '+(ml/ref).toFixed(1)+' mL per VWC point · a 54 → 38 dryback would read ≈ '+
+    Math.round((54-38)*(ml/ref))+' mL';
+}
 function saveRoomSetup(){
   var c=roomCfg()[S.room]||{};
   var fs=($('cfg_fs').value||'').trim();
@@ -3816,6 +3840,10 @@ function saveRoomSetup(){
   if(!isNaN(pl) && pl>0) c.plants=pl; else delete c.plants;
   var tk=$('cfg_tank').value;
   if(tk) c.tank=tk; else delete c.tank;
+  var fcml=parseFloat($('cfg_fcml').value);
+  if(!isNaN(fcml) && fcml>0) c.fcMl=fcml; else delete c.fcMl;
+  var fcref=parseFloat($('cfg_fcref').value);
+  if(!isNaN(fcref) && fcref>0) c.fcRefVwc=fcref; else delete c.fcRefVwc;
   var strains={}, drip={}, anyS=false, anyD=false;
   [].forEach.call(document.querySelectorAll('#cfgtables .st'),function(i){
     var t=i.dataset.t, name=(i.value||'').trim();
@@ -4009,10 +4037,15 @@ function drawLog(){
   } else {
     h+=fld('room','<input id="lg_room" value="'+rm+'">');
     h+=fld('table','<input id="lg_table" placeholder="3">');
-    h+=fld('pass','<select id="lg_pass"><option>1</option><option>2</option><option>3</option></select>');
+    h+=fld('pass — 1 pre-flush, 2 after the 1st flush, 3 after the 2nd',
+      '<select id="lg_pass"><option>1</option><option>2</option><option>3</option></select>');
     h+=fld('volume mL — dry if none','<input id="lg_vol" placeholder="400 or dry">');
-    h+=fld('runoff EC','<input id="lg_ec" inputmode="decimal" placeholder="6.0">');
+    h+=fld('runoff EC — add + if the meter maxed','<input id="lg_ec" inputmode="decimal" placeholder="6.0 or 6.0+">');
     h+=fld('runoff pH','<input id="lg_ph" inputmode="decimal" placeholder="6.3">');
+    h+=fld('note','<textarea id="lg_note" rows="2"></textarea>');
+    h+='<div class="tiny">Flush timing (Weekend Plan 4.1) — only on pass 2 or 3, for the flush that ran just before this sample. Leave blank on a non-flush day.</div>';
+    h+=fld('flush start','<input id="lg_fstart" placeholder="10:05">');
+    h+=fld('flush minutes','<input id="lg_fmin" inputmode="numeric" placeholder="28">');
   }
   $('logbody').innerHTML=h;
   [].forEach.call(document.querySelectorAll('#logbody .chip'),function(b){
@@ -4053,7 +4086,10 @@ function summarizeEv(e){
     (e.ml?'  ~'+e.ml+' mL':'')+(e.why?'  '+e.why:'');
   if(e.kind==='fault') return faultMsg(e)+(e.status&&e.status!=='open'?'  ['+e.status+']':'');
   if(e.kind==='bulb') return bulbMsg(e);
-  return e.room+' T'+e.table+' pass '+e.pass+'  '+(e.vol||'')+(e.ec?'  '+e.ec+' EC':'')+(e.ph?' / '+e.ph:'');
+  return e.room+' T'+e.table+' pass '+e.pass+'  '+(e.vol||'')+(e.ec?'  '+e.ec+' EC':'')+(e.ph?' / '+e.ph:'')+
+    (e.flush?'  · '+(e.flush.which===2?'2nd':'1st')+' flush'+(e.flush.start?' '+e.flush.start:'')+
+      (e.flush.min!=null?' '+e.flush.min+'min':''):'')+
+    (e.note?'  · '+e.note:'');
 }
 function pick(id){
   var el=$(id); if(!el) return '';
@@ -4091,8 +4127,13 @@ $('logsave').onclick=function(){
     toast('logged · message copied for Teams');
     drawLog(); return;
   } else {
-    e=addEv({kind:'runoff', room:room, table:val('lg_table'), pass:val('lg_pass'),
-      vol:val('lg_vol'), ec:val('lg_ec'), ph:val('lg_ph')});
+    if(!val('lg_table')){ toast('table?'); return; }
+    var pass=val('lg_pass')||'1';
+    var ev={kind:'runoff', room:room, table:val('lg_table'), pass:pass,
+      vol:val('lg_vol'), ec:val('lg_ec'), ph:val('lg_ph'), note:val('lg_note')};
+    var fstart=val('lg_fstart'), fmin=val('lg_fmin');
+    if(fstart||fmin) ev.flush={which:(pass==='3'?2:1), start:fstart, min:(fmin?parseFloat(fmin):null)};
+    e=addEv(ev);
   }
   toast('logged');
   drawLog();
