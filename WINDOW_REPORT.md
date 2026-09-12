@@ -205,7 +205,7 @@ had built against a guess or left unwired is now built against a
 confirmed fact instead; 2.2's reconciliation, run against real fixtures
 for the first time, caught two real bugs no synthetic fixture ever had
 a chance to. Suite: **996 → 1049 passing, all green.** Branch
-`claude/new-session-ri155r`, v59.
+`claude/new-session-ri155r`, v59 (`ee2be9b`).
 
 ## Corrected
 
@@ -301,7 +301,7 @@ flagged gap in `QUESTIONS.md` instead of a silent one.
 
 ## What's on branch (Window 3 correction)
 
-One commit beyond the first Window 3 pass: v59. `docs/Growlink_Skill.md`
+One commit beyond the first Window 3 pass: `ee2be9b` (v59). `docs/Growlink_Skill.md`
 and `fixtures/9-11/` (nine real schedule screens, a README, and the
 SYNTHETIC A7 device-log fixture) are new on branch. Merges to `main`
 alongside Window 4, per Andy's instruction this round.
