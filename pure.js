@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v52';
+var VER='v53';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -595,6 +595,39 @@ function tankFor(rm){
   var c=rcfg(rm);
   if(c.tank) return c.tank;
   return (FEEDEC[rm]===0) ? 'water' : '';
+}
+/* Reconstruct the moment a row was captured, from the same Date/Time text
+   that goes into the CSV (toLocaleDateString('en-US') / toLocaleTimeString
+   with hour12:false). Re-rooming (Weekend Plan 1.2) needs hours-since-shot
+   recomputed against when the reading actually happened, not against now —
+   a sweep re-roomed the next day would otherwise print the wrong number. */
+function rowDateTime(row){
+  var dp=(row.date||'').split('/'), tp=(row.time||'').split(':');
+  if(dp.length!==3 || tp.length<2) return null;
+  var d=new Date(+dp[2], +dp[0]-1, +dp[1], +tp[0]||0, +tp[1]||0, +tp[2]||0);
+  return isNaN(d.getTime()) ? null : d;
+}
+/* Re-room a sweep, in progress or already filed (Weekend Plan 1.2). A full
+   C3 sweep went out under A1 on 9/11 and nothing said so for eleven tables.
+   This recomputes every field that is a property of the ROOM — strain,
+   flags, bag, media, hours since shot, and below-floor, which depends on
+   floorFor(room) — and leaves the physical measurement exactly as read:
+   table, position, depth, vwc, ec, bulk, tmp, raw, and when it was taken. */
+function reRoomRows(rows, newRoom){
+  if(!ROOMS[newRoom]) return rows;
+  var f=floorFor(newRoom);
+  return rows.map(function(r){
+    var out={}; Object.keys(r).forEach(function(k){ out[k]=r[k]; });
+    var t=(typeof r.table==='number')?r.table:parseInt(r.table,10);
+    var si=strainFor(newRoom, t);
+    var h=hoursSinceShot(newRoom, rowDateTime(r), t);
+    out.room=newRoom;
+    out.strain=si[0]; out.flags=si[1];
+    out.hrs=(h===null?'':h.toFixed(1));
+    out.bag=ROOMS[newRoom].bag; out.media=ROOMS[newRoom].media;
+    out.flag=(typeof r.vwc==='number')?(r.vwc<f):r.flag;
+    return out;
+  });
 }
 /* Room state (spec §5.7, and A3 went harvest -> empty -> move-in in 48
    hours this week with no way to say so). Only an active room is on the

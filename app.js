@@ -1061,9 +1061,9 @@ function drawRoute(){
 function render(){
   var s=S.route[S.i];
   if(!s){ finish(); return; }
-  $('pos').textContent=s.spot
+  $('pos').innerHTML=s.spot
     ? 'Spot '+(S.i+1)+(S.spotTable!=null?' · T'+S.spotTable:' · pick a table')
-    : 'Table '+s.t;
+    : 'Table <b class="tnum">'+s.t+'</b>';
   $('depth').innerHTML=s.pos+'<span class="d">'+(s.depth==='reference'?'REF':'MID')+'</span>';
   var info=strainFor(S.room, s.t);
   $('strain').onclick=null;
@@ -1921,7 +1921,11 @@ function advance(stop){
   S.i++; saveSession();
   var nxt=S.route[S.i];
   var tableDone=S.mode==='sweep' && !stop.spot && (!nxt || nxt.t!==stop.t);
-  if(tableDone) beep('tableDone');
+  /* Weekend Plan 1.3: T6-front to T7-front reads identically on screen at
+     a glance, and a room is loud enough that one more beep in the same
+     register stops registering. tableDone already has its own tone; this
+     adds a haptic buzz and a pulse on the table number itself. */
+  if(tableDone){ beep('tableDone'); vibrate(BUZZ_TABLE); pulseTable(); }
   if(!nxt){ setTimeout(finish,450); return; }
   if(tableDone && S.flaggedTable){
     S.flaggedTable=false;
@@ -1931,6 +1935,18 @@ function advance(stop){
   }
   if(tableDone) S.flaggedTable=false;
   render(); flash();
+}
+/* Feature-detected: most of iOS Bluefy has no Vibration API at all, and a
+   missing one costs nothing here — the beep and the pulse still fire. */
+var BUZZ_TABLE=[40,60,40];
+function vibrate(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+function pulseTable(){
+  var el=$('pos'); if(!el) return;
+  el.classList.remove('pulse');
+  void el.offsetWidth;   /* restart the animation even table-to-table */
+  el.classList.add('pulse');
 }
 
 /* ---------------- controls ---------------- */
@@ -2443,6 +2459,41 @@ function finish(){
     '. The hand goes blind below about '+HAND_LIMIT+', so bag feel cannot find a table under it.</span>';
   html+='<br>operator '+S.op+' · side '+S.side;
   $('stats').innerHTML=html;
+  buildExports();
+  clearChangedIfConfirmed();
+  try{
+    if(DEMO) throw 0;
+    var h2=getHist();
+    var histTs=Date.now();
+    h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:histTs,
+      n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)), low:lows,
+      dur:dur, clean:clean, qual:qual, spm:(spm==null?null:+spm.toFixed(2)),
+      probeFrames:S.probeFrames||0, handOnly:handOnlyBlind(), op:S.op||'',
+      skipped:skippedList().length, swept:coverage().swept,
+      csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
+      dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
+      notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
+    saveHist(h2);
+    S._histTs=histTs;
+  }catch(e){}
+  clearSession();
+  PREF.lastDir=S.dir; savePrefs();
+  if(!canShareFiles()) $('share').style.display='none';
+  $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
+    ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
+    ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
+    ' · batt '+(S.batt==null?'no reply':S.batt+'%')+
+    (DBG.sensorErr?' · sensor errors '+DBG.sensorErr+' (last '+DBG.lastSensorErr+')':'')+
+    (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
+  showHist();
+  beep('sweepDone');
+}
+/* ---------------- CSV / workbook / CHECK exports ----------------
+   Pulled out of finish() so re-rooming (Weekend Plan 1.2) can rebuild
+   everything room-derived without duplicating a 40-line block. Reads S.rows
+   and S.room; writes CSV_TEXT/WB_TEXT/ROW_TEXT/ROOM_TEXT and the matching
+   textareas/checks on screen. Safe to call more than once. */
+function buildExports(){
   /* CSV: original 22 columns, then appended */
   var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
   var swx=sweepFlags();
@@ -2509,31 +2560,6 @@ function finish(){
   $('wbroomnone').classList.toggle('hide',!none);
   $('wbroom').classList.toggle('hide',none);
   $('copyroom').parentNode.classList.toggle('hide',none);
-  clearChangedIfConfirmed();
-  try{
-    if(DEMO) throw 0;
-    var h2=getHist();
-    h2.unshift({room:S.room, when:new Date().toLocaleString('en-US'), ts:Date.now(),
-      n:S.rows.length, mode:S.mode, dir:S.dir, med:(m==null?null:+m.toFixed(1)), low:lows,
-      dur:dur, clean:clean, qual:qual, spm:(spm==null?null:+spm.toFixed(2)),
-      probeFrames:S.probeFrames||0, handOnly:handOnlyBlind(), op:S.op||'',
-      skipped:skippedList().length, swept:coverage().swept,
-      csv:CSV_TEXT, wb:WB_TEXT, wbrow:ROW_TEXT, wbroom:ROOM_TEXT,
-      dbg:{polls:DBG.polls,directs:DBG.directs,writeFails:DBG.writeFails,timeouts:DBG.timeouts,unstable:S.unstable||0},
-      notes:JSON.parse(JSON.stringify(S.notes||{})), free:JSON.parse(JSON.stringify(S.free||{}))});
-    saveHist(h2);
-  }catch(e){}
-  clearSession();
-  PREF.lastDir=S.dir; savePrefs();
-  if(!canShareFiles()) $('share').style.display='none';
-  $('dbg').textContent='pkts '+DBG.pkts+' · polls '+DBG.polls+' · direct '+DBG.directs+
-    ' · status '+DBG.statusFrames+' · writeFail '+DBG.writeFails+' · timeouts '+DBG.timeouts+
-    ' · lastLat '+(S.lastLat==null?'—':S.lastLat+'ms')+
-    ' · batt '+(S.batt==null?'no reply':S.batt+'%')+
-    (DBG.sensorErr?' · sensor errors '+DBG.sensorErr+' (last '+DBG.lastSensorErr+')':'')+
-    (DBG.unparsed.length?('\n\nunparsed:\n'+DBG.unparsed.join('\n')):'\n\nno unparsed packets');
-  showHist();
-  beep('sweepDone');
 }
 function showHist(){
   var el=$('hist'); if(!el) return;
@@ -2591,6 +2617,62 @@ function copyBox(id,label){
 }
 $('copyrow').onclick=function(){ copyBox('wbrow','row notes'); };
 $('copyroom').onclick=function(){ copyBox('wbroom','room notes'); };
+/* ---------------- re-room (Weekend Plan 1.2) ----------------
+   A full C3 sweep went out as A1 on 9/11 and nothing on the done screen
+   said so. Table, position, depth and every measurement stay exactly as
+   read; strain, floor, bag, drippers and hours since shot recompute for
+   whichever room actually took the readings — reRoomRows does the work,
+   buildExports reruns the CSV/workbook/CHECK. The sweep is already in
+   history by the time this screen is up (finish() writes it immediately),
+   so that entry is kept in sync too, matched by the timestamp finish()
+   stamped it with rather than by room name — the room name is exactly
+   what is changing. */
+function showReroomSheet(){
+  var el=$('reroomgrid'); if(!el) return;
+  var h='';
+  ['A','B','C'].forEach(function(w){
+    var keys=Object.keys(ROOMS).filter(function(k){ return k[0]===w && !ROOMS[k].kind; });
+    if(!keys.length) return;
+    h+='<div class="wl">'+w+' WING</div><div class="wing">'+
+      keys.map(function(k){ return '<button class="rm'+(k===S.room?' on':'')+'" data-room="'+k+'">'+k+'</button>'; }).join('')+
+      '</div>';
+  });
+  el.innerHTML=h;
+  [].forEach.call(el.querySelectorAll('.rm'),function(b){
+    b.onclick=function(){ applyReroom(b.dataset.room); };
+  });
+  $('reroomsheet').classList.remove('hide');
+}
+function applyReroom(newRoom){
+  if(!ROOMS[newRoom] || ROOMS[newRoom].kind) return;
+  if(newRoom===S.room){ $('reroomsheet').classList.add('hide'); return; }
+  var oldRoom=S.room;
+  if(!confirm('Re-room this sweep from '+oldRoom+' to '+newRoom+'?\n\n'+
+     'Table, position and depth stay exactly as read. Strain, floor, bag, '+
+     'drippers and hours since shot recompute for '+newRoom+'.')) return;
+  S.rows=reRoomRows(S.rows, newRoom);
+  S.room=newRoom;
+  $('reroomsheet').classList.add('hide');
+  $('dtitle').textContent=S.room+' · '+S.rows.length+' readings';
+  buildExports();
+  if(!DEMO){
+    try{
+      var h=getHist();
+      if(h.length && S._histTs && h[0].ts===S._histTs){
+        h[0].room=S.room;
+        h[0].csv=CSV_TEXT; h[0].wb=WB_TEXT; h[0].wbrow=ROW_TEXT; h[0].wbroom=ROOM_TEXT;
+        var msd2=measuredRows();
+        var v2=msd2.filter(function(r){return r.depth==='reference';}).map(function(r){return r.vwc;});
+        h[0].med=v2.length?+med(v2).toFixed(1):null;
+        h[0].low=msd2.filter(function(r){return r.flag;}).length;
+        saveHist(h);
+      }
+    }catch(e){}
+  }
+  toast('re-roomed '+oldRoom+' → '+newRoom);
+}
+$('reroom').onclick=showReroomSheet;
+$('reroomcancel').onclick=function(){ $('reroomsheet').classList.add('hide'); };
 $('discard').onclick=function(){
   if(!confirm('Discard this sweep? '+S.rows.length+' readings will be deleted and no history kept.')) return;
   try{

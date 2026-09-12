@@ -2146,6 +2146,85 @@ function rowsFor(w,room,spec){
        'confirmgo is what actually starts it, on the confirmed room');
     w.S.roomStarted=false; }
 
+  // ============ Weekend Plan 1.2 — re-room a sweep ============
+  // The Friday sweep that went out as A1 instead of C3. reRoomRows has to
+  // recompute strain, floor and hours-since-shot from C3's own schedule —
+  // an imported one, since a room-wide default schedule cannot produce a
+  // gap this long — while leaving the table, position, depth and the
+  // measurement itself exactly as read.
+  { const {w,d,errors}=boot({'stab_sched':JSON.stringify({C3:{savedAt:Date.now(),tables:[
+      {table:1,P1:{start:'21:15',duration:300,interval:0,frequency:1},P2:null,runtimeSec:300,reconciles:true}
+    ]}})});
+    await sleep(50);
+    w.S.rows=[{date:'9/12/2026',time:'17:15:00',room:'A1',table:1,position:'front',depth:'reference',
+      plant:'',strain:'Purple Chem',flags:'',hrs:'2.0',mode:'sweep',dir:'up',feedEC:'',feedPH:'',
+      bag:2,media:'Bio365',side:'standard',vwc:18,ec:1.0,bulk:0.4,tmp:22,flag:false,raw:'0\t2297.3 22.0 400\rg8',
+      op:'APG',frame:'direct'}];
+    const rr=w.reRoomRows(w.S.rows,'C3');
+    ok(rr[0].room==='C3','room reassigned: '+rr[0].room);
+    ok(rr[0].strain==='Kabuki Sour','C3\'s own strain, not A1\'s Purple Chem: '+rr[0].strain);
+    ok(rr[0].bag===1.25 && rr[0].media==='Bio365','C3\'s bag size follows too: '+rr[0].bag);
+    ok(rr[0].flag===true,'18% now reads below C3\'s 1.25-gal floor of 30, not A1\'s 22');
+    ok(Math.abs(parseFloat(rr[0].hrs)-20)<0.05,'about 20h since C3\'s own shot, from its imported schedule: '+rr[0].hrs);
+    ok(rr[0].table===1 && rr[0].position==='front' && rr[0].depth==='reference' &&
+       rr[0].vwc===18 && rr[0].ec===1.0 && rr[0].raw===w.S.rows[0].raw,
+       'table, position, depth and the measurement itself are untouched');
+    ok(errors.length===0,'no runtime errors (1.2 reRoomRows): '+errors.join('|'));
+    w.close(); }
+
+  // the done-screen control: re-rooms the live sweep, its exports, and the
+  // history entry finish() already wrote — matched by timestamp, not by
+  // the room name that is exactly what is changing
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'A1',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    enterSettling(w,18,400); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    d.getElementById('exit').click(); await sleep(50);
+    ok(w.S.finished===true,'the sweep finished under A1 first');
+    d.getElementById('reroom').click(); await sleep(20);
+    ok(!d.getElementById('reroomsheet').classList.contains('hide'),'Re-room opens a room picker');
+    const c3btn=d.querySelector('#reroomgrid .rm[data-room="C3"]');
+    ok(!!c3btn,'C3 is one of the choices');
+    c3btn.click(); await sleep(20);
+    ok(w.S.room==='C3','the live session is re-roomed: '+w.S.room);
+    ok(d.getElementById('reroomsheet').classList.contains('hide'),'and the picker closes');
+    ok(new RegExp(w.strainFor('C3',1)[0]).test(d.getElementById('csv').value),
+       'the re-exported CSV carries C3\'s strain, not A1\'s');
+    const hist=JSON.parse(w.localStorage.getItem('stab_hist')||'{}');
+    ok(hist.items && hist.items[0].room==='C3','and the history entry finish() already wrote follows it: '+
+       (hist.items&&hist.items[0]&&hist.items[0].room));
+    ok(errors.length===0,'no runtime errors (1.2 done-screen re-room): '+errors.join('|'));
+    w.S.roomStarted=false; }
+
+  // ============ Weekend Plan 1.3 — table-change cue ============
+  // T6-front to T7-front reads identically on screen at a glance. A table
+  // boundary now carries its own beep (already existed), a haptic buzz,
+  // and a pulse on the table number itself.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    start(w,d,'B2',2); w.S.trigger=w.TRIGGER; await sleep(20);
+    const beeps=[]; const origBeep=w.beep;
+    w.beep=function(n){ beeps.push(n); return origBeep(n); };
+    const buzzes=[];
+    Object.defineProperty(w.navigator,'vibrate',{value:function(p){buzzes.push(p);return true;},configurable:true});
+    enterSettling(w,30,500); await sleep(20);
+    d.getElementById('log').click(); await sleep(20);
+    ok(!beeps.includes('tableDone'),'no table cue within the same table yet');
+    ok(!d.getElementById('pos').classList.contains('pulse'),'and no pulse yet either');
+    let guard=0;
+    while(w.S.route[w.S.i] && w.S.route[w.S.i].t===1 && guard<8){
+      enterSettling(w,30,500); await sleep(15);
+      d.getElementById('log').click(); await sleep(15);
+      guard++;
+    }
+    ok(w.S.route[w.S.i] && w.S.route[w.S.i].t===2,'walked T1 through to the T1'+String.fromCharCode(0x2192)+'T2 boundary');
+    ok(beeps.includes('tableDone'),'a distinct beep fires at the boundary');
+    ok(buzzes.length>0 && Array.isArray(buzzes[0]),'a haptic buzz fires alongside it: '+JSON.stringify(buzzes[0]));
+    ok(d.getElementById('pos').classList.contains('pulse'),'the table number pulses at the boundary');
+    ok(/<b class="tnum">2<\/b>/.test(d.getElementById('pos').innerHTML),
+       'and is its own large element, not buried in the sentence: '+d.getElementById('pos').innerHTML);
+    ok(errors.length===0,'no runtime errors (1.3 table cue): '+errors.join('|'));
+    w.S.roomStarted=false; }
+
   // ============ §4 the verification screen ============
   // The paste is a convenience, not an authority: nothing is committed until
   // the operator has seen what was read.
