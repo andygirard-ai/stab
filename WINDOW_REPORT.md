@@ -515,7 +515,7 @@ plan text and `growlink_room_export.csv`'s own columns, asked in
 
 ## What's on branch (Window 5)
 
-One commit beyond v61: v62. Not yet merged to `main`.
+One commit beyond v61: `ccb62a5` (v62). Not yet merged to `main`.
 
 ## Blocked
 
