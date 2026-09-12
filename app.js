@@ -1380,13 +1380,21 @@ function battLive(){
 }
 function battPaint(){
   var b=$('batt'); if(!b) return;
-  if(S.batt==null || !battLive()){ b.className=''; b.textContent=''; return; }
+  if(!battLive()){ b.className=''; b.textContent=''; return; }
+  /* 1.4: before the first battery reply — the first five minutes of a
+     sweep, every time — this pill is where the probe's own name shows up
+     instead of sitting empty. */
+  if(S.batt==null){
+    if(S.probeName){ b.className='ok'; b.textContent=S.probeName; }
+    else{ b.className=''; b.textContent=''; }
+    return;
+  }
   /* shown whenever it is known: a pill that appears only near empty means a
      healthy probe and a probe that never answered look identical */
   b.className=S.batt<BATT_CRIT?'red':(S.batt<BATT_WARN?'amber':'ok');
   /* and an old number says how old, so a stale one is visibly stale */
   var age=S.battAt?Math.floor((Date.now()-S.battAt)/60000):0;
-  b.textContent='batt '+S.batt+'%'+(age>=BATT_STALE_MIN?' · '+age+'m':'');
+  b.textContent='batt '+S.batt+'%'+(age>=BATT_STALE_MIN?' · '+age+'m':'')+(S.probeName?' · '+S.probeName:'');
 }
 function battWarn(){
   if(S.batt==null) return;
@@ -1537,9 +1545,16 @@ function connect(){
   }).then(function(w){
     S.wchr=w;
     S.everConn=true; S.connecting=false;
+    /* 1.4: the bridge's own advertised name, captured fresh on every
+       successful connect — a probe swap mid-day (Evan's arriving) shows up
+       here rather than silently carrying the last one forward. Falls back
+       to whatever was last known rather than clearing it, since not every
+       BluetoothDevice exposes .name on a reconnect. */
+    S.probeName=(S.dev && S.dev.name) || S.probeName || '';
     ['log','extra','skip','undo','redo'].forEach(function(id){$(id).disabled=false;});
     $('statxt').textContent='waiting';
     setBig();
+    battPaint();
     return verifyTrigger();
   }).catch(function(err){
     S.connecting=false;
@@ -1844,6 +1859,9 @@ function doCommit(r, meta){
     unstable:!!meta.unstable,
     implaus:isImplausible(S.room, r.vwc, !!S.postFlush),
     batt:(S.batt==null?'':S.batt), lat:(S.lastLat==null?'':S.lastLat),
+    /* 1.4: the bridge's own name (e.g. ZSC08328), stored per connection —
+       a prerequisite for per-probe calibration once Evan's probe arrives. */
+    probe:S.probeName||'',
     manualCommit:!!meta.manual,
     /* 1.4: a live per-stab alarm, distinct from the CHECK "no feed" rule —
        this fires on ONE reading, not two, because it means "delivery
@@ -2495,7 +2513,7 @@ function finish(){
    textareas/checks on screen. Safe to call more than once. */
 function buildExports(){
   /* CSV: original 22 columns, then appended */
-  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags\n';
+  var head='Date,Time,Room,Table,Position,Depth,Plant,Strain,Flags,Hrs since shot,Mode,Dir,Bag gal,Media,Side,VWC,Pore EC,Bulk EC,Temp F,Below floor,Row notes,Raw,Feed EC,Feed pH,Operator,Frame,Batt,Lat ms,Settle n,Unstable,Implausible,Manual commit,Zero EC flag,Skipped,After mid-sweep shot,Sweep flags,Tank,Drippers,Open flags,Probe\n';
   var swx=sweepFlags();
   if(S.postFlush) swx.push('POST_FLUSH');
   if(DBG.sensorErr) swx.push('SENSOR_ERR:'+DBG.lastSensorErr+'x'+DBG.sensorErr);
@@ -2507,7 +2525,7 @@ function buildExports(){
       (r.feedEC==null?'':r.feedEC),(r.feedPH==null?'':r.feedPH),r.op||'',r.frame||'',(r.batt==null?'':r.batt),(r.lat==null?'':r.lat),(r.tries==null?'':r.tries),(r.unstable?'YES':''),(r.implaus?'YES':''),
       (r.manualCommit?'YES':''),(r.zeroEc?'YES':''),csvq(skipReason(r.table)),(r.postShot?'YES':''),swFlags,
       tankFor(S.room),(typeof r.table==='number'?drippersFor(S.room,r.table):''),
-      csvq(flagLine(S.room,r.table))].join(',');
+      csvq(flagLine(S.room,r.table)),csvq(r.probe||'')].join(',');
   });
   /* A §2.1: a table that was never measured leaves no row, so the skip was
      invisible in the export — B-1 shipped 18 rows for three tables with no
@@ -2517,7 +2535,7 @@ function buildExports(){
      now, once in the export itself and once in three different tests */
   var cols=head.trim().split(',');
   var nCols=cols.length, iSkip=cols.indexOf('Skipped'), iFlags=cols.indexOf('Sweep flags'),
-      iTank=cols.indexOf('Tank');
+      iTank=cols.indexOf('Tank'), iProbe=cols.indexOf('Probe');
   var skD=new Date().toLocaleDateString('en-US');
   var skT=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   skippedList().sort(function(a,b){return (+a)-(+b);}).forEach(function(t){
@@ -2529,6 +2547,7 @@ function buildExports(){
     cells[14]=S.side; cells[24]=S.op||'';
     cells[iSkip]=csvq(skipReason(t));
     cells[iFlags]=swFlags; cells[iTank]=tankFor(S.room);
+    cells[iProbe]=csvq(S.probeName||'');
     lines.push(cells.join(','));
   });
   /* §3: a hand-only sweep produces no rows at all, so without this the whole
@@ -2541,6 +2560,7 @@ function buildExports(){
     hc[12]=ROOMS[S.room]?ROOMS[S.room].bag:''; hc[13]=ROOMS[S.room]?ROOMS[S.room].media:'';
     hc[14]=S.side; hc[24]=S.op||'';
     hc[iFlags]=swFlags||'NO_READINGS'; hc[iTank]=tankFor(S.room);
+    hc[iProbe]=csvq(S.probeName||'');
     lines.push(hc.join(','));
   }
   var body=lines.join('\n');
