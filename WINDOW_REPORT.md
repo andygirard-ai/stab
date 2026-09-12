@@ -142,3 +142,83 @@ Nothing.
 
 Window 3 (Growlink read-only), Window 4 (Evan's runoff mode, demand,
 stale-median greying).
+
+---
+
+# Window 3 report — Sunday AM, Growlink read-only
+
+Three of five items shipped in full; one built as far as it can go
+without unverified API facts; one not started. Suite: **960 → 996
+passing, all green.** Branch `claude/new-session-ri155r`, merged to
+`main` at `8a6c64c` (v58).
+
+Nothing in this window fires a valve. `growlinkGet()` is the only thing
+that calls `fetch`, and it is a GET with no body.
+
+## Shipped
+
+**3.1 Connection status on Settings — v58 (`8a6c64c`).** `growlinkGet()`
+wraps `fetch` with the key from `stab_growlink` and a `Bearer` auth
+header — flagged as unverified in the settings screen's own copy, since
+I've never seen the discovery page the plan refers to, not asserted as
+fact anywhere in code. Missing key renders one line and calls nothing.
+Settings gets a key field, a base-URL field, and **Test connection**,
+which hits `/devices/data/log` and records the org field or the HTTP
+error with a timestamp. Verified in jsdom via a new `bootWithFetch()`
+harness helper (jsdom has no `fetch` at all, same gap as
+`navigator.bluetooth`) covering missing-key, key-without-base-URL,
+success, and a rejected key.
+
+**3.4 `activeRun` field names — v58 (`8a6c64c`).** `dofNow(rm)` prefers
+a stored `activeRun.currentDayNo` over the `FLOWER_START` count once one
+exists, falling back cleanly when neither is on file. `currentGrowthStage`'s
+photoperiod claim is stripped on the way into storage for every room, not
+only A3–A7 — the plan's "never trust API photoperiod for A-3 through A-7"
+read as a floor, not a whitelist, since there's no reason the API's
+photoperiod guess is trustworthy for the other twelve rooms either.
+
+**3.5 Zone-list paste — v58 (`8a6c64c`).** `parseZoneList`/`zoneFor` read
+Growlink's own zone list per room (`#20003605  B1 Table 4  B-1`),
+alongside the existing schedule Sensor column, not instead of it. Room
+Setup gets a paste box and a coverage line ("N of T tables have a
+zone"). A paste naming a different room than the one open is named and
+rejected, the same shape check schedule pastes already do.
+
+## Built, not wired
+
+**3.3 Batch tank turnover — pure half only.** `tankFillByDay(points)`
+sums positive deltas over 0.3 per day from an `{at, level}` series;
+verified against a synthetic fixture reproducing the 9/9–9/11
+fill/flush-day/fill pattern from the accept criterion. Not connected to
+a real fetch or to the 1.5 tank-entry UI, because the plan's Batch Tank
+#1/#2/#3/#5 never says which number is A, which is B, which is C, and
+which is Veg — guessing that mapping risks silently crediting the wrong
+room's water to the wrong tank, which is worse than not showing it.
+Asked in `QUESTIONS.md`.
+
+## Not started
+
+**3.2 Did last night fire.** Needs `/devices/data/log`'s actual response
+shape — specifically how a manually-triggered flush is distinguished
+from a scheduled P1/P2 shot — to build the A7 T3 9/11 fixture (pre-flush
+runoff present, two 28-minute flushes producing nothing) honestly rather
+than against an invented envelope. Asked in `QUESTIONS.md` alongside the
+rest of the open API specifics; scoped for a future window to
+scheduled-shot comparison only, with manual-task matching flagged as a
+separate gap once the shape is known.
+
+## What's on branch (Window 3)
+
+One commit beyond Window 2: `8a6c64c` (v58). Merged to `main` same day.
+
+## Blocked
+
+3.2 in full, and 3.3's live wiring, on the Growlink API specifics listed
+in `QUESTIONS.md` (base URL, auth header format, two response shapes,
+the `activeRun` endpoint path, and the tank-number-to-letter map).
+Nothing else.
+
+## Not started
+
+Window 4 (Evan's runoff entry mode, demand computation, stale-median
+greying).
