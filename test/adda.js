@@ -2518,47 +2518,66 @@ function rowsFor(w,room,spec){
     ok(errors.length===0,'no runtime errors (2.3 settings tool): '+errors.join('|'));
     w.close(); }
 
-  // ============ Weekend Plan 3.5 — Growlink zone list paste ============
-  // The second half of the v41 finding: 76 of 216 tables had no sensor
-  // mapping at all. This is Growlink's own export — a device id, the
-  // table it's on, and Growlink's own zone code — not a guess pieced
-  // together from a sensor name string.
-  { const {w,d,errors}=boot(null); await sleep(50);
-    const r=w.parseZoneList('#20003605  B1 Table 4  B-1\n#20003606  B1 Table 5  B-2');
-    ok(r.room==='B1' && r.entries.length===2,'both lines read as B1: '+r.room+' x'+r.entries.length);
-    ok(r.entries[0].device==='20003605' && r.entries[0].table===4 && r.entries[0].zone==='B-1',
-       'device, table and zone all come off one line: '+JSON.stringify(r.entries[0]));
-    ok(r.warnings.length===0,'a well-formed paste raises nothing');
-    const bad=w.parseZoneList('#20003605  B1 Table 4  B-1\n#20003607  B2 Table 1  B-3\nnot a zone line');
-    ok(/mixed rooms/.test(bad.warnings.join(' ')),'a second room in the same paste is named, not silently merged');
-    ok(/could not read/.test(bad.warnings.join(' ')),'and an unparseable line is reported, not dropped');
-    ok(errors.length===0,'no runtime errors (3.5 parseZoneList): '+errors.join('|'));
+  // ============ Growlink Integration Plan §0/§1 — valve/sensor parsers ============
+  // §0's own finding: the 3.5 zone-list paste expected "Table N" but the
+  // A-wing's real device and sensor names never say that word at all
+  // ("A1 5 Back Moisture", "Flower A1 - Zone Valve #5"), and B-1's own
+  // "Zone Valve #2" is typed Valve where #1, #6-13 in the same room's own
+  // list are typed Batch Tank — so matching here never looks at type,
+  // only the name. Every string below is copied verbatim out of the real
+  // discovery fixture, fixtures/growlink/api_list.txt, not invented.
+  { const {w}=boot(null);
+    ok(JSON.stringify(w.valveHeader('Flower A1 - Zone Valve #5'))===JSON.stringify({kind:'zone',room:'A1',num:5}),
+       'the ordinary zone-valve name, any room but A-7: '+JSON.stringify(w.valveHeader('Flower A1 - Zone Valve #5')));
+    ok(JSON.stringify(w.valveHeader('A7 - Zone Valve #3'))===JSON.stringify({kind:'zone',room:'A7',num:3}),
+       'A-7 drops the "Flower " prefix but keeps the hyphen');
+    ok(JSON.stringify(w.valveHeader('A7- Zone Valve #6'))===JSON.stringify({kind:'zone',room:'A7',num:6}),
+       'and one real A-7 row drops the space before that hyphen too — still a zone valve');
+    ok(JSON.stringify(w.valveHeader('Flower A1 - Master Irrigation Valve'))===JSON.stringify({kind:'masterDefault',room:'A1'}),
+       'the unlabeled default master');
+    ok(JSON.stringify(w.valveHeader('A7 Master Irrigation valve'))===JSON.stringify({kind:'masterDefault',room:'A7'}),
+       'A-7\'s own default master has no hyphen at all and a lowercase "valve": '+JSON.stringify(w.valveHeader('A7 Master Irrigation valve')));
+    ok(JSON.stringify(w.valveHeader('C3 Master Irrigation Tank A'))===JSON.stringify({kind:'masterA',room:'C3'}),
+       'an explicit Tank A label, word order "Master Irrigation Tank A"');
+    ok(JSON.stringify(w.valveHeader('A1 Tank B Master Irrigation'))===JSON.stringify({kind:'masterB',room:'A1'}),
+       'A-wing\'s own word order, "Tank B Master Irrigation"');
+    ok(JSON.stringify(w.valveHeader('C3 Master Irrigation Tank B'))===JSON.stringify({kind:'masterB',room:'C3'}),
+       'B/C-wing\'s own word order, "Master Irrigation Tank B"');
+    ok(JSON.stringify(w.valveHeader('Flower A1 - Fresh Water Master Valve'))===JSON.stringify({kind:'water',room:'A1'}),
+       'the ordinary Fresh Water Master Valve name');
+    ok(JSON.stringify(w.valveHeader('Flower B3 - Fresh Water Valve'))===JSON.stringify({kind:'water',room:'B3'}),
+       'B-3\'s own real row drops the word "Master" entirely — still the flush valve');
+    ok(JSON.stringify(w.valveHeader('Flower A1 - Drain Valve '))===JSON.stringify({kind:'drain',room:'A1'}),
+       'a trailing space on the real row does not stop the match');
+    ok(w.valveHeader('Flower A1 - C02')===null && w.valveHeader('A7 CO2')===null && w.valveHeader('Valve #1')===null,
+       'CO2 (either spelling) and a bare numbered Valve are not irrigation — ignored, not misfiled');
     w.close(); }
 
-  // the room setup screen: paste, save, coverage, and a wrong-room paste
-  // is refused the same way the schedule paste already is
-  { const {w,d,errors}=boot(null); await sleep(50);
-    ok(w.zoneFor('B1',4)===null,'nothing pasted yet — no zone, not a guess');
-    d.querySelector('#rooms .rm[data-room="B1"]').click(); await sleep(20);
-    d.getElementById('cfgbtn').click(); await sleep(30);
-    ok(/0 of 11 tables/.test(d.getElementById('zonecov').textContent),
-       'the coverage line starts honest: '+d.getElementById('zonecov').textContent);
-    d.getElementById('zonepaste').value='#20003605  B1 Table 4  B-1\n#20003606  B1 Table 5  B-2';
-    d.getElementById('zoneread').click(); await sleep(20);
-    ok(/2 devices saved/.test(d.getElementById('zonebody').textContent),
-       'confirms what was saved: '+d.getElementById('zonebody').textContent);
-    ok(/2 of 11 tables/.test(d.getElementById('zonecov').textContent),'and the coverage line updates in place');
-    ok(w.zoneFor('B1',4).device==='20003605' && w.zoneFor('B1',4).zone==='B-1','saved and readable back');
-    ok(w.zoneFor('B1',6)===null,'a table not in the paste is still unknown, not zero');
-    // a paste for the wrong room is refused, same as the schedule paste
-    d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
-    d.getElementById('cfgbtn').click(); await sleep(30);
-    d.getElementById('zonepaste').value='#20003605  B1 Table 4  B-1';
-    d.getElementById('zoneread').click(); await sleep(20);
-    ok(/says B1, you are on B2/.test(d.getElementById('zonebody').textContent),
-       'names the mismatch rather than saving it under the wrong room: '+d.getElementById('zonebody').textContent);
-    ok(w.zoneFor('B2',4)===null,'and nothing was saved under B2');
-    ok(errors.length===0,'no runtime errors (3.5 room setup): '+errors.join('|'));
+  // valveTablesFor — the A-wing shared-last-valve rule (one valve short of
+  // the table count -> the top valve covers two tables) versus the B/C-wing
+  // extras rule (more valves than tables -> the excess are real spares,
+  // not a guess), both confirmed against every room in the real fixture
+  { const {w}=boot(null);
+    const a1=w.valveTablesFor(12,11);   // A-1: 11 zone valves, 12 tables
+    ok(JSON.stringify(a1.byValve[11])==='[11,12]' && a1.extras.length===0,
+       'A-1\'s valve 11 covers T11 and T12, no extras: '+JSON.stringify(a1));
+    const c3=w.valveTablesFor(11,13);   // C-3: 13 zone valves, 11 tables
+    ok(Object.keys(c3.byValve).length===11 && JSON.stringify(c3.extras)==='[12,13]',
+       'C-3 maps 11 straight through and reports #12/#13 as extras: '+JSON.stringify(c3));
+    w.close(); }
+
+  // sensorHeader — A-wing's Back/Front position, B/C-wing's Table N (case
+  // loose either way), and C-4's own real typo ("Table table 7") reading
+  // as table 7, not a different table
+  { const {w}=boot(null);
+    ok(JSON.stringify(w.sensorHeader('A1 5 Back Moisture'))===JSON.stringify({room:'A1',table:5,position:'back'}),
+       'A-wing position+table, no "Table" word at all');
+    ok(JSON.stringify(w.sensorHeader('C1 Table 2 Moisture'))===JSON.stringify({room:'C1',table:2,position:null}),
+       'B/C-wing Table N');
+    ok(JSON.stringify(w.sensorHeader('C4 Table table 7 moisture '))===JSON.stringify({room:'C4',table:7,position:null}),
+       'C-4\'s real double "table" typo still reads as table 7: '+JSON.stringify(w.sensorHeader('C4 Table table 7 moisture ')));
+    ok(w.sensorHeader('Substrate Moisture #20004907')===null && w.sensorHeader('Substrate Moisture 1')===null,
+       'a serial-numbered or bare-numbered sensor carries no room or table in its own name — unmapped, not guessed');
     w.close(); }
 
   // Growlink names a room "A-1" where Stab says "A1" (confirmed by Andy
@@ -2770,10 +2789,13 @@ function rowsFor(w,room,spec){
        'and a normalized sensor is still found by findTankSensor');
     w.close(); }
 
-  // ============ Weekend Plan 3.2 — did last night fire ============
+  // ============ Growlink Integration Plan §2 — did last night fire ============
   // nightFireLine (pure.js): only scheduled periods count toward fired/
   // missed; a manual run sitting next to them is reported, not counted
-  // against the schedule either way.
+  // against the schedule either way. Extended for §2: a matched period
+  // running well under the schedule's own duration is a short run, and a
+  // scheduled period matching no expected shot at all is an extra run —
+  // both new mismatch categories on top of the original fired/missed/manual.
   { const {w}=boot(null);
     const t=(h,m)=>new Date(2026,8,12,h,m).toISOString();
     const expected=[new Date(2026,8,12,1,15), new Date(2026,8,12,3,45), new Date(2026,8,12,6,15)];
@@ -2787,60 +2809,169 @@ function rowsFor(w,room,spec){
     ok(r.missed.length===1 && r.missed[0].getHours()===3,'the 3:45 shot with no nearby period is the miss, named by time');
     ok(r.manual===1,'the manual flush is counted separately, not folded into fired or missed');
     ok(/2\/3 fired/.test(r.line) && /manual run/.test(r.line),'the line reads both facts: '+r.line);
+    // now with a scheduled duration: all three shots fire, one of them
+    // (3:45's) at half the schedule's own duration — a short run — and a
+    // fourth, unscheduled period at 9:00 matches nothing within 30
+    // minutes of any expected shot, so it reads as extra rather than
+    // being folded into the 3:45 match
+    const logs2=[
+      {on:t(1,16), off:t(1,26), onDurationInSeconds:600, isManual:false},
+      {on:t(3,46), off:t(3,51), onDurationInSeconds:300, isManual:false},
+      {on:t(6,16), off:t(6,26), onDurationInSeconds:600, isManual:false},
+      {on:t(9,0), off:t(9,5), onDurationInSeconds:300, isManual:false},
+    ];
+    const r2=w.nightFireLine(expected, logs2, 600);
+    ok(r2.fired===3,'all three shots fire this time: '+r2.fired);
+    ok(r2.short===1,'only the 3:45 match ran at half the schedule\'s own duration: '+r2.short);
+    ok(r2.extra.length===1,'the 9:00 period matches no expected shot — an extra run, not folded into anything: '+r2.extra.length);
+    ok(/short run/.test(r2.line) && /extra run/.test(r2.line), 'both show up in the line: '+r2.line);
     w.close(); }
 
-  // matchDeviceForTable on its own: room + table, case and spacing loose
-  // the way schedHeader already is, a shared-valve header fanning out to
-  // both its tables, and a device name that doesn't parse as a header at
-  // all is simply not a candidate — never an exact string anywhere here
+  // §3 — tankFromLog: which master's own periods overlapped the table
+  // runs, the plan's own accept scenario (a synthetic day where P1 runs
+  // overlap Tank B Master on C4)
   { const {w}=boot(null);
-    const devices=[{id:'d1',name:'A1 Table 11+12'},{id:'d2',name:'c3 table 4'},{id:'d3',name:'Substrate Moisture #20004907'}];
-    ok(w.matchDeviceForTable(devices,'A1',11)===devices[0] && w.matchDeviceForTable(devices,'A1',12)===devices[0],
-       'a shared-valve device header fans out to both its tables, same as the schedule parser');
-    ok(w.matchDeviceForTable(devices,'C3',4)===devices[1],'room and case both fold before comparing');
-    ok(w.matchDeviceForTable(devices,'A1',5)===null,'no device claims that table — not a guess, not the shared one');
-    ok(w.matchDeviceForTable(devices,'B1',4)===null,
-       'a device name that never parses as a room+table header at all is not a candidate: '+w.matchDeviceForTable(devices,'B1',4));
+    const on=(h,m)=>new Date(2026,8,11,h,m).toISOString();
+    const tableRuns=[{on:on(7,0), off:on(7,5)}, {on:on(9,0), off:on(9,5)}];
+    const masterRuns={A:[], B:[{on:on(6,58), off:on(9,7)}], C:[]};
+    ok(JSON.stringify(w.tankFromLog(masterRuns, tableRuns))==='["B"]',
+       'Tank B Master was open across both P1 runs on C4: '+JSON.stringify(w.tankFromLog(masterRuns, tableRuns)));
+    ok(JSON.stringify(w.tankFromLog({A:[],B:[],C:[]}, tableRuns))==='[]',
+       'no master open during the runs reads as nothing found, not a guess');
     w.close(); }
 
-  // 3.2 wired end to end: a zoned table resolves to a Growlink device by
-  // room + table number (the schedule parser's own schedHeader, not an
-  // exact string against the 3.5 zone label — confirmed by Andy 9/12
-  // after the first pass here matched on the zone label directly), the
-  // device log is fetched for that device only, and the result is
-  // reported per table
+  // §3 — flushEventsFromLog: a 28-minute Fresh Water Master run reads as
+  // the plan's own accept number, 1960 mL at 4 drippers (A1: DRIP_FLOW.A
+  // 17.5 mL/min × 4 drippers × 28 min)
+  { const {w}=boot(null);
+    const waterRuns=[{on:'2026-09-11T07:59:00Z', off:'2026-09-11T08:27:00Z', onDurationInSeconds:1680, isManual:true}];
+    const ev=w.flushEventsFromLog(waterRuns, 'A1');
+    ok(ev.length===1 && ev[0].durationMin===28 && ev[0].mL===1960,
+       'a manual 28-minute flush still counts — a flush is real whether triggered by hand or not: '+JSON.stringify(ev));
+    w.close(); }
+
+  // §4 — observed schedule report + drift alarm, replaying the plan's own
+  // 9/11 C3 scenario: stored was 5:15×2 before a 1:15 PM paste moved it to
+  // 7:00×3, and by the next light-day the log shows exactly that pattern.
+  // C3 is a PM room (lights-on 11:00), so a 7:00 AM shot falls 20 hours
+  // (1200 min) after the *previous* day's lights-on, not two hours after
+  // that same morning's — the light-day, not the calendar day, is what
+  // this is measured against.
+  { const {w}=boot(null);
+    w.saveSched('C3',{tables:[{table:5, P1:{start:'07:00', duration:300, frequency:3, interval:7200}}]});
+    const stored=w.storedAsObserved('C3',5);
+    ok(stored.startOffsetMin===1200 && stored.duration===300 && stored.frequency===3 && stored.intervalMin===120,
+       '7:00 AM is 1200 minutes after C3\'s own previous-day 11:00 lights-on: '+JSON.stringify(stored));
+    // two light-days of 7:00x3 runs on T5 — the pattern the log actually
+    // shows once the new schedule has had a night to run
+    // offsets 1195/1315/1435 minutes — three shots two hours apart,
+    // starting just under 1200 (close enough for scheduleMatches' own
+    // 10-minute tolerance) and ending at 1435, safely short of the next
+    // light-day's own boundary at 1440
+    const lightDayRuns=function(daysAgo){
+      var lo=new Date(w.lastLightsOn('C3', new Date()).getTime()-daysAgo*86400000);
+      return [0,1,2].map(function(i){
+        var on=new Date(lo.getTime()+(1195+i*120)*60000);
+        return {on:on.toISOString(), off:new Date(on.getTime()+300000).toISOString(), onDurationInSeconds:300, isManual:false};
+      });
+    };
+    var runs=lightDayRuns(1).concat(lightDayRuns(0));
+    var report=w.observedScheduleReport('C3', runs);
+    ok(report.frequency===3 && report.duration===300 && Math.abs(report.startOffsetMin-1200)<=10,
+       'the observed pattern is 7:00x3, matching what the log actually shows: '+JSON.stringify(report));
+    ok(report.confident===true && report.lightDays===2,
+       'two consecutive light-days agreeing is a confident read, not "1 day — provisional": '+JSON.stringify(report));
+    ok(w.scheduleMatches(report, stored),'the observed pattern now matches the just-pasted stored one — nothing to replace');
+    // one light-day only reads as provisional
+    var reportOneDay=w.observedScheduleReport('C3', lightDayRuns(0));
+    ok(reportOneDay.confident===false,'a single light-day of data is provisional, not confident yet: '+JSON.stringify(reportOneDay));
+    w.close(); }
+
+  // §4 — drift alarm: stored says one thing, the log has fired something
+  // else for two straight light-days with no paste in between — "entered
+  // right, firing wrong", the case a paste can never catch on its own.
+  { const {w}=boot(null);
+    w.saveSched('C3',{tables:[{table:5, P1:{start:'07:00', duration:300, frequency:3, interval:7200}}]});
+    var driftRuns=function(daysAgo){
+      var lo=new Date(w.lastLightsOn('C3', new Date()).getTime()-daysAgo*86400000);
+      return [0,1].map(function(i){   // two shots, not the stored three — a frequency mismatch on its own
+        var on=new Date(lo.getTime()+(1260+i*150)*60000);
+        return {on:on.toISOString(), off:new Date(on.getTime()+300000).toISOString(), onDurationInSeconds:300, isManual:false};
+      });
+    };
+    var runs=driftRuns(1).concat(driftRuns(0));
+    ok(w.scheduleDrift('C3', 5, runs)===true,
+       'two consecutive light-days both disagreeing with the stored schedule is a drift, not a one-off: '+JSON.stringify(runs));
+    ok(w.scheduleDrift('C3', 5, driftRuns(0))===false,
+       'a single mismatching light-day is not enough to call it drift yet');
+    w.close(); }
+
+  // 3.2 wired end to end, rebuilt on the valve map (Growlink Integration
+  // Plan §0/§1/§2, 9/12) — the correction this window exists to make. A
+  // table's real device is a numbered Zone Valve from the room's own
+  // discovered valve map, never a schedule-style "Room Table N" header
+  // (that was the schedHeader-based version this replaces, and it never
+  // had a real device to match since Growlink names these "Zone Valve
+  // #N"). Names below are copied verbatim from the real B-1 rows in
+  // fixtures/growlink/api_list.txt; ids are short labels standing in for
+  // the real UUIDs, which carry no information of their own.
   { const orgId='org1';
-    const rooms=[{id:'r-b1',name:'B-1',roomType:0}];   // Growlink's own hyphenated name
-    // device names in schedHeader's own format — case and spacing this
-    // loose is exactly what it already tolerates for schedule headers
-    const devices=[{id:'d-t4',name:'b1 table 4'},{id:'d-t5',name:'B1 Table 5'}];
-    const calls=[];
+    const FIXED_NOW=new Date(2026,8,13,4,30,0).getTime();
+    const rooms=[{id:'r-b1',name:'B-1'}];
+    const devices=[
+      {id:'zv4',name:'Flower B1 - Zone Valve #4',type:'Valve'},
+      {id:'zv5',name:'Flower B1 - Zone Valve #5',type:'Valve'},
+      {id:'mA',name:'B1 Master Irrigation Tank A',type:'Batch Tank'},
+      {id:'water',name:'Flower B1 - Fresh Water Master Valve',type:'Batch Tank'}];
+    const sensors=[
+      {id:'s1',name:'B1 Table 4 Moisture',type:'VWC'},{id:'s2',name:'B1 Table 4 Temperature',type:'Substrate Temp'},
+      {id:'s3',name:'B1 Table 4 EC',type:'pwEC'},{id:'s4',name:'B1 Table 5 Moisture',type:'VWC'},
+      {id:'s5',name:'B1 Table 5 Temperature',type:'Substrate Temp'},{id:'s6',name:'B1 Table 5 EC',type:'pwEC'}];
+    // T4 fires both scheduled shots clean; T5 only fires the first — the
+    // two tables must report independently off their own device's own log
+    const logDevices=[
+      {id:'zv4',logs:[{on:'2026-09-13T01:16:00',off:'2026-09-13T01:21:00',onDurationInSeconds:300,isManual:false},
+                       {on:'2026-09-13T03:16:00',off:'2026-09-13T03:21:00',onDurationInSeconds:300,isManual:false}]},
+      {id:'zv5',logs:[{on:'2026-09-13T01:16:00',off:'2026-09-13T01:21:00',onDurationInSeconds:300,isManual:false}]},
+      {id:'mA',logs:[{on:'2026-09-13T01:14:00',off:'2026-09-13T01:22:00',isManual:false}]},
+      {id:'water',logs:[{on:'2026-09-13T02:00:00',off:'2026-09-13T02:28:00',onDurationInSeconds:1680,isManual:true}]}];
     const {w,d,errors}=bootWithFetch(null, (url,opts)=>{
-      calls.push(url);
       if(/organizations$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({organizations:[{id:orgId,name:'Acme Farms'}]})});
-      if(/\/rooms$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({rooms})});
-      if(/\/devices$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({devices})});
-      if(/\/devices\/data\/log$/.test(url)){
-        const body=JSON.parse(opts.body);
-        ok(body.deviceIds.length===1 && body.deviceIds[0]==='d-t4',
-           'only the one zoned table\'s device is asked for, not the whole room: '+JSON.stringify(body.deviceIds));
-        return Promise.resolve({ok:true, json:()=>Promise.resolve({devices:[{id:'d-t4',name:'b1 table 4',logs:[]}]})});
-      }
+      if(/\/organization\/[^/]+\/rooms$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({rooms})});
+      if(/\/room\/r-b1\/devices$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({devices})});
+      if(/\/room\/r-b1\/sensors$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({sensors})});
+      if(/\/sensors$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({sensors:[]})});   // CFS
+      if(/\/devices\/data\/log$/.test(url)) return Promise.resolve({ok:true, json:()=>Promise.resolve({devices:logDevices})});
       return Promise.reject(new Error('unexpected call: '+url));
     });
     await sleep(50);
     d.querySelector('.brand').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true})); await sleep(800);
     d.getElementById('gl_key').value='abc123'; d.getElementById('gl_key').dispatchEvent(new w.Event('change'));
     d.getElementById('gl_test').click(); await sleep(30);
+    d.getElementById('discoverbtn').click(); await sleep(200);
+    const disc=d.getElementById('discoverbody').textContent;
+    ok(/B1: 2\/11 tables valved/.test(disc),'B-1\'s coverage line reports its own two mapped tables: '+disc);
+    ok(/master A/.test(disc) && /water/.test(disc),'the explicit Tank A master and the water master both show: '+disc);
+    ok(/sensors 2\/2\/2 vwc\/ec\/temp/.test(disc),'both tables\' three-sensor sets count: '+disc);
     d.getElementById('setclose').click();
-    w.S.room='B1';
-    w.saveZones('B1',[{device:'20003605',room:'B1',table:4,zone:'B-1'}]);
+    // freeze the clock so the light-day window is deterministic
+    class FixedDate extends w.Date{ constructor(...a){ if(a.length===0) super(FIXED_NOW); else super(...a); } static now(){ return FIXED_NOW; } }
+    w.Date=FixedDate;
+    d.querySelector('#rooms .rm[data-room="B1"]').click(); await sleep(20);
     d.getElementById('cfgbtn').click(); await sleep(20);
-    d.getElementById('nightfirebtn').click();
-    await sleep(80);
-    const body=d.getElementById('nightfirebody').textContent;
-    ok(/T4:/.test(body),'the zoned table reports by its own number: '+body);
-    ok(errors.length===0,'no runtime errors (3.2 wired): '+errors.join('|'));
+    d.getElementById('nightfirebtn').click(); await sleep(80);
+    const nf=d.getElementById('nightfirebody').textContent;
+    ok(/T4: 2\/2 fired/.test(nf),'T4, off its own zone valve\'s log, fired both shots: '+nf);
+    ok(/T5: 1\/2 fired/.test(nf) && /missed/.test(nf),'T5, off a different device, only fired one — reported independently: '+nf);
+    ok(/tank open during shots: A/.test(nf),'Tank A Master overlapped the matched shot periods: '+nf);
+    ok(/flush.*28 min/.test(nf),'the Fresh Water Master\'s 28-minute run reads as a flush: '+nf);
+    d.getElementById('tanklogbtn').click(); await sleep(80);
+    const tl=d.getElementById('tanklogbody').textContent;
+    ok(/tank A \(from log\)/.test(tl) && /config says B/.test(tl),
+       'B-1\'s weekly-file config says B, the log says A — named as a mismatch, not silently overwritten: '+tl);
+    d.getElementById('tanklogconfirm').click(); await sleep(20);
+    ok(d.getElementById('cfg_tank').value==='A','confirming updates the room-setup field in place');
+    ok(errors.length===0,'no runtime errors (§0-§2 wired on the valve map): '+errors.join('|'));
     w.close(); }
 
   // A7 9/11 accept scenario, against a SYNTHETIC devices/data/log fixture

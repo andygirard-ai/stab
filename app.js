@@ -687,6 +687,19 @@ function histTs(h){
     $('gl_test').disabled=true;
     testGrowlinkConnection().then(function(){ $('gl_test').disabled=false; });
   };
+  if($('discoverbtn')) $('discoverbtn').onclick=function(){
+    var el=$('discoverbody'); if(!el) return;
+    if(!growlinkOrgId()){ el.innerHTML='<div class="sn bad">connect Growlink first — test the connection above</div>'; return; }
+    el.innerHTML='<div class="sn">discovering…</div>';
+    $('discoverbtn').disabled=true;
+    discoverGrowlink().then(function(){
+      $('discoverbtn').disabled=false;
+      renderGrowlinkDiscovery();
+    }).catch(function(e){
+      $('discoverbtn').disabled=false;
+      el.innerHTML='<div class="sn bad">'+esc(String((e&&e.message)||e))+'</div>';
+    });
+  };
   /* ---- probe scan: settle the battery question with the device, not with
      a document ----
      The Batt column was read exactly this way from v18 to v42 and never
@@ -2956,22 +2969,164 @@ function getRenames(){
 function saveRename(entry){
   var a=getRenames(); a.push(entry); lsSet('stab_renames', JSON.stringify(a));
 }
-/* Growlink zone list, per room (Weekend Plan 3.5). Late-bound like
-   getSched, so zoneFor in pure.js reaches this without knowing about
-   storage. Keyed by room, each holding the parsed entries for every
-   device pasted for it — a fresh paste for a room replaces its own
-   entries only, leaving every other room's list untouched. */
-function getZones(){
-  try{ return JSON.parse(localStorage.getItem('stab_zones')||'{}'); }catch(e){ return {}; }
+/* Growlink discovery storage (Growlink Integration Plan §1). Three maps,
+   built by one button press over every flower room, replacing the 3.5
+   zone paste outright.
+
+   Valve map, per room: `tables[N]` is the zone valve that fires table N
+   (or, for the one A-wing valve short of its table count, both of the
+   two tables it actually shares); `extras` is any zone valve number
+   beyond the room's own table count (B/C-wing rooms all run two valves
+   long — real spares, confirmed against the discovery fixture, not
+   something to force onto a table); `masterA`/`masterB`/`masterC` are
+   the master valves feeding each tank, `masterDefault` the unlabeled
+   one every room has (folded into masterA when no explicit "Tank A"
+   label exists — B/C-wing rooms carry both, A-wing only the default);
+   `water` and `drain` are the Fresh Water Master and Drain valves.
+
+   Sensor map, per room: `tables[N]` holds whichever of `vwc`/`ec`/`temp`
+   this room's own sensors actually cover for that table (never assume
+   all three — B-5 has none at all); `unmapped` is every substrate
+   sensor whose own name carries no room or table ("Substrate Moisture
+   4"), attributed to the room its API call was made for since the name
+   itself gives no other clue.
+
+   Solution sensors: CFS's own non-substrate sensors (pH, EC, TDS, flow,
+   temperature) — informational, the manual truncheon round if these are
+   live. Separate from, and does not replace, the Batch Tank fill fetch
+   built in Window 3 (`growlinkTankSensor`), which already works. */
+function getGrowlinkValveMap(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_valvemap')||'{}'); }catch(e){ return {}; }
 }
-function saveZones(rm, entries){
-  var a=getZones(); a[rm]={savedAt:Date.now(), entries:entries}; lsSet('stab_zones', JSON.stringify(a));
+function saveGrowlinkValveMap(m){ lsSet('stab_growlink_valvemap', JSON.stringify(m)); }
+function getGrowlinkSensorMap(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_sensormap')||'{}'); }catch(e){ return {}; }
 }
-function renderZoneCoverage(rm){
-  var el=$('zonecov'); if(!el || !rm || !ROOMS[rm]) return;
-  var n=0;
-  for(var t=1;t<=ROOMS[rm].t;t++) if(zoneFor(rm,t)) n++;
-  el.textContent=n+' of '+ROOMS[rm].t+' tables have a zone'+(n?'':' — nothing pasted yet');
+function saveGrowlinkSensorMap(m){ lsSet('stab_growlink_sensormap', JSON.stringify(m)); }
+function getGrowlinkSolution(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_solution')||'null'); }catch(e){ return null; }
+}
+function saveGrowlinkSolution(s){ lsSet('stab_growlink_solution', JSON.stringify(s)); }
+function getGrowlinkDiscovery(){
+  try{ return JSON.parse(localStorage.getItem('stab_growlink_discovery')||'null'); }catch(e){ return null; }
+}
+function saveGrowlinkDiscovery(d){ lsSet('stab_growlink_discovery', JSON.stringify(d)); }
+function sensorMetricFor(type){
+  if(type==='VWC') return 'vwc';
+  if(type==='pwEC') return 'ec';
+  if(type==='Substrate Temp') return 'temp';
+  return null;
+}
+/* One button, every flower room, two GETs each. Devices are classified
+   by name into whichever room the name itself says (valveHeader),
+   never the room the call was made for — the one real cross-room
+   duplicate in the fixture, "Flower A2 - Zone Valve #8" appearing
+   under A-1's own device list too, only resolves correctly this way.
+   Sensors do the same when their name parses; a sensor whose name
+   carries no room ("Substrate Moisture 4") has nothing else to go on
+   and is filed under the room its call was actually made for. Dedup by
+   id is global across every room's fetch, so the duplicate above is
+   still one device, not two. */
+function discoverGrowlink(){
+  var orgId=growlinkOrgId();
+  if(!orgId) return Promise.reject(new Error('not connected'));
+  return growlinkRooms(true).then(function(orgRooms){
+    var rms=Object.keys(ROOMS).filter(function(k){ return !ROOMS[k].kind; });
+    var valveMap={}, sensorMap={}, notFound=[];
+    rms.forEach(function(rm){
+      valveMap[rm]={tables:{}, extras:[], masterA:null, masterB:null, masterC:null,
+                    masterDefault:null, water:null, drain:null, _zones:[]};
+      sensorMap[rm]={tables:{}, unmapped:[]};
+    });
+    var seenD={}, seenS={};
+    var chain=Promise.resolve();
+    rms.forEach(function(rm){
+      var roomId=growlinkRoomIdFor(orgRooms, rm);
+      if(!roomId){ notFound.push(rm); return; }
+      chain=chain
+        .then(function(){ return growlinkGet('/api/v2/room/'+encodeURIComponent(roomId)+'/devices'); })
+        .then(function(data){
+          unwrapList(data,'devices').forEach(function(d){
+            if(seenD[d.id]) return; seenD[d.id]=1;
+            var hd=valveHeader(d.name);
+            if(!hd || !valveMap[hd.room]) return;
+            var vm=valveMap[hd.room];
+            if(hd.kind==='zone') vm._zones.push({num:hd.num, id:d.id, name:d.name});
+            else if(hd.kind!=='zone') vm[hd.kind]={id:d.id, name:d.name};
+          });
+        })
+        .then(function(){ return growlinkGet('/api/v2/room/'+encodeURIComponent(roomId)+'/sensors'); })
+        .then(function(data){
+          unwrapList(data,'sensors').forEach(function(s){
+            if(seenS[s.id]) return; seenS[s.id]=1;
+            var hd=sensorHeader(s.name);
+            var metric=sensorMetricFor(s.type);
+            var targetRoom=(hd && sensorMap[hd.room]) ? hd.room : rm;
+            var sm=sensorMap[targetRoom]; if(!sm) return;
+            if(hd && metric){
+              var row=sm.tables[hd.table]||(sm.tables[hd.table]={});
+              row[metric]={id:s.id, name:s.name, position:hd.position};
+            } else {
+              sm.unmapped.push({id:s.id, name:s.name, type:s.type});
+            }
+          });
+        });
+    });
+    return chain.then(function(){
+      var coverage=rms.map(function(rm){
+        var vm=valveMap[rm], sm=sensorMap[rm];
+        var maxNum=0; vm._zones.forEach(function(z){ if(z.num>maxNum) maxNum=z.num; });
+        if(maxNum>0){
+          var vt=valveTablesFor(ROOMS[rm].t, maxNum);
+          var byNum={}; vm._zones.forEach(function(z){ byNum[z.num]=z; });
+          Object.keys(vt.byValve).forEach(function(numStr){
+            var dev=byNum[+numStr]; if(!dev) return;
+            vt.byValve[numStr].forEach(function(t){ vm.tables[t]={id:dev.id, name:dev.name}; });
+          });
+          vt.extras.forEach(function(num){ if(byNum[num]) vm.extras.push({num:num, id:byNum[num].id, name:byNum[num].name}); });
+        }
+        delete vm._zones;
+        if(!vm.masterA) vm.masterA=vm.masterDefault;
+        var vwc=0, ec=0, temp=0;
+        Object.keys(sm.tables).forEach(function(t){
+          if(sm.tables[t].vwc) vwc++; if(sm.tables[t].ec) ec++; if(sm.tables[t].temp) temp++;
+        });
+        /* Unmapped is counted per sensor position, not per raw row — a
+           VWC/pwEC/Substrate Temp triple for one unnamed point is one
+           thing an operator has to go serial-walk, not three (confirmed
+           against B-3's real fixture: 12 unmapped rows, 4 positions). */
+        var unmappedVwc=sm.unmapped.filter(function(u){ return u.type==='VWC'; }).length;
+        return {room:rm, valveTables:Object.keys(vm.tables).length, valveExtras:vm.extras.length,
+                masterA:!!vm.masterA, masterB:!!vm.masterB, masterC:!!vm.masterC,
+                water:!!vm.water, drain:!!vm.drain,
+                sensorVwc:vwc, sensorEc:ec, sensorTemp:temp, sensorUnmapped:unmappedVwc};
+      });
+      saveGrowlinkValveMap(valveMap);
+      saveGrowlinkSensorMap(sensorMap);
+      saveGrowlinkDiscovery({at:Date.now(), coverage:coverage, notFound:notFound});
+      return growlinkGet('/api/v2/room/'+encodeURIComponent(GROWLINK_CFS_ROOM_ID)+'/sensors').then(function(data){
+        saveGrowlinkSolution({at:Date.now(), sensors:unwrapList(data,'sensors').map(function(s){
+          return {id:s.id, name:s.name, type:s.type};
+        })});
+        return getGrowlinkDiscovery();
+      }).catch(function(){ return getGrowlinkDiscovery(); });
+    });
+  });
+}
+function renderGrowlinkDiscovery(){
+  var el=$('discoverbody'); if(!el) return;
+  var d=getGrowlinkDiscovery();
+  if(!d){ el.innerHTML='<div class="sn">not run yet</div>'; return; }
+  var rows=d.coverage.map(function(c){
+    return '<div class="sn">'+c.room+': '+c.valveTables+'/'+ROOMS[c.room].t+' tables valved'+
+      (c.valveExtras?' (+'+c.valveExtras+' extra)':'')+
+      ' · master '+(c.masterA?'A':'—')+'/'+(c.masterB?'B':'—')+'/'+(c.masterC?'C':'—')+
+      (c.water?' · water':'')+(c.drain?' · drain':'')+
+      ' · sensors '+c.sensorVwc+'/'+c.sensorEc+'/'+c.sensorTemp+' vwc/ec/temp'+
+      (c.sensorUnmapped?' · '+c.sensorUnmapped+' unmapped':'')+'</div>';
+  }).join('');
+  if(d.notFound && d.notFound.length) rows+='<div class="sn bad">no Growlink room found for: '+d.notFound.join(', ')+'</div>';
+  el.innerHTML='<div class="sn">discovered '+new Date(d.at).toLocaleString('en-US')+'</div>'+rows;
 }
 /* ---------------- Growlink, read-only (Weekend Plan 3.1) ----------------
    Nothing here fires a valve — every call is a GET, or a POST that only
@@ -2983,11 +3138,15 @@ function renderZoneCoverage(rm){
    Growlink_Skill.md, received 9/12) — the earlier Bearer-token guess
    this window shipped with is gone, not patched. Room naming (Growlink
    says "A-1" where Stab says "A1"), the CFS room id, the Batch Tank
-   number map, where activeRun actually lives, and how to match a device
-   to a table (room + table, the way the schedule parser does — never an
-   exact string against the 3.5 zone label, which was this window's own
-   first guess) were all confirmed by Andy and are no longer flagged as
-   guesses anywhere below. */
+   number map, and where activeRun actually lives were all confirmed by
+   Andy and are no longer flagged as guesses anywhere below. How a device
+   ties to a table went through two more guesses after that — an exact
+   string against a manual zone paste, then room+table the way the
+   schedule parser reads it — before the Growlink Integration Plan (§0,
+   9/12) traced the real cause to the device names themselves: a table's
+   actual device is a numbered Zone Valve, name-matched by valveHeader
+   (pure.js) against the room's own discovered valve map, never a
+   schedule-style header. */
 var GROWLINK_BASE_URL='https://api.developer.growlink.com';
 function growlinkCfg(){
   try{ return JSON.parse(localStorage.getItem('stab_growlink')||'{}'); }catch(e){ return {}; }
@@ -3181,82 +3340,147 @@ function renderTankFill(){
     }).join('');
   });
 }
-/* Device discovery per room, cached the same way rooms are (Weekend
-   Plan 3.2). */
-function growlinkDevicesCache(){
-  try{ return JSON.parse(localStorage.getItem('stab_growlink_devices')||'{}'); }catch(e){ return {}; }
-}
-function growlinkDevices(rm, force){
-  var c=growlinkDevicesCache();
-  if(c[rm] && !force) return Promise.resolve(c[rm]);
-  return growlinkRooms().then(function(rooms){
-    var roomId=growlinkRoomIdFor(rooms, rm);
-    if(!roomId) return Promise.reject(new Error('no Growlink room named '+growlinkApiRoomName(rm)));
-    return growlinkGet('/api/v2/room/'+encodeURIComponent(roomId)+'/devices').then(function(data){
-      var devices=unwrapList(data,'devices');
-      c[rm]=devices; lsSet('stab_growlink_devices', JSON.stringify(c));
-      return devices;
-    });
-  });
-}
-/* Confirmed by Andy 9/12: match a device by room + table number, the
-   same way the schedule parser does — never an exact string against the
-   3.5 zone label. A device's own `name` gets read through schedHeader
-   (pure.js), the exact function that already turns "A1 Table 11+12"
-   into {room, tables}, tolerant of the same case and spacing variance
-   Growlink's schedule screens print. A device whose name doesn't parse
-   as a room+table header at all is not a candidate, not a guess. */
-function matchDeviceForTable(devices, room, table){
-  for(var i=0;i<devices.length;i++){
-    var hd=schedHeader((devices[i]||{}).name);
-    if(hd && hd.room.toLowerCase()===String(room).toLowerCase() && hd.tables.indexOf(table)>=0)
-      return devices[i];
-  }
-  return null;
-}
-/* Did last night fire (Weekend Plan 3.2). Ties each zoned table (3.5) to
-   its Growlink device, pulls the last 24h of that device's runs, and
-   hands the comparison to nightFireLine (pure.js) against this app's own
-   schedule for the same table. A table with no zone saved, or whose
-   device can't be matched by room + table, is skipped rather than
-   guessed at — reported by its absence from the result, not a
-   fabricated line.
+/* Did last night fire, rebuilt on the valve map (Growlink Integration
+   Plan §2, 9/12). Replaces the 3.5 zone-list version outright — §0 found
+   that version's own device match (schedHeader against a device's name)
+   never had anything real to match against, since a table's actual
+   device is a numbered Zone Valve from the room's own valve map (§1's
+   discoverGrowlink), never a schedule-style "Room Table N" header. A
+   room with no valve map at all (discovery not yet run) fails by name
+   rather than reporting nothing.
+
+   Window is lights-on minus one hour to now, not a rolling 24h — a
+   calendar day cuts an AM room's own watering night in half where the
+   light day (lastLightsOn, pure.js) does not.
 
    Known limit, confirmed by the guide (§7.3) and by the real A7 T3
    finding from 9/11: a device still running when the window ends has no
    period reported for that run at all — not a short one, none — until
    it closes. Widening how far back this looks doesn't fix that; only
-   cross-checking live device state (§6.2, not built here) would. So a
-   table absent from the result here can mean either no zone/device
-   match or a run still open at query time — nightFireLine can't tell
-   the two apart from the log alone, and neither can this. */
+   cross-checking live device state (§6, not built here) would.
+
+   The same call also answers §2's own "which master ran the shots" and
+   "did the Fresh Water Master run" — both read off the exact same log,
+   not a second call, since every master's own window is identical to
+   the tables' own window. */
 function fetchNightFire(rm){
   var orgId=growlinkOrgId();
   if(!orgId) return Promise.reject(new Error('not connected'));
   if(!ROOMS[rm]) return Promise.reject(new Error('unknown room '+rm));
-  return growlinkDevices(rm).then(function(devices){
-    var tables=[], deviceIds=[], byTableId={};
-    for(var t=1;t<=ROOMS[rm].t;t++){
-      if(!zoneFor(rm,t)) continue;
-      var dev=matchDeviceForTable(devices, rm, t);
-      if(!dev) continue;
-      tables.push(t); byTableId[t]=dev.id; deviceIds.push(dev.id);
-    }
-    if(!deviceIds.length) return Promise.reject(new Error('no zoned table in '+rm+' matched a Growlink device'));
-    var end=new Date(), start=new Date(end.getTime()-24*3600000);
-    return growlinkPost('/api/v2/organization/'+encodeURIComponent(orgId)+'/devices/data/log',
-      {deviceIds:deviceIds, start:start.toISOString(), end:end.toISOString()})
-    .then(function(data){
-      var byDevId={};
-      unwrapList(data,'devices').forEach(function(d){ byDevId[d.id]=d.logs||[]; });
-      var out={};
-      tables.forEach(function(t){
-        var expected=shotTimes(rm,t,end).filter(function(d){ return d>=start && d<=end; });
-        out[t]=nightFireLine(expected, byDevId[byTableId[t]]||[]);
-      });
-      return out;
+  var vm=(getGrowlinkValveMap()||{})[rm];
+  if(!vm || !Object.keys(vm.tables).length) return Promise.reject(new Error('no valve map for '+rm+' — run discovery in Settings first'));
+  var tables=Object.keys(vm.tables).map(Number).sort(function(a,b){ return a-b; });
+  var masterIds={A:vm.masterA&&vm.masterA.id, B:vm.masterB&&vm.masterB.id, C:vm.masterC&&vm.masterC.id};
+  var waterId=vm.water&&vm.water.id;
+  var deviceIds=tables.map(function(t){ return vm.tables[t].id; });
+  ['A','B','C'].forEach(function(L){ if(masterIds[L]) deviceIds.push(masterIds[L]); });
+  if(waterId) deviceIds.push(waterId);
+  deviceIds=deviceIds.filter(function(id,i){ return id && deviceIds.indexOf(id)===i; });
+  var end=new Date();
+  var start=new Date(lastLightsOn(rm, end).getTime()-3600000);
+  return growlinkPost('/api/v2/organization/'+encodeURIComponent(orgId)+'/devices/data/log',
+    {deviceIds:deviceIds, start:start.toISOString(), end:end.toISOString()})
+  .then(function(data){
+    var byDevId={};
+    unwrapList(data,'devices').forEach(function(d){ byDevId[d.id]=d.logs||[]; });
+    var outTables={}, allMatches=[];
+    tables.forEach(function(t){
+      var expected=shotTimes(rm,t,end).filter(function(d){ return d>=start && d<=end; });
+      var r=nightFireLine(expected, byDevId[vm.tables[t].id]||[], scheduledDurationFor(rm,t));
+      outTables[t]=r;
+      (r.matches||[]).forEach(function(m){ allMatches.push(m.log); });
     });
+    var masterRuns={};
+    ['A','B','C'].forEach(function(L){ masterRuns[L]=masterIds[L]?(byDevId[masterIds[L]]||[]):[]; });
+    return {tables:outTables,
+            tank:tankFromLog(masterRuns, allMatches, end),
+            flush:waterId?flushEventsFromLog(byDevId[waterId]||[], rm):[]};
   });
+}
+/* Tank from the log (Growlink Integration Plan §3, 9/12). Reuses §2's own
+   fetch outright — both read the exact same masters over the exact same
+   light-day window, so this just asks a different question of the data
+   fetchNightFire already pulled: which letter the log shows against
+   what room config currently says. */
+function fetchTankFromLog(rm){
+  return fetchNightFire(rm).then(function(r){
+    var configured=tankFor(rm);
+    var single=(r.tank||[]).length===1?r.tank[0]:null;
+    return {letters:r.tank||[], configured:configured, flush:r.flush||[],
+            mismatch:!!(single && configured && single!==configured),
+            noneConfigured:!!(single && !configured)};
+  });
+}
+/* The operator confirms a tank-from-log finding (§3): room config
+   updates and the change is recorded in the room's own event log
+   (stab_events), the same store every other room event already writes
+   into, tagged so an end-of-day roll-up can tell it apart from a
+   fault or a shot. */
+function confirmTankFromLog(rm, letter){
+  var c=roomCfg()[rm]||{}, was=c.tank||'';
+  c.tank=letter; saveRoomCfg(rm, c);
+  addEv({kind:'tankchange', room:rm, from:was||'none', to:letter, source:'log'});
+}
+/* Observed schedule (Growlink Integration Plan §4, 9/12): 48h of each
+   table's own zone-valve log, handed to pure.js's observedScheduleReport
+   and scheduleDrift against the stored (pasted or weekly-file) schedule.
+   Any light-day the Fresh Water Master ran on is dropped before either
+   function sees the table's own runs — a flush's own long single run
+   must never read as "duration changed to 28 minutes". Manual runs are
+   left in for that exclusion check (lightDayKeysFor) since a flush is
+   real whether triggered by hand or not, but groupRunsByLightDay (pure.js)
+   drops them again before building the pattern itself. */
+function fetchObservedSchedule(rm){
+  var orgId=growlinkOrgId();
+  if(!orgId) return Promise.reject(new Error('not connected'));
+  var vm=(getGrowlinkValveMap()||{})[rm];
+  if(!vm || !Object.keys(vm.tables).length) return Promise.reject(new Error('no valve map for '+rm+' — run discovery in Settings first'));
+  var tables=Object.keys(vm.tables).map(Number).sort(function(a,b){ return a-b; });
+  var waterId=vm.water&&vm.water.id;
+  var deviceIds=tables.map(function(t){ return vm.tables[t].id; });
+  if(waterId) deviceIds.push(waterId);
+  var end=new Date(), start=new Date(end.getTime()-48*3600000);
+  return growlinkPost('/api/v2/organization/'+encodeURIComponent(orgId)+'/devices/data/log',
+    {deviceIds:deviceIds, start:start.toISOString(), end:end.toISOString()})
+  .then(function(data){
+    var byDevId={};
+    unwrapList(data,'devices').forEach(function(d){ byDevId[d.id]=d.logs||[]; });
+    var flushDays=waterId?lightDayKeysFor(rm, byDevId[waterId]||[]):{};
+    var sched=getSched(), rec=sched[rm];
+    var changedAt=(rec&&rec.changed&&rec.changed.at)||null;
+    var out={};
+    tables.forEach(function(t){
+      var runs=(byDevId[vm.tables[t].id]||[]).filter(function(r){
+        var lo=lastLightsOn(rm, new Date(r.on));
+        return lo && !flushDays[lo.getTime()];
+      });
+      out[t]={report:observedScheduleReport(rm, runs, changedAt),
+              drift:scheduleDrift(rm, t, runs, changedAt),
+              stored:storedAsObserved(rm, t)};
+    });
+    return out;
+  });
+}
+/* OK, replace (§4): the observed pattern becomes the stored schedule for
+   that one table, and the existing schedule change log (logSchedDiff,
+   inside saveSched) records it same as any pasted change would — tagged
+   'observed' so the log can tell the two apart. */
+function applyObservedSchedule(rm, table, obs){
+  var sched=getSched(), was=sched[rm];
+  var rec=was ? JSON.parse(JSON.stringify(was)) : {tables:[]};
+  if(!rec.tables) rec.tables=[];
+  var lo=lightsOnFor(rm);
+  var lp=lo.split(':').map(Number);
+  var startMin=((lp[0]*60+lp[1]+obs.startOffsetMin)%1440+1440)%1440;
+  var startStr=('0'+Math.floor(startMin/60)).slice(-2)+':'+('0'+(startMin%60)).slice(-2);
+  var idx=-1;
+  rec.tables.forEach(function(t,i){ if(t.table===table) idx=i; });
+  var entry=idx>=0?rec.tables[idx]:{table:table};
+  entry.P1={start:startStr, duration:obs.duration, frequency:obs.frequency,
+            interval:obs.intervalMin!=null?obs.intervalMin*60:null};
+  if(obs.duration!=null && obs.frequency!=null) entry.runtimeSec=obs.duration*obs.frequency;
+  if(idx>=0) rec.tables[idx]=entry; else rec.tables.push(entry);
+  saveSched(rm, rec, 'source: observed');
 }
 /* activeRun, per room (Weekend Plan 3.4) — currentDayNo, totalNoOfDays,
    currentGrowthStage (1 Veg, 2 Early, 3 Mid, 4 Late). Confirmed by Andy
@@ -3305,7 +3529,7 @@ function renderRenames(){
       esc(r.effectiveDate)+(pending?' <span class="pend">(pending)</span>':' (active)')+'</div>';
   }).join('');
 }
-function saveSched(rm,rec){
+function saveSched(rm,rec,note){
   var a=getSched(), was=a[rm];
   /* §6.4: a room whose shot structure just changed needs a reading 1-2 h
      after its next P1 to confirm the front still reaches the bottom of the
@@ -3316,7 +3540,7 @@ function saveSched(rm,rec){
   if(diffs.length) rec.changed={at:Date.now(), diffs:diffs};
   else if(was && was.changed) rec.changed=was.changed;
   a[rm]=rec; lsSet('stab_sched',JSON.stringify(a));
-  logSchedDiff(rm, was, rec);
+  logSchedDiff(rm, was, rec, note);
 }
 /* M:SS, for a diff and the workbook's Room Schedule History export (§2.2)
    — "Durations M:SS text". schedFmt (5m 15s) is the per-table detail
@@ -3396,14 +3620,14 @@ function schedDiff(rm, was, now){
 function getSchedLog(){
   try{ return JSON.parse(localStorage.getItem('stab_schedlog')||'[]'); }catch(e){ return []; }
 }
-function logSchedDiff(rm, was, now){
+function logSchedDiff(rm, was, now, note){
   if(!was || !was.tables || !now || !now.tables) return;
   var old={}; was.tables.forEach(function(t){ old[t.table]=t; });
   var log=getSchedLog(), added=false;
   now.tables.forEach(function(t){
     var o=old[t.table];
     if(!schedTableDiffParts(rm, o, t)) return;
-    log.push({ts:Date.now(), room:rm, table:t.table, op:S.op||'', note:'', before:o, after:t});
+    log.push({ts:Date.now(), room:rm, table:t.table, op:S.op||'', note:note||'', before:o, after:t});
     added=true;
   });
   if(added) lsSet('stab_schedlog', JSON.stringify(log));
@@ -3743,35 +3967,83 @@ function openRoomSetup(){
     i.oninput=function(){ i.classList.add('known'); };
   });
   $('cfg_fs').oninput=drawCfgDof;
-  $('zonepaste').value=''; $('zonebody').innerHTML='';
-  renderZoneCoverage(S.room);
+  if($('nightfirebody')) $('nightfirebody').innerHTML='';
+  if($('tanklogbody')) $('tanklogbody').innerHTML='';
+  if($('obsschedbody')) $('obsschedbody').innerHTML='';
   $('cfgsheet').classList.remove('hide');
 }
-$('zoneread').onclick=function(){
-  if(!S.room) return;
-  var r=parseZoneList($('zonepaste').value);
-  if(!r.entries.length){
-    $('zonebody').innerHTML='<div class="sn bad">nothing read from that paste — is it a zone list?</div>';
-    return;
-  }
-  if(r.room && r.room!==S.room){
-    $('zonebody').innerHTML='<div class="sn bad">that paste says '+esc(r.room)+', you are on '+S.room+'</div>';
-    return;
-  }
-  saveZones(S.room, r.entries);
-  renderZoneCoverage(S.room);
-  $('zonebody').innerHTML='<div class="sn">'+r.entries.length+' device'+(r.entries.length>1?'s':'')+' saved: T'+
-    r.entries.map(function(e){ return e.table; }).sort(function(a,b){return a-b;}).join(', T')+'</div>'+
-    (r.warnings.length?'<div class="sn bad">'+r.warnings.map(esc).join('<br>')+'</div>':'');
-  $('zonepaste').value='';
-};
 if($('nightfirebtn')) $('nightfirebtn').onclick=function(){
   if(!S.room) return;
   var el=$('nightfirebody'); if(!el) return;
   el.innerHTML='<div class="sn">checking…</div>';
-  fetchNightFire(S.room).then(function(results){
-    var tbls=Object.keys(results).map(Number).sort(function(a,b){ return a-b; });
-    el.innerHTML=tbls.map(function(t){ return '<div class="sn">T'+t+': '+esc(results[t].line)+'</div>'; }).join('');
+  fetchNightFire(S.room).then(function(r){
+    var tbls=Object.keys(r.tables).map(Number).sort(function(a,b){ return a-b; });
+    var h=tbls.map(function(t){ return '<div class="sn">T'+t+': '+esc(r.tables[t].line)+'</div>'; }).join('');
+    if(r.tank && r.tank.length) h+='<div class="sn">tank open during shots: '+r.tank.join(', ')+'</div>';
+    if(r.flush && r.flush.length) h+='<div class="sn">flush: '+r.flush.map(function(f){
+      return f.date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · '+f.durationMin+' min · '+f.mL+' mL';
+    }).join(' · ')+'</div>';
+    el.innerHTML=h||'<div class="sn">no valved table reported</div>';
+  }).catch(function(e){
+    el.innerHTML='<div class="sn bad">'+esc(String((e&&e.message)||e))+'</div>';
+  });
+};
+if($('tanklogbtn')) $('tanklogbtn').onclick=function(){
+  if(!S.room) return;
+  var el=$('tanklogbody'); if(!el) return;
+  el.innerHTML='<div class="sn">checking…</div>';
+  fetchTankFromLog(S.room).then(function(r){
+    var h='';
+    if(!r.letters.length) h+='<div class="sn">no master open during a shot in this window</div>';
+    else if(r.letters.length>1) h+='<div class="sn bad">more than one master open during shots: '+r.letters.join(', ')+'</div>';
+    else{
+      var found=r.letters[0];
+      h+='<div class="sn">tank '+found+' (from log)'+(r.configured?' · config says '+r.configured:'')+'</div>';
+      if(r.mismatch || r.noneConfigured)
+        h+='<button class="fp" id="tanklogconfirm" data-l="'+found+'">'+
+           (r.noneConfigured?'assign tank '+found:'update config to '+found)+'</button>';
+    }
+    if(r.flush && r.flush.length) h+='<div class="sn">flush: '+r.flush.map(function(f){
+      return f.date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' · '+f.durationMin+' min · '+f.mL+' mL';
+    }).join(' · ')+'</div>';
+    el.innerHTML=h;
+    if($('tanklogconfirm')) $('tanklogconfirm').onclick=function(){
+      confirmTankFromLog(S.room, this.dataset.l);
+      $('cfg_tank').value=this.dataset.l;
+      $('tanklogbtn').click();
+    };
+  }).catch(function(e){
+    el.innerHTML='<div class="sn bad">'+esc(String((e&&e.message)||e))+'</div>';
+  });
+};
+if($('obsschedbtn')) $('obsschedbtn').onclick=function(){
+  if(!S.room) return;
+  var el=$('obsschedbody'); if(!el) return;
+  el.innerHTML='<div class="sn">checking…</div>';
+  fetchObservedSchedule(S.room).then(function(out){
+    var tbls=Object.keys(out).map(Number).sort(function(a,b){ return a-b; });
+    var h=tbls.map(function(t){
+      var o=out[t], r=o.report;
+      if(!r) return '<div class="sn">T'+t+': no completed runs in the last 48h</div>';
+      var obsTxt=mmss(r.duration)+'×'+r.frequency+(r.intervalMin!=null?' @'+hmm(r.intervalMin*60):'');
+      var matches=o.stored && r.frequency===o.stored.frequency && Math.abs(r.startOffsetMin-o.stored.startOffsetMin)<=10;
+      var line='<div class="sn">T'+t+': observed '+obsTxt+(r.confident?'':' · 1 day — provisional')+
+        (matches?' ✓':' ≠ stored')+
+        (o.drift?' <span class="dtag chg">schedule drift</span>':'')+'</div>';
+      if(!matches) line+='<button class="fp" id="obsschedok_'+t+'" data-t="'+t+
+        '" data-dur="'+r.duration+'" data-freq="'+r.frequency+
+        '" data-off="'+r.startOffsetMin+'" data-int="'+(r.intervalMin==null?'':r.intervalMin)+'">OK, replace stored</button>';
+      return line;
+    }).join('');
+    el.innerHTML=h;
+    tbls.forEach(function(t){
+      var b=$('obsschedok_'+t); if(!b) return;
+      b.onclick=function(){
+        applyObservedSchedule(S.room, t, {duration:+this.dataset.dur, frequency:+this.dataset.freq,
+          startOffsetMin:+this.dataset.off, intervalMin:this.dataset.int===''?null:+this.dataset.int});
+        $('obsschedbtn').click();
+      };
+    });
   }).catch(function(e){
     el.innerHTML='<div class="sn bad">'+esc(String((e&&e.message)||e))+'</div>';
   });

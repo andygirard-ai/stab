@@ -9,9 +9,10 @@ const pureSrc =fs.readFileSync(path.join(D,'pure.js'),'utf8');
 const pre=`var S={room:null,rows:[],notes:{},free:{},feedEC:null,feedPH:null,side:'standard',dir:'up',op:'APG',mode:'sweep',triage:[],skipped:{},access:null,startedAt:0};
 var DEMO=false; var HIST=[]; function getHist(){return HIST;}
 var TANKS={}; function getTanks(){return TANKS;}
-var EV=[]; function getEv(){return EV;}`;
+var EV=[]; function getEv(){return EV;}
+var SCHEDSTORE={}; function getSched(){return SCHEDSTORE;}`;
 const code=pre+'\n'+roomsSrc+'\n'+pureSrc+
-'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,TANK,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},setTanks:function(t){TANKS=t;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes,PEGS,ACCESS,SKIPWHY,tableSkipped,skipReason,skippedList,sweepStamp,rowNoteLines,buildRowNotes,buildRoomNotes,roomHead,roomPara,strainFor,strainListFor,rowDateTime,reRoomRows,feedEcFor,tankFor,isOnWater,TANK_IDS,parseZoneList,zoneFor,tankFillByDay,BATCH_TANK_NUM,nightFireLine,runoffTableLine,runoffNotesLine,todaysRunoffFor,runoffMlForTable,demandFor,fcMlFor,fcRefVwcFor,drybackMl,setEv:function(e){EV=e;}};';
+'\nmodule.exports={S,ROOMS,mergePrevText,prevTs,FLOOR,TANK,floorFor,med,checkLines,buildWorkbook,feelWord,byTable,setHist:function(h){HIST=h;},setTanks:function(t){TANKS=t;},hoursSinceShot,dofNow,buildRoute,poreEC,permCounts,vwcCounts,parseText,frameBytes,crc16,rxBytes,PEGS,ACCESS,SKIPWHY,tableSkipped,skipReason,skippedList,sweepStamp,rowNoteLines,buildRowNotes,buildRoomNotes,roomHead,roomPara,strainFor,strainListFor,rowDateTime,reRoomRows,feedEcFor,tankFor,isOnWater,TANK_IDS,tankFillByDay,BATCH_TANK_NUM,valveHeader,valveTablesFor,sensorHeader,lightsOnFor,lastLightsOn,scheduledDurationFor,nightFireLine,tankFromLog,flushEventsFromLog,groupRunsByLightDay,lightDayKeysFor,observedSchedule,observedScheduleReport,scheduleMatches,storedAsObserved,scheduleDrift,mlPerPlant,schedSeries,runoffTableLine,runoffNotesLine,todaysRunoffFor,runoffMlForTable,demandFor,fcMlFor,fcRefVwcFor,drybackMl,setEv:function(e){EV=e;},setSched:function(s){SCHEDSTORE=s;}};';
 fs.writeFileSync(path.join(__dirname,'lib.js'),code);
 module.exports=require('./lib.js');
 // CSV loader -> S.rows shape used by doCommit

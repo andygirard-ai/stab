@@ -16,9 +16,54 @@ worth chasing down for a control type this app will stop seeing in days.**
 Left exactly as it was: hours-since-shot still reflects P1 only, a
 flagged gap in `schedSeries` (pure.js), not resolved and not going to be.
 
+**Open (asked 9/12) — Batch/Stock Tank level sensors missing from the live
+discovery pass.** The Growlink Integration Plan's own §1.3 text describes
+CFS's solution sensors as including `Batch Tank #1/#2/#3/#5 (veg)`
+levels and `Stock Tank #1–7`, and `growlink_room_export.csv` (real
+export, confirmed earlier) carries exactly those columns. But the real
+9/9 discovery run in `fixtures/growlink/api_list.txt` (`== Fertigation
+and solution sensors ==`, lines 1492–1506) returns only twelve rows for
+CFS — two Temperature, four pH, three EC/TDS, three Flow Rate — no Batch
+or Stock Tank entries at all, from the same `GET room/{id}/sensors` call
+this window's discovery button now uses for that section. Both facts are
+real: the CSV export and the room-scoped sensors call may simply be two
+different views of the account (the CSV possibly enumerating sensors
+tied to devices rather than the room, or a query the discovery script
+didn't run), and this is not something the repo can settle on its own.
+**Assumed for now:** Window 3's existing `growlinkTankSensor`/
+`fetchTankFill` (hardcoded to `GROWLINK_CFS_ROOM_ID` and
+`BATCH_TANK_NUM`, confirmed working and Andy-approved) stays completely
+untouched; §1's new discovery simply stores and displays whatever CFS's
+live `/sensors` call actually returns, with no attempt to reconcile the
+two or treat the smaller list as evidence the tank sensors don't exist.
+**If this is wrong:** the two features silently diverge — Window 3's
+tank fill keeps working off the hardcoded name match while §1's
+discovery display never shows a Batch/Stock Tank line — and nothing in
+the app currently flags that split for the operator to notice.
+
 ## Resolved
 
-**3.2 — matching a device to a table (asked 9/12, answered same day).**
+**Growlink Integration Plan §0 — matching a device to a table, second
+correction (asked 9/12, answered same day).** The 3.2 fix below (schedHeader
+against a device's own name) still wasn't the real device: §0 traced the
+actual cause once `fixtures/growlink/api_list.txt` gave real device names
+to check against — a table's own Growlink device is a numbered `Zone
+Valve #N` (`Flower A1 - Zone Valve #5`, or `A7 - Zone Valve #5` for A-7),
+never a schedule-style "Room Table N" header, and its device `type` field
+is unreliable for telling a zone valve from anything else (the identical
+name pattern comes back typed `Batch Tank` for most of B-1's own valves
+and `Valve` for #2 through #5 in that same room's own list). `valveHeader`
+(pure.js) now parses this directly, by name only, and `valveTablesFor`
+encodes the A-wing shared-last-valve convention (one valve short of the
+table count, the last one covers two tables) and the B/C-wing extras
+convention (two valves long, the extra numbers are real spares) — both
+confirmed against every room in the real fixture, not just the one that
+happened to get checked. `schedHeader`-based matching is gone from this
+path entirely, not kept as a fallback.
+
+**3.2 — matching a device to a table, first correction (asked 9/12,
+answered same day; superseded 9/12 by the entry above once the real
+device names were checked).**
 The first pass guessed a device's own `name` was the zone label from the
 3.5 paste ("B-1"), matched by exact string. Andy: match room + table
 number the way the schedule parser does, never exact strings.

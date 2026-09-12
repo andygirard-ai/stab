@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v61</title>
+<title>Stab v62</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -369,12 +369,10 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
 #schedtop{font-size:28px;font-weight:700;margin-bottom:2px}
 #schedsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5}
-#schedpaste,#zonepaste{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+#schedpaste{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;
   padding:11px;font-family:var(--mono);font-size:12px;color:var(--ink);resize:none;
   -webkit-user-select:text;user-select:text;margin-bottom:9px}
 #schedbody{margin:12px 0}
-#zonecov{margin-bottom:8px}
-#zonebody{margin:8px 0 4px}
 #schedbody .sn{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:8px;line-height:1.5}
 #schedbody .sn.bad{color:var(--warn)}
 table.sched{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
@@ -549,7 +547,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v61</b></div>
+  <div class="brand">Substrate sweep · <b>v62</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -687,7 +685,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v61</div>
+  <div class="v">stab v62</div>
   <div id="stats"></div>
   <div class="act2"><button id="reroom">Re-room this sweep</button></div>
   <div class="wbh">Checks · read here, never pasted</div>
@@ -898,24 +896,27 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
     same way, so neither is a property of the room.</div>
   <div id="cfgtables"></div>
 
-  <div class="lbl">Zones (Weekend Plan 3.5)</div>
-  <div class="tiny">Paste Growlink's own zone list for this room — one
-    device per line, <code>#20003605  B1 Table 4  B-1</code> — to tie a
-    table to the device id the overnight sensor pull will eventually read.
-    Alongside the schedule paste's own Sensor column, not instead of it.</div>
-  <div id="zonecov" class="tiny"></div>
-  <textarea id="zonepaste" rows="4" placeholder="paste the Growlink zone list for this room"></textarea>
-  <button id="zoneread" class="fp">Read it</button>
-  <div id="zonebody"></div>
-
-  <div class="lbl">Did last night fire (Weekend Plan 3.2)</div>
-  <div class="tiny">Compares last night's shots against Growlink's own
-    device log, table by table. Needs a zone saved for the table (above)
-    and a working connection (Settings) — a table with no zone, or one
-    whose zone doesn't match a device here, is left out rather than
-    guessed at.</div>
+  <div class="lbl">Did last night fire (Growlink Plan §2)</div>
+  <div class="tiny">Compares this light-day's shots against Growlink's own
+    device log, table by table, off the valve map — run "Discover rooms
+    &amp; devices" in Settings first. A table with no zone valve in the map
+    is left out rather than guessed at.</div>
   <button id="nightfirebtn" class="fp">Check</button>
   <div id="nightfirebody"></div>
+
+  <div class="lbl">Tank from log (Growlink Plan §3)</div>
+  <div class="tiny">Which master valve actually ran the shots above,
+    against what room config says. A Fresh Water Master run is a flush,
+    logged automatically.</div>
+  <button id="tanklogbtn" class="fp">Check</button>
+  <div id="tanklogbody"></div>
+
+  <div class="lbl">Observed schedule (Growlink Plan §4)</div>
+  <div class="tiny">What the valve log says a table is actually running,
+    from 48h of its own history — not what was last pasted. OK replaces
+    the stored schedule for that table.</div>
+  <button id="obsschedbtn" class="fp">Check</button>
+  <div id="obsschedbody"></div>
 
   <div class="lgact">
     <button id="cfgsave">Save room setup</button>
@@ -942,6 +943,14 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   </div>
   <div id="growlinkstatus" class="tiny"></div>
   <div id="dbtns"><button class="dbtn" id="gl_test">Test connection</button></div>
+
+  <div class="lbl">Discovery (Growlink Plan §1)</div>
+  <div class="tiny">One pass over every flower room: the valve map (which
+    device is which table's zone valve, and which is each master), the
+    sensor map, and the CFS solution sensors. Re-run any time — a valve
+    changed in the portal only shows up here after this runs again.</div>
+  <div id="dbtns"><button class="dbtn" id="discoverbtn">Discover rooms &amp; devices</button></div>
+  <div id="discoverbody" class="tiny"></div>
 
   <div class="lbl">Full backup · sweeps + room config (Weekend Plan 1.6)</div>
   <div class="tiny">Storage is per device, and a second phone is coming.
@@ -1010,8 +1019,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=61"></script>
-<script src="pure.js?v=61"></script>
-<script src="app.js?v=61"></script>
+<script src="rooms.js?v=62"></script>
+<script src="pure.js?v=62"></script>
+<script src="app.js?v=62"></script>
 </body>
 </html>

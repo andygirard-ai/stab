@@ -1,0 +1,1508 @@
+Validating key…
+Organization: Vireo Health NY
+34 rooms
+
+== Q1 · Fertigation rooms ==
+No roomType 2. The skid is not exposed as a fertigation room — tank checks stay manual.
+
+== All rooms ==
+CFS	Production	1101903f-b6d5-43e7-b0e7-2617a6bd9d61
+A7, Veg  B, C, Dry A, B, and Cure C	Production	e46c4e1a-bc2a-43c2-8d45-0039fb784caf
+Mom & Early Veg	Production	9c8f98e0-c68f-4bae-84e2-323c4abd4a87
+A2 substrate	Production	3bfd06a4-65d0-4057-82ba-307733d9d67f
+A-1	Production	5778cf05-e794-423e-a68e-e655e7fbc4f7
+A-2	Production	581cb85a-794f-4d90-84f6-7003c275f881
+A-3	Production	3eaeec2f-e890-41c8-8c81-8d6ec541a491
+B-1	Production	880c8e39-c9e7-4ba0-9fce-9b5729d9e037
+B-2	Production	c5699e3f-da1e-4180-9b6a-19a3fc2807fa
+B-3	Production	65b045e6-f5f2-45d2-873e-8a0cba724973
+B-4	Production	8d9528c1-59cf-495c-858e-9fec29249f3b
+B-5	Production	c6b4c47a-13ab-434a-86da-d6f27be3003b
+B-6	Production	3f3a5d89-742e-4215-a1bb-d2ff31699ae2
+A-4	Production	eb8c36b6-13dc-4e6e-a29f-07848ed7b854
+A-5	Production	dbd0d73e-2e63-4631-8105-66e1440831ba
+A-6	Production	1e8da0d4-cb71-4d68-b9ec-102c3fb64f59
+Trim	Production	e7b1d546-0144-4c7b-9fa7-45b9fc9d70c6
+Vault 1	Production	af81d0c6-67ef-47e1-996c-48e947a8c2c3
+Vault 2	Production	4e75fc35-b24f-4965-8a4a-4166609f85f2
+Cure 2	Production	ca323cde-6119-4d99-8e4b-2db615f42a13
+Packaging 2	Production	5dc6e8b5-0f23-4be8-89c3-697736b76999
+Pre-Roll	Production	1221b96b-3f99-4536-ba31-06e69d3499b6
+C-1	Production	9b5049ec-76ad-4f97-947c-6b8d82eef496
+C-2	Production	a0ec30c7-f0c3-4fea-a4fe-a5aa2449cead
+C-3	Production	ce7b7505-fdb4-4589-bc1b-77c395c4dc6b
+C-4	Production	511b4004-d849-4e32-9964-e6482dddb3b0
+C-5	Production	604051e7-d843-40c9-b6cc-9291fac8df59
+C-6	Production	f8c7c586-3fc4-4f2f-b1f2-92b7d10cff50
+A-7	Production	77f7ad67-c8cf-4310-825a-2daf9ffab7a4
+Veg B	Production	5befbec0-0730-43d3-9c62-7c89d7e04f59
+Veg C	Production	a219f432-0ea2-4fd7-a69b-973f85695987
+Dry A	Production	52d41ea8-134a-4a64-a8e0-5722151e40d9
+Dry B	Production	81116b68-fb6b-44b2-81e3-3ecc38a2dcda
+Cure 1	Production	b1030eda-7c47-4778-a3f5-abf773335a62
+Reading CFS…
+Reading A7, Veg  B, C, Dry A, B, and Cure C…
+Reading Mom & Early Veg…
+Reading A2 substrate…
+Reading A-1…
+Reading A-2…
+Reading A-3…
+Reading B-1…
+Reading B-2…
+Reading B-3…
+Reading B-4…
+Reading B-5…
+Reading B-6…
+Reading A-4…
+Reading A-5…
+Reading A-6…
+Reading Trim…
+Reading Vault 1…
+Reading Vault 2…
+Reading Cure 2…
+Reading Packaging 2…
+Reading Pre-Roll…
+Reading C-1…
+Reading C-2…
+Reading C-3…
+Reading C-4…
+Reading C-5…
+Reading C-6…
+Reading A-7…
+Reading Veg B…
+Reading Veg C…
+Reading Dry A…
+Reading Dry B…
+Reading Cure 1…
+
+== Q2 · Day of flower and light cycle ==
+activeRun is populated — DOF and lights-on/off can come from the API, no manual entry
+CFS	—	—	—	11:00:00	23:00:00	America/New_York
+A7, Veg  B, C, Dry A, B, and Cure C	—	—	—	11:00:00	23:00:00	America/New_York
+Mom & Early Veg	—	—	—	08:00:00	20:00:00	America/New_York
+A2 substrate	—	—	—	08:00:00	16:00:00	America/New_York
+A-1	?	?	—	23:00:00	11:00:00	America/New_York
+A-2	?	?	—	11:00:00	23:00:00	America/New_York
+A-3	?	?	—	08:00:00	16:00:00	America/New_York
+B-1	?	?	—	23:00:00	11:00:00	America/New_York
+B-2	?	?	—	23:00:00	11:00:00	America/New_York
+B-3	?	?	—	23:00:00	11:00:00	America/New_York
+B-4	?	?	—	23:00:00	11:00:00	America/New_York
+B-5	?	?	—	23:00:00	11:00:00	America/New_York
+B-6	?	?	—	23:00:00	11:00:00	America/New_York
+A-4	?	?	—	08:00:00	16:00:00	America/New_York
+A-5	?	?	—	08:00:00	16:00:00	America/New_York
+A-6	?	?	—	08:00:00	16:00:00	America/New_York
+Trim	—	—	—	08:00:00	16:00:00	America/New_York
+Vault 1	—	—	—	08:00:00	16:00:00	America/New_York
+Vault 2	—	—	—	08:00:00	16:00:00	America/New_York
+Cure 2	—	—	—	08:00:00	16:00:00	America/New_York
+Packaging 2	—	—	—	08:00:00	16:00:00	America/New_York
+Pre-Roll	—	—	—	08:00:00	16:00:00	America/New_York
+C-1	?	?	—	11:00:00	23:00:00	America/New_York
+C-2	?	?	—	11:00:00	23:00:00	America/New_York
+C-3	?	?	—	11:00:00	23:00:00	America/New_York
+C-4	?	?	—	11:00:00	23:00:00	America/New_York
+C-5	?	?	—	11:00:00	23:00:00	America/New_York
+C-6	?	?	—	11:00:00	23:00:00	America/New_York
+A-7	?	?	—	08:00:00	16:00:00	America/New_York
+Veg B	—	—	—	08:00:00	16:00:00	America/New_York
+Veg C	—	—	—	08:00:00	16:00:00	America/New_York
+Dry A	?	?	—	00:00:00	12:00:00	America/New_York
+Dry B	?	?	—	08:00:00	16:00:00	America/New_York
+Cure 1	—	—	—	08:00:00	16:00:00	America/New_York
+
+== Q3 · Substrate sensors ==
+909 substrate sensors across 34 rooms
+Check whether each name maps to a table. Anything reading as a bare number needs renaming in the portal.
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Back Moisture	VWC	A7 substrate sensors	b45e978e-27a6-4b03-8766-0a80b10fa1b2
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Front Moisture	VWC	A7 substrate sensors	77a9e195-b4a5-47cd-827d-dba03bd12acf
+A7, Veg  B, C, Dry A, B, and Cure C	A7 10 Front Moisture	VWC	A7 substrate sensors	7a04e936-5b1a-4e38-a9b5-eb53f7ef93e1
+A7, Veg  B, C, Dry A, B, and Cure C	A7 11 Front Moisture	VWC	A7 substrate sensors	c233374d-78db-4a28-8749-e1eb0b063eeb
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Back Moisture	VWC	A7 substrate sensors	0e1aa548-d3fd-43a7-a143-f09231804514
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Front Moisture	VWC	A7 substrate sensors	3bcea7d9-8e4e-480d-8741-b07a6585f54c
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Back Moisture	VWC	A7 substrate sensors	86d511b7-9d9d-422c-b529-c68e533533f6
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Front Moisture	VWC	A7 substrate sensors	7b52c63f-9a27-4b6f-8466-c6e4ebf2fce4
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Back Moisture	VWC	A7 substrate sensors	157390f2-9320-4d83-900a-ae18f4df4c96
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Front Moisture	VWC	A7 substrate sensors	59d9c704-fd4c-4cab-a657-ac424c377c9e
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Back Moisture	VWC	A7 substrate sensors	155d18bb-b4f6-4bc4-84b5-0fbae390c212
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Front Moisture	VWC	A7 substrate sensors	91686e2f-9088-4595-8a96-079345535670
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Back Moisture	VWC	A7 substrate sensors	4bfd6f4e-1195-4f49-977b-9aa808e16e52
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Front Moisture	VWC	A7 substrate sensors	bc4c7ba5-2353-4577-9626-596cf0c38454
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Back Moisture	VWC	A7 substrate sensors	80735806-ff42-46ee-82fa-b2e718e9e76a
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Front Moisture	VWC	A7 substrate sensors	840990c4-69d4-40f4-8781-0599ee19f87c
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Back Moisture	VWC	A7 substrate sensors	09cd588f-3b01-4164-be73-4ad3a79949e2
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Front Moisture	VWC	A7 substrate sensors	015dae13-7171-4c7e-a498-5cc14c461c55
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Back Moisture	VWC	A7 substrate sensors	b25b4195-fb47-45fa-9474-2d10e74d33d0
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Front Moisture	VWC	A7 substrate sensors	59cb818d-dced-4f51-8ab4-774d7b047a70
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Back Moisture	VWC	A7 substrate sensors	0f2f0e12-3473-4c0c-85d8-9ff79325b65e
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Front Moisture	VWC	A7 substrate sensors	2de57d24-d099-4076-b161-335bc6e62be9
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Back Temperature	Substrate Temp	A7 substrate sensors	cf196c77-a1e2-45c1-95fd-bb7b119ef920
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Front Temperature	Substrate Temp	A7 substrate sensors	9760f047-57a7-40b7-9f86-2957b188c5ea
+A7, Veg  B, C, Dry A, B, and Cure C	A7 10 Front Temperature	Substrate Temp	A7 substrate sensors	ee6cd5b2-7104-40ab-8c7d-40e4c5c2df5f
+A7, Veg  B, C, Dry A, B, and Cure C	A7 11 Front Temperature	Substrate Temp	A7 substrate sensors	c99093f3-63cc-4cd6-a7f3-5a02c679ff35
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Back Temperature	Substrate Temp	A7 substrate sensors	10f79f84-3e2c-4aeb-b2cb-f4b1c89293ea
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Front Temperature	Substrate Temp	A7 substrate sensors	92324b81-e1dc-49c3-91d9-80e678b8f59d
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Back Temperature	Substrate Temp	A7 substrate sensors	8d68d5ad-a22a-4124-89a4-97e4a9388364
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Front Temperature	Substrate Temp	A7 substrate sensors	8cc95efd-2178-49cf-a509-1ddbad0be69f
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Back Temperature	Substrate Temp	A7 substrate sensors	895b3bf6-f95b-4191-aa32-a897b25f7f86
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Front Temperature	Substrate Temp	A7 substrate sensors	34d2e6db-9103-44ec-9dd4-7fa3bb97d3b9
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Back Temperature	Substrate Temp	A7 substrate sensors	66f71afb-c185-48b7-ab74-512be68ac45b
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Front Temperature	Substrate Temp	A7 substrate sensors	73d9c3cf-8a2d-451e-b64d-38d4a21fd6e0
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Back Temperature	Substrate Temp	A7 substrate sensors	1ec77671-cd83-4606-a8c3-eef4eade3252
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Front Temperature	Substrate Temp	A7 substrate sensors	91d88c3e-fa49-42dc-8132-72acca80cb7c
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Back Temperature	Substrate Temp	A7 substrate sensors	4395f37e-cc29-4b09-8064-aff1ce5b53a8
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Front Temperature	Substrate Temp	A7 substrate sensors	26dd9707-cbaf-4f00-9c1d-6d1f63fd7822
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Back Temperature	Substrate Temp	A7 substrate sensors	d4698ede-cb5e-4db1-8981-2d0acb3a17e3
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Front Temperature	Substrate Temp	A7 substrate sensors	76dbfe66-7adf-4a31-925a-7bd31398c359
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Back Temperature	Substrate Temp	A7 substrate sensors	b00f2477-6808-45d1-b3d3-ac5b11b1f368
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Front Temperature	Substrate Temp	A7 substrate sensors	29b58c91-0483-4049-aea7-e82172d02422
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Back Temperature	Substrate Temp	A7 substrate sensors	efb6e3d2-fa70-4751-9aa5-21a2230b3279
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Front Temperature	Substrate Temp	A7 substrate sensors	6c724083-2241-4624-a43f-f392697d4b93
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Back EC	pwEC	A7 substrate sensors	6c31a075-33dd-475b-8295-0f7806d86abe
+A7, Veg  B, C, Dry A, B, and Cure C	A7 1 Front EC	pwEC	A7 substrate sensors	23b7f00c-d603-4c7e-ace5-9c85bd44bd23
+A7, Veg  B, C, Dry A, B, and Cure C	A7 10 Front EC	pwEC	A7 substrate sensors	bd1b9d7d-c4a4-4d91-9af0-5b85f306b2d2
+A7, Veg  B, C, Dry A, B, and Cure C	A7 11 Front EC	pwEC	A7 substrate sensors	514e639d-1bc4-483b-8e1b-582cc44afcde
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Back EC	pwEC	A7 substrate sensors	cb74710d-552f-4d75-8404-731a846a487f
+A7, Veg  B, C, Dry A, B, and Cure C	A7 12 Front EC	pwEC	A7 substrate sensors	ea33d43d-e7ca-43c2-a5c1-bd14dde2f4a0
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Back EC	pwEC	A7 substrate sensors	8bda7b8a-3466-4fa1-b375-b0b9c86bebf0
+A7, Veg  B, C, Dry A, B, and Cure C	A7 2 Front EC	pwEC	A7 substrate sensors	d52d4196-9702-4bba-95c0-db12aa30a7b9
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Back EC	pwEC	A7 substrate sensors	270cad4e-9016-4a5c-bb00-6dde98bcf107
+A7, Veg  B, C, Dry A, B, and Cure C	A7 3 Front EC	pwEC	A7 substrate sensors	5feb5b06-3ae4-4582-87ea-7d859cf734bc
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Back EC	pwEC	A7 substrate sensors	73f199d2-398e-4488-98ff-0b2d89a9b3d4
+A7, Veg  B, C, Dry A, B, and Cure C	A7 4 Front EC	pwEC	A7 substrate sensors	559836b2-a134-4e4c-b69d-606ec1560b48
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Back EC	pwEC	A7 substrate sensors	345ccf25-29cf-4c0e-a108-82e8c2a99c74
+A7, Veg  B, C, Dry A, B, and Cure C	A7 5 Front EC	pwEC	A7 substrate sensors	f466926b-4361-4c38-b2fa-07c6e4f6931c
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Back EC	pwEC	A7 substrate sensors	2fe8bb74-9c24-4944-94ee-10c26b3882cc
+A7, Veg  B, C, Dry A, B, and Cure C	A7 6 Front EC	pwEC	A7 substrate sensors	2042c8d0-53c6-45d0-91b6-f586c2b59f63
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Back EC	pwEC	A7 substrate sensors	824e5a40-33d7-4038-aee4-20c0c5e5ad24
+A7, Veg  B, C, Dry A, B, and Cure C	A7 7 Front EC	pwEC	A7 substrate sensors	7a29d691-1da2-4644-b20c-fda879eacd01
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Back EC	pwEC	A7 substrate sensors	ca2372a8-bf47-474f-9eb3-c73e47820c35
+A7, Veg  B, C, Dry A, B, and Cure C	A7 8 Front EC	pwEC	A7 substrate sensors	396d7667-be7d-45d8-87fb-071e4090d33b
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Back EC	pwEC	A7 substrate sensors	1940a54a-f87f-4d35-a9c3-f05a7c9555ed
+A7, Veg  B, C, Dry A, B, and Cure C	A7 9 Front EC	pwEC	A7 substrate sensors	5ef3696a-9c81-4c11-bb47-de9bf8d5a745
+A2 substrate	Substrate Moisture 1	VWC	A2 substrate 	8d5ab2dc-f10c-4f7e-9822-cfaeacc1375d
+A2 substrate	Substrate Moisture 2	VWC	A2 substrate 	887ab523-f539-4df1-a8bc-0b25232f6b6a
+A2 substrate	Substrate Moisture 3	VWC	A2 substrate 	22016025-d6e6-4601-b43d-e477977b1183
+A2 substrate	Substrate Moisture 4	VWC	A2 substrate 	e676eaac-bf3d-4b6a-8a38-d12ad32d8665
+A2 substrate	Substrate Temp 1	Substrate Temp	A2 substrate 	b29f977d-7e5a-41bb-9dda-7f421d09d3c2
+A2 substrate	Substrate Temp 2	Substrate Temp	A2 substrate 	973348f2-44ce-4858-a5d8-45ddd02f6e7c
+A2 substrate	Substrate Temp 3	Substrate Temp	A2 substrate 	7fed160b-174a-49ad-bb99-d6da1db512df
+A2 substrate	Substrate Temp 4	Substrate Temp	A2 substrate 	62b00aa5-885d-4a9f-97a6-e9967d1a960c
+A2 substrate	Substrate EC 1	pwEC	A2 substrate 	5229ad48-dfa8-4863-b654-a5b1b342df0f
+A2 substrate	Substrate EC 2	pwEC	A2 substrate 	a840ef09-ddb3-479a-b573-29c457cc41d0
+A2 substrate	Substrate EC 3	pwEC	A2 substrate 	5d31d6f0-974f-48d5-b039-dab2459aa4d6
+A2 substrate	Substrate EC 4	pwEC	A2 substrate 	ea6075f8-0535-4d19-ae7f-3128488022f6
+A-1	A1 1 Back Moisture	VWC	A1 substrate sensor	dca9f54e-7895-489e-a7de-8783fe957a39
+A-1	A1 1 Front Moisture	VWC	A1 substrate sensor	4197b831-af34-4e73-9470-ce13204dd5b7
+A-1	A1 10 Back Moisture	VWC	A1 substrate sensor	bf2aed55-7009-422e-9563-4dc58698330d
+A-1	A1 10 Front Moisture	VWC	A1 substrate sensor	59f154b6-6e75-4070-84b6-265ccfa29050
+A-1	A1 11 Back Moisture	VWC	A1 substrate sensor	26581dc2-395c-4a4f-a2de-74f515f58d1e
+A-1	A1 11 Front Moisture	VWC	A1 substrate sensor	758261e3-6154-4e13-8238-0fab908b0d14
+A-1	A1 12 Back Moisture	VWC	A1 substrate sensor	b9cced95-82f9-4827-b56e-ce45837aaa77
+A-1	A1 12 Front Moisture	VWC	A1 substrate sensor	fe747ccc-fd11-42cb-bd2c-755054496127
+A-1	A1 2 Front Moisture	VWC	A1 substrate sensor	44d39ba2-e555-4e66-ad38-ccba972d377f
+A-1	A1 3 Front Moisture	VWC	A1 substrate sensor	97b00e8f-7c70-4028-ae30-d4e82b4bbc94
+A-1	A1 4 Back Moisture	VWC	A1 substrate sensor	55f0c4b9-1595-4079-b470-a6a60c8362dc
+A-1	A1 4 Front Moisture	VWC	A1 substrate sensor	cfdc703e-8bbb-4989-af1e-447335c8f12a
+A-1	A1 5 Back Moisture	VWC	A1 substrate sensor	2525a0c6-3e26-4d23-b9f3-49383a84b29a
+A-1	A1 5 Front Moisture	VWC	A1 substrate sensor	b889ff34-beaf-4aed-b429-baf5df2d1ac7
+A-1	A1 6 Back Moisture	VWC	A1 substrate sensor	7b47c317-8bfc-4e3a-9323-976100193638
+A-1	A1 6 Front Moisture	VWC	A1 substrate sensor	0fef13b8-34dd-41ec-87dd-fdece7ada08f
+A-1	A1 7 Back Moisture	VWC	A1 substrate sensor	2dde1448-3597-4e05-a219-830e3c1e3245
+A-1	A1 7 Front Moisture	VWC	A1 substrate sensor	f2986064-0b1b-4c64-a391-27ad58623068
+A-1	A1 8 Back Moisture	VWC	A1 substrate sensor	0f746ac7-bdf6-4a96-a40e-b2c65a3b61c1
+A-1	A1 8 Front Moisture	VWC	A1 substrate sensor	32f3678d-cbb0-41b4-8733-dad4ba9d7a99
+A-1	A1 9 Back Moisture	VWC	A1 substrate sensor	d24aa2c1-d7c9-4b5f-b4f6-de5185425489
+A-1	A1 9 Front Moisture	VWC	A1 substrate sensor	9bc05a63-e0a6-49b4-8c0f-560d7d9a5a69
+A-1	A1 1 Back Temperature	Substrate Temp	A1 substrate sensor	ed7487d2-6936-4fcc-8834-057b763333e6
+A-1	A1 1 Front Temperature	Substrate Temp	A1 substrate sensor	4e07be12-9caa-48c6-b1a6-37fe2a09f6e3
+A-1	A1 10 Back Temperature	Substrate Temp	A1 substrate sensor	304e1bc6-d49b-4d94-a3d6-909353aa3311
+A-1	A1 10 Front Temperature	Substrate Temp	A1 substrate sensor	2c3ae1d8-2ecb-42f8-b81b-452ee9c68411
+A-1	A1 11 Back Temperature	Substrate Temp	A1 substrate sensor	7d12e512-a12c-4c3d-b79d-35e6e77db0ba
+A-1	A1 11 Front Temperature	Substrate Temp	A1 substrate sensor	04b3239b-7da7-4fdf-ab77-51430c7e0a8f
+A-1	A1 12 Back Temperature	Substrate Temp	A1 substrate sensor	ff55d567-dc23-486c-ae08-2f8a9ccaf670
+A-1	A1 12 Front Temperature	Substrate Temp	A1 substrate sensor	a71921d2-23b9-43cc-ab34-b03c3e51fb9e
+A-1	A1 2 Front Temperature	Substrate Temp	A1 substrate sensor	3047a944-7b15-4215-b223-a7ec2c499279
+A-1	A1 3 Front Temperature	Substrate Temp	A1 substrate sensor	0175d12a-9baf-400e-86c3-a11febb39fd6
+A-1	A1 4 Back Temperature	Substrate Temp	A1 substrate sensor	c5da4a43-19a7-4f1b-b55e-cdf97e927705
+A-1	A1 4 Front Temperature	Substrate Temp	A1 substrate sensor	99d0d30a-0ceb-4a65-a78f-201ca4408363
+A-1	A1 5 Back Temperature	Substrate Temp	A1 substrate sensor	9a484ea1-a1d0-41a2-a6c5-799ef7913ea3
+A-1	A1 5 Front Temperature	Substrate Temp	A1 substrate sensor	f4e7007a-34b6-4095-bf6b-65e652ba4dad
+A-1	A1 6 Back Temperature	Substrate Temp	A1 substrate sensor	09d58689-812d-454e-a102-2cd58942fee8
+A-1	A1 6 Front Temperature	Substrate Temp	A1 substrate sensor	1cb696e5-2265-4504-8931-521937d1369b
+A-1	A1 7 Back Temperature	Substrate Temp	A1 substrate sensor	28e18a94-99cb-468a-98eb-d6bdd5c94f05
+A-1	A1 7 Front Temperature	Substrate Temp	A1 substrate sensor	8642a6de-28b7-4a86-9e58-dd18059102f0
+A-1	A1 8 Back Temperature	Substrate Temp	A1 substrate sensor	26ce0f27-088b-47a2-9993-87c34422e5c7
+A-1	A1 8 Front Temperature	Substrate Temp	A1 substrate sensor	688789d6-3451-4cb6-a9a0-78675e7d6768
+A-1	A1 9 Back Temperature	Substrate Temp	A1 substrate sensor	cd1c1171-fab7-4385-b955-1e0cbb5de15e
+A-1	A1 9 Front Temperature	Substrate Temp	A1 substrate sensor	1d57a869-bf92-44f1-bc8c-1578271378ca
+A-1	A1 1 Back EC	pwEC	A1 substrate sensor	a77eab95-6e45-417f-bdfb-2b4cd9ac954a
+A-1	A1 1 Front EC	pwEC	A1 substrate sensor	d24ced2b-dfbe-4953-9658-11b075f0ebd3
+A-1	A1 10 Back EC	pwEC	A1 substrate sensor	f3af588e-2523-442b-b32f-fededa3e4c30
+A-1	A1 10 Front EC	pwEC	A1 substrate sensor	d6a5dc67-93a2-49fe-9023-05df8421b7d7
+A-1	A1 11 Back EC	pwEC	A1 substrate sensor	ae15626d-8dae-4d96-a431-c19e0b045664
+A-1	A1 11 Front EC	pwEC	A1 substrate sensor	b62cdebe-3cc8-4d34-a212-070ea3ebb8d1
+A-1	A1 12 Back EC	pwEC	A1 substrate sensor	cbc8be20-a5ae-4602-b384-0bd79952a487
+A-1	A1 12 Front EC	pwEC	A1 substrate sensor	d2134cb1-b854-47ff-ac0c-51c6b99d6503
+A-1	A1 2 Front EC	pwEC	A1 substrate sensor	f78e568b-8fc2-4861-be36-533bb912765a
+A-1	A1 3 Front EC	pwEC	A1 substrate sensor	ac6a9d16-579e-4383-b94c-1f8b99a19127
+A-1	A1 4 Back EC	pwEC	A1 substrate sensor	bad3b687-fcbe-40e0-8690-c93a40af932e
+A-1	A1 4 Front EC	pwEC	A1 substrate sensor	e8d346ad-b029-4209-bed9-f883bfccb1b1
+A-1	A1 5 Back EC	pwEC	A1 substrate sensor	869a13a7-e5b0-4150-bab5-09473229ea82
+A-1	A1 5 Front EC	pwEC	A1 substrate sensor	b6c55ff3-46b3-4041-bf0d-94f8ec1891e9
+A-1	A1 6 Back EC	pwEC	A1 substrate sensor	1c3a999e-1e5d-4cb3-8756-dd248a995dfa
+A-1	A1 6 Front EC	pwEC	A1 substrate sensor	5c058d55-3156-473d-b804-ee819bb96015
+A-1	A1 7 Back EC	pwEC	A1 substrate sensor	507448ed-8731-4466-9664-f7a0f7b82ed8
+A-1	A1 7 Front EC	pwEC	A1 substrate sensor	afc1b4b4-e7c6-457d-b0a2-2c497346d8fb
+A-1	A1 8 Back EC	pwEC	A1 substrate sensor	36dde46c-7046-40bf-a657-e3aaf84b5dec
+A-1	A1 8 Front EC	pwEC	A1 substrate sensor	b6c997ee-043c-4f29-80f9-4ff8077d743a
+A-1	A1 9 Back EC	pwEC	A1 substrate sensor	bfc19fac-1d6b-4aa7-a80b-990bc82471b3
+A-1	A1 9 Front EC	pwEC	A1 substrate sensor	176fc05b-db1c-4a04-8747-8cffd3bd7862
+A-2	A2 1 Back Moisture	VWC	A2 substrate 	2460ba82-48f0-483e-bd33-dbe0bd0c99be
+A-2	A2 1 Front Moisture	VWC	A2 substrate 	ea76f2d9-c6d1-47e0-a5b6-0e4cc487568b
+A-2	A2 10 Back Moisture	VWC	A2 substrate 	72fc3b15-7fc1-49d4-9b94-1c2a00e15d14
+A-2	A2 10 Front Moisture	VWC	A2 substrate 	382fded8-a08f-41a7-a1c9-29543b236e5a
+A-2	A2 11 Back Moisture	VWC	A2 substrate 	267a42dd-9f67-41f1-a9f0-d1168931e84b
+A-2	A2 11 Front Moisture	VWC	A2 substrate 	aac04571-d692-4217-bab2-8080c196a5a0
+A-2	A2 12 Back Moisture	VWC	A2 substrate 	f0de6943-1b6e-4ab0-a121-52f2f7fe7eb9
+A-2	A2 12 Front Moisture	VWC	A2 substrate 	6b3bab2f-36d5-488a-b269-10b91daec036
+A-2	A2 2 Back Moisture	VWC	A2 substrate 	fb6fd597-05de-4c8c-a13c-92fa44c7e1d7
+A-2	A2 2 Front Moisture	VWC	A2 substrate 	4b4c21b0-7870-41ad-a86c-dd34d22043e9
+A-2	A2 3 Back Moisture	VWC	A2 substrate 	dd051ec1-9bf1-4c47-81e5-6b70ffcb8ae8
+A-2	A2 3 Front Moisture	VWC	A2 substrate 	ab375ca0-db21-4aec-bda1-b3123fe781c5
+A-2	A2 4 Back Moisture	VWC	A2 substrate 	d3c692f0-a284-4b13-b294-0e53f8d7b9f7
+A-2	A2 4 Front Moisture	VWC	A2 substrate 	bc91bd11-c5fc-4aa4-bd5a-2ec7985acc95
+A-2	A2 5 Back Moisture	VWC	A2 substrate 	36f13501-b035-4d09-94a5-f6b097a099fa
+A-2	A2 5 Front Moisture	VWC	A2 substrate 	1fa9abd1-4b24-43bc-a790-067c0f5d14d4
+A-2	A2 6 Back Moisture	VWC	A2 substrate 	9b072326-d16c-41d4-bc0d-8b04e2391702
+A-2	A2 6 Front Moisture	VWC	A2 substrate 	db07fae5-429f-4b22-a15e-c14229c34866
+A-2	A2 7 Back Moisture	VWC	A2 substrate 	adfbfe3e-f854-45d0-951b-6b6ccb9d180b
+A-2	A2 7 Front Moisture	VWC	A2 substrate 	2805f080-6bbe-49d8-a074-4637def18100
+A-2	A2 8 Back Moisture	VWC	A2 substrate 	459e7ec3-c1c8-4cd4-aca2-4ff8ae24843d
+A-2	A2 8 Front Moisture	VWC	A2 substrate 	133c91fe-a622-451b-b647-2305c10d90a2
+A-2	A2 9 Back Moisture	VWC	A2 substrate 	126255e3-4fd4-43db-ba78-c9281bbfc48f
+A-2	A2 9 Front Moisture	VWC	A2 substrate 	622c56d0-0a99-4abb-9f09-4b6295251719
+A-2	A2 1 Back Temperature	Substrate Temp	A2 substrate 	1b41bc12-8e28-40ca-ab3a-e02adc266c65
+A-2	A2 1 Front Temperature	Substrate Temp	A2 substrate 	76fee0a5-a0f9-4068-b579-b2746363a59f
+A-2	A2 10 Back Temperature	Substrate Temp	A2 substrate 	b4ef51ff-128f-4ee4-9dc1-32e4b1e2bdcd
+A-2	A2 10 Front Temperature	Substrate Temp	A2 substrate 	d3be6464-538c-45e0-b7cb-8081a075c2d3
+A-2	A2 11 Back Temperature	Substrate Temp	A2 substrate 	b3470238-2a5e-4f2e-9485-fc59f70abca4
+A-2	A2 11 Front Temperature	Substrate Temp	A2 substrate 	4c9abb91-5415-46b3-be78-68c13b413fe8
+A-2	A2 12 Back Temperature	Substrate Temp	A2 substrate 	638b11c4-70ae-4f5c-8004-391003e61d1c
+A-2	A2 12 Front Temperature	Substrate Temp	A2 substrate 	577a5246-ae86-46a8-a122-38e8311df51e
+A-2	A2 2 Back Temperature	Substrate Temp	A2 substrate 	9a35fe80-7b62-406f-8ab1-9b5b48277f64
+A-2	A2 2 Front Temperature	Substrate Temp	A2 substrate 	02f87e51-4ad4-401b-b32b-717bebb49c24
+A-2	A2 3 Back Temperature	Substrate Temp	A2 substrate 	127ce444-0d7f-4a2d-ac86-ce4fdaec28b0
+A-2	A2 3 Front Temperature	Substrate Temp	A2 substrate 	e38f74d4-7f4b-4650-8993-6b4bff27114d
+A-2	A2 4 Back Temperature	Substrate Temp	A2 substrate 	abb93a78-5769-46aa-a8b3-2e97b8d7e115
+A-2	A2 4 Front Temperature	Substrate Temp	A2 substrate 	b743317a-1591-44d7-aca5-a3d6e18b41dd
+A-2	A2 5 Back Temperature	Substrate Temp	A2 substrate 	667ef9ab-d1be-4673-bbab-f2860888ccc8
+A-2	A2 5 Front Temperature	Substrate Temp	A2 substrate 	18b0fa33-c3bf-48d9-9f54-21b56bcb7726
+A-2	A2 6 Back Temperature	Substrate Temp	A2 substrate 	151fec50-b9f8-49e5-8792-d882b7d0feb6
+A-2	A2 6 Front Temperature	Substrate Temp	A2 substrate 	b842ac69-5528-4435-8d2c-e88e115b28da
+A-2	A2 7 Back Temperature	Substrate Temp	A2 substrate 	a20b6be6-2e00-4f1c-bf44-a05fc07657ae
+A-2	A2 7 Front Temperature	Substrate Temp	A2 substrate 	a5ae22fa-a16e-4faa-9f06-688cd49b8903
+A-2	A2 8 Back Temperature	Substrate Temp	A2 substrate 	1d43fffe-cc24-460d-8629-8cb0a480590d
+A-2	A2 8 Front Temperature	Substrate Temp	A2 substrate 	3d2ba650-d297-4b0d-8fb7-e955373bf114
+A-2	A2 9 Back Temperature	Substrate Temp	A2 substrate 	c980b710-1e8c-450e-8769-4351dba710f5
+A-2	A2 9 Front Temperature	Substrate Temp	A2 substrate 	e2c59767-36f8-4178-a648-2beecfc8f314
+A-2	A2 1 Back EC	pwEC	A2 substrate 	ac231e2b-c017-4738-b66d-986809ca0ebb
+A-2	A2 1 Front EC	pwEC	A2 substrate 	358b58f7-f916-4858-ae82-8048ea55c33c
+A-2	A2 10 Back EC	pwEC	A2 substrate 	5a53b1f7-7945-4c6c-9909-c79fd7bf8c14
+A-2	A2 10 Front EC	pwEC	A2 substrate 	467c5c15-5ef7-43d4-a407-35d8761a2995
+A-2	A2 11 Back EC	pwEC	A2 substrate 	424321bb-d480-48ad-aabe-872fd2c93ace
+A-2	A2 11 Front EC	pwEC	A2 substrate 	cd0fb0a0-b58f-4752-b29d-6be7a3f94a08
+A-2	A2 12 Back EC	pwEC	A2 substrate 	c619ec3a-4c3c-4b23-82fa-55c3771dcfc8
+A-2	A2 12 Front EC	pwEC	A2 substrate 	5129223a-bcf7-4753-b070-89b869f60813
+A-2	A2 2 Back EC	pwEC	A2 substrate 	fb8eff15-0d3b-4ea6-aaf1-cb2876f191d8
+A-2	A2 2 Front EC	pwEC	A2 substrate 	2659ae31-1ff1-4809-9846-d39fc1c31171
+A-2	A2 3 Back EC	pwEC	A2 substrate 	a28e4682-b68a-41bb-ae4e-46da3f63170c
+A-2	A2 3 Front EC	pwEC	A2 substrate 	195f17f8-6b35-461a-8690-c24217183d7a
+A-2	A2 4 Back EC	pwEC	A2 substrate 	84cb28f1-ad7e-4887-b2b9-be36557937db
+A-2	A2 4 Front EC	pwEC	A2 substrate 	2e3bc278-393d-4e31-9c90-bf120cd35ed8
+A-2	A2 5 Back EC	pwEC	A2 substrate 	73c1e532-7fa4-453f-a762-2b4438aeccc7
+A-2	A2 5 Front EC	pwEC	A2 substrate 	222780d4-e933-49e4-9fd0-2ef5d130c970
+A-2	A2 6 Back EC	pwEC	A2 substrate 	12be7efe-2964-4a01-bc34-6c724f19b0ef
+A-2	A2 6 Front EC	pwEC	A2 substrate 	5a4aff9f-a984-47e0-a54f-1c96812f7427
+A-2	A2 7 Back EC	pwEC	A2 substrate 	0c17fcdd-c6bf-4784-b8dd-64204db74604
+A-2	A2 7 Front EC	pwEC	A2 substrate 	cbd28e69-2c39-47c4-b53c-52fb64ea1535
+A-2	A2 8 Back EC	pwEC	A2 substrate 	51ef066c-9d95-4807-87cf-e97d3d1e7e0e
+A-2	A2 8 Front EC	pwEC	A2 substrate 	cb92232a-a9b3-4fcc-9f5e-adc1e811f0ed
+A-2	A2 9 Back EC	pwEC	A2 substrate 	421436bb-80f8-4de7-b81f-87870dd4d82c
+A-2	A2 9 Front EC	pwEC	A2 substrate 	5490a9c8-aec5-49e1-894f-90f204bc07dd
+A-3	A3 1 Back Moisture	VWC	A3 substrate sensor	f72403f8-3086-4717-bb2c-149ce3f4859a
+A-3	A3 1 Front Moisture	VWC	A3 substrate sensor	fc58b448-71b4-4b00-b900-f62ba1d56e99
+A-3	A3 10 Back Moisture	VWC	A3 substrate sensor	99e052e3-b963-4f69-a0e0-131fbb50db72
+A-3	A3 10 Front Moisture	VWC	A3 substrate sensor	bf2efa26-252f-42de-9421-37b50da48504
+A-3	A3 11 Back Moisture	VWC	A3 substrate sensor	aec75058-3af5-40ec-a402-04fd64076fa1
+A-3	A3 12 Back Moisture	VWC	A3 substrate sensor	3762caa6-95e5-432c-8f9c-ebc53a63757a
+A-3	A3 2 Back Moisture	VWC	A3 substrate sensor	a0b22ed6-e80c-49ac-943d-45fe8646044c
+A-3	A3 2 Front Moisture	VWC	A3 substrate sensor	c3a3ceaf-e7e7-4e9a-a828-4c3bf340250c
+A-3	A3 3 Back Moisture	VWC	A3 substrate sensor	fcea3db0-896b-40a4-93f5-1d28c9674c95
+A-3	A3 3 Front Moisture	VWC	A3 substrate sensor	0b96b8ab-70d0-4480-8447-32d9eef7ed29
+A-3	A3 4 Back Moisture	VWC	A3 substrate sensor	737d5657-580b-45d4-8d29-0f7c92a44222
+A-3	A3 4 Front Moisture	VWC	A3 substrate sensor	35fa94d3-b04f-45ee-9ee0-52dedf9d9e0d
+A-3	A3 5 Back Moisture	VWC	A3 substrate sensor	6450967f-48d4-4e73-b043-5d9b9a499006
+A-3	A3 5 Front Moisture	VWC	A3 substrate sensor	dbef2df3-9895-4511-a267-0b1051585b7d
+A-3	A3 6 Back Moisture	VWC	A3 substrate sensor	55f59fba-99f6-40b4-a675-87701fcdf49c
+A-3	A3 6 Front Moisture	VWC	A3 substrate sensor	f64fec17-7582-47c2-8703-28414a29a4fa
+A-3	A3 7 Back Moisture	VWC	A3 substrate sensor	ec89e657-2e99-4e20-b0ed-6e869ff4ca6d
+A-3	A3 7 Front Moisture	VWC	A3 substrate sensor	48330f18-223c-4cfe-bc59-c5d235902de1
+A-3	A3 8 Back Moisture	VWC	A3 substrate sensor	e2b6e2fc-44e8-493f-8e35-d9ea2fa54471
+A-3	A3 8 Front Moisture	VWC	A3 substrate sensor	2a4f9322-738a-454c-a73e-9417b2d18f00
+A-3	A3 9 Back Moisture	VWC	A3 substrate sensor	a0b898dd-aec8-4a7f-aae6-6d2dbd5e8373
+A-3	A3 9 Front Moisture	VWC	A3 substrate sensor	5e23e3c3-8cc5-447e-b4b1-3b02a024044e
+A-3	A3 1 Back Temperature	Substrate Temp	A3 substrate sensor	435168bf-3f4d-4814-bbe1-d08c5f9ec23e
+A-3	A3 1 Front Temperature	Substrate Temp	A3 substrate sensor	50625bcd-7c38-483a-89b4-a178210e2fcc
+A-3	A3 10 Back Temperature	Substrate Temp	A3 substrate sensor	5357c29e-b61b-4df2-a163-54b3fbd32cb8
+A-3	A3 10 Front Temperature	Substrate Temp	A3 substrate sensor	a05d788e-233c-47ad-a1bc-437308a3c22e
+A-3	A3 11 Back Temperature	Substrate Temp	A3 substrate sensor	96ce15d2-d867-4453-b23b-282aeb173851
+A-3	A3 12 Back Temperature	Substrate Temp	A3 substrate sensor	885a563f-4e4a-4867-b4f0-6e1ddacff9d2
+A-3	A3 2 Back Temperature	Substrate Temp	A3 substrate sensor	2f6b592b-3169-4f5c-94d9-4d05695299cf
+A-3	A3 2 Front Temperature	Substrate Temp	A3 substrate sensor	aa3786e8-6348-43dc-8467-57fe0549d00e
+A-3	A3 3 Back Temperature	Substrate Temp	A3 substrate sensor	6a0f5b0e-126d-4662-a6aa-d80d51cbb524
+A-3	A3 3 Front Temperature	Substrate Temp	A3 substrate sensor	5d067a15-fb00-48a9-860f-57eef4c86b3c
+A-3	A3 4 Back Temperature	Substrate Temp	A3 substrate sensor	3e242e60-2c15-480a-8199-695dc30b1d1f
+A-3	A3 4 Front Temperature	Substrate Temp	A3 substrate sensor	83c2a977-90c2-4bbd-98aa-656af205eb86
+A-3	A3 5 Back Temperature	Substrate Temp	A3 substrate sensor	9ee05ae5-1ba4-465a-abc3-89e692b55290
+A-3	A3 5 Front Temperature	Substrate Temp	A3 substrate sensor	cd30ff49-a885-4eb4-8ed8-b4dd4bffa5a6
+A-3	A3 6 Back Temperature	Substrate Temp	A3 substrate sensor	271bb268-0335-48d2-b231-0bbfc56b841e
+A-3	A3 6 Front Temperature	Substrate Temp	A3 substrate sensor	93be0e18-57bd-4df9-8301-59f6f4da8343
+A-3	A3 7 Back Temperature	Substrate Temp	A3 substrate sensor	4ce4b61b-ced8-4ac3-a91d-e6bc281959b9
+A-3	A3 7 Front Temperature	Substrate Temp	A3 substrate sensor	57282988-7dbd-405c-aa0e-7a6621a0fc01
+A-3	A3 8 Back Temperature	Substrate Temp	A3 substrate sensor	0dd09c04-fc0b-495d-91da-858e73e238a7
+A-3	A3 8 Front Temperature	Substrate Temp	A3 substrate sensor	ba1bd7be-468e-41aa-80fe-5d5ada8b981a
+A-3	A3 9 Back Temperature	Substrate Temp	A3 substrate sensor	80d01581-351b-4352-bc75-6bc2212f7cd1
+A-3	A3 9 Front Temperature	Substrate Temp	A3 substrate sensor	f8f1033b-e64f-4fbf-8d93-911c4b923686
+A-3	A3 1 Back EC	pwEC	A3 substrate sensor	aef16d51-f0ad-4724-8ff8-fee2a6480ee2
+A-3	A3 1 Front EC	pwEC	A3 substrate sensor	5ae32739-a8a8-43b5-ae97-f1e31488900f
+A-3	A3 10 Back EC	pwEC	A3 substrate sensor	93e37f13-701d-4e4c-a738-9d2e0a51266a
+A-3	A3 10 Front EC	pwEC	A3 substrate sensor	c0296e74-8a34-4cd6-99d9-3fba2ef710e7
+A-3	A3 11 Back EC	pwEC	A3 substrate sensor	a5055262-e918-427b-a4cc-de1a9a514d85
+A-3	A3 12 Back EC	pwEC	A3 substrate sensor	c375a98d-d315-4e60-98b6-748af3073fa8
+A-3	A3 2 Back EC	pwEC	A3 substrate sensor	bfdbe3c0-4ad5-4487-a838-8e254f537e44
+A-3	A3 2 Front EC	pwEC	A3 substrate sensor	30f6c314-1f45-44b4-bf18-8e8f69c7a739
+A-3	A3 3 Back EC	pwEC	A3 substrate sensor	95b59ef2-92f7-4cae-ada0-51bba0da6928
+A-3	A3 3 Front EC	pwEC	A3 substrate sensor	387c8b9d-8be7-4564-92d1-207a600cc873
+A-3	A3 4 Back EC	pwEC	A3 substrate sensor	b4d28d8a-d794-4da5-9080-fdc4e5f42a3b
+A-3	A3 4 Front EC	pwEC	A3 substrate sensor	a5267fc2-9533-4501-8353-d18dcaf73fb0
+A-3	A3 5 Back EC	pwEC	A3 substrate sensor	939183d8-62f3-4e96-ad6f-a6c219c50a8a
+A-3	A3 5 Front EC	pwEC	A3 substrate sensor	9fbb4e90-8a1c-4105-b761-fd562b6ee505
+A-3	A3 6 Back EC	pwEC	A3 substrate sensor	d14837b8-14d2-468d-8bd9-da56b87ef15f
+A-3	A3 6 Front EC	pwEC	A3 substrate sensor	c7471543-6693-4ffd-96fb-d85f9da8d171
+A-3	A3 7 Back EC	pwEC	A3 substrate sensor	cb135588-0354-4b5d-9e27-6ebab98d0478
+A-3	A3 7 Front EC	pwEC	A3 substrate sensor	74446eb3-14d7-4e4c-a8da-c7e1c144ffde
+A-3	A3 8 Back EC	pwEC	A3 substrate sensor	7a0770e3-cb7e-4181-a45e-07393787e49b
+A-3	A3 8 Front EC	pwEC	A3 substrate sensor	da4d0e4e-952c-4b05-96e1-5c19518b7b9d
+A-3	A3 9 Back EC	pwEC	A3 substrate sensor	59231c77-36c0-41ac-97b2-b4eebb51b3ca
+A-3	A3 9 Front EC	pwEC	A3 substrate sensor	2fa69cef-2618-49c8-b793-4619c81315c4
+B-1	B1 Table 1 Moisture	VWC	B1 substrate sensor	e4161a99-b879-40fc-b39a-384cafd00b79
+B-1	B1 Table 10 Moisture	VWC	B1 substrate sensor	20e25a98-7128-4313-83e4-c41e5ea04dd8
+B-1	B1 Table 11 Moisture	VWC	B1 substrate sensor	d174ccd5-eb76-4ffc-a2ad-080205c77e6e
+B-1	B1 Table 2 Moisture	VWC	B1 substrate sensor	92a0b883-e13b-47e6-bde8-6d9a9492191f
+B-1	B1 Table 3 Moisture	VWC	B1 substrate sensor	a71981e7-577d-4381-8579-439199514380
+B-1	B1 Table 4 Moisture	VWC	B1 substrate sensor	d99d5db6-ba19-4454-a5ac-412a474f3a1b
+B-1	B1 Table 5 Moisture	VWC	B1 substrate sensor	a7396fc0-50c3-473c-ba31-6377bd52baab
+B-1	B1 Table 6 Moisture	VWC	B1 substrate sensor	1efe8374-1f98-41ba-a2e9-761351437d63
+B-1	B1 Table 7 Moisture	VWC	B1 substrate sensor	0584fd38-d152-4d98-b97d-c9b00cf922ce
+B-1	B1 Table 8 Moisture	VWC	B1 substrate sensor	e43933c8-83d2-4eba-b644-172c702f2b34
+B-1	B1 Table 9 Moisture	VWC	B1 substrate sensor	85722266-ec78-4399-8644-87acc72cf999
+B-1	Port 1 VWC	VWC	B1 PIC	278ce944-0255-40c5-8ec7-f50ec2dbf5ec
+B-1	Port 2 VWC	VWC	B1 PIC	201afe4c-b60c-4e63-9733-b00b76cda2ca
+B-1	Port 3 VWC	VWC	B1 PIC	aef46447-430a-4ccd-94a2-5af04c6cd873
+B-1	Port 4 VWC	VWC	B1 PIC	57ed0921-a85c-4995-8187-1cd661c1d8fa
+B-1	B1 Table 1 Temperature	Substrate Temp	B1 substrate sensor	ab983330-4972-4ce8-9a3f-21924581ea9b
+B-1	B1 Table 10 Temperature	Substrate Temp	B1 substrate sensor	effef527-840b-4be8-8e98-4ed24a28dfbb
+B-1	B1 Table 11 Temperature	Substrate Temp	B1 substrate sensor	124b33e2-2b0f-4b42-985e-af1694d0e781
+B-1	B1 Table 2 Temperature	Substrate Temp	B1 substrate sensor	b8354d74-9132-42ff-bfed-96420edaf407
+B-1	B1 Table 3 Temperature	Substrate Temp	B1 substrate sensor	997dde1e-81f6-44e0-9a7b-aa9b3f6d41a6
+B-1	B1 Table 4 Temperature	Substrate Temp	B1 substrate sensor	7888ea55-bd70-4cf2-87ec-a444f529b7e8
+B-1	B1 Table 5 Temperature	Substrate Temp	B1 substrate sensor	f37152d4-4846-4b9c-85da-dd61e43ebe61
+B-1	B1 Table 6 Temperature	Substrate Temp	B1 substrate sensor	56595942-7f8e-49f5-bcf3-e23f293fddde
+B-1	B1 Table 7 Temperature	Substrate Temp	B1 substrate sensor	7ea648fa-bf15-423b-88a7-757a568a3f7a
+B-1	B1 Table 8 Temperature	Substrate Temp	B1 substrate sensor	bc74553c-8f8f-4a8a-856f-40e677bf99d9
+B-1	B1 Table 9 Temperature	Substrate Temp	B1 substrate sensor	7b6cf212-ff52-4f6c-a616-8d515a054aa5
+B-1	Port 1 Temperature	Substrate Temp	B1 PIC	6be1cafe-e8a7-4436-948f-129524bffb9e
+B-1	Port 2 Temperature	Substrate Temp	B1 PIC	cbf93951-b0d5-4e1d-87fd-7a05e5e94c29
+B-1	Port 3 Temperature	Substrate Temp	B1 PIC	e37956d1-764d-4377-9812-7cd04121577e
+B-1	Port 4 Temperature	Substrate Temp	B1 PIC	191e0334-d0ec-47a3-8a96-970f8867f2eb
+B-1	B1 Table 1 EC	pwEC	B1 substrate sensor	ad8a7192-7fea-4c80-9cbd-4dbfddca99c8
+B-1	B1 Table 10 EC	pwEC	B1 substrate sensor	88e2caf8-3d51-432a-84e7-8339a2161f57
+B-1	B1 Table 11 EC	pwEC	B1 substrate sensor	38e5dd7f-c38b-4860-b23e-fbf9672a3f13
+B-1	B1 Table 2 EC	pwEC	B1 substrate sensor	761e6904-e788-48b9-b46d-ef121a16c60c
+B-1	B1 Table 3 EC	pwEC	B1 substrate sensor	e30fb4a4-8132-4280-aa00-6e65f5aa8b86
+B-1	B1 Table 4 EC	pwEC	B1 substrate sensor	9895d032-623c-4b65-ab98-b222ab2edbec
+B-1	B1 Table 5 EC	pwEC	B1 substrate sensor	b438a807-d02d-4ff8-baca-de05de692787
+B-1	B1 Table 6 EC	pwEC	B1 substrate sensor	d0881f3d-da70-471e-a9a7-33ea70193d5b
+B-1	B1 Table 7 EC	pwEC	B1 substrate sensor	05cce9ff-e40c-4228-9d7f-872fcd4a84a7
+B-1	B1 Table 8 EC	pwEC	B1 substrate sensor	b13a23f0-138c-4693-bd44-bd81ed024a27
+B-1	B1 Table 9 EC	pwEC	B1 substrate sensor	11743c44-20ef-4154-9b56-ea4114adf498
+B-1	Port 1 EC	pwEC	B1 PIC	b4b423c5-5589-419e-8552-4cb87862b2a1
+B-1	Port 2 EC	pwEC	B1 PIC	c2aab4da-8db2-4b60-a51d-2e1705a42a70
+B-1	Port 3 EC	pwEC	B1 PIC	194a5c4a-ee05-48f2-b9da-cdc3755444c6
+B-1	Port 4 EC	pwEC	B1 PIC	d613c348-6dc9-4b1a-848a-d46ae7909661
+B-2	B2 table 1 Moisture	VWC	B2 substrate sensor	4cf83698-bdb6-41bd-9530-2125154c6f00
+B-2	B2 table 2 Moisture	VWC	B2 substrate sensor	a37f83d3-6004-4bd8-977a-e011e2e8a66c
+B-2	B2 table 4 Moisture	VWC	B2 substrate sensor	c0b4ea58-1899-49f5-b94d-3a3eba9dcaec
+B-2	B2 table 7 Moisture	VWC	B2 substrate sensor	92343642-506f-4bbd-9947-dc1a157e0498
+B-2	B2 table 1 Temperature	Substrate Temp	B2 substrate sensor	584c84f4-6bff-4c85-a08a-fea5169a24c5
+B-2	B2 table 2 Temperature	Substrate Temp	B2 substrate sensor	028c337e-c85c-4b36-bfa6-082fcfb48aea
+B-2	B2 table 4 Temperature	Substrate Temp	B2 substrate sensor	a4974531-7338-4283-9d18-82157bd018e5
+B-2	B2 table 7 Temperature	Substrate Temp	B2 substrate sensor	cdac8e2b-7d2b-433f-8e74-6f01bab4d2c4
+B-2	B2 table 1 EC	pwEC	B2 substrate sensor	df58778b-9504-438e-93eb-cf5a84271937
+B-2	B2 table 2 EC	pwEC	B2 substrate sensor	be777cb2-9934-4fae-a222-0e56571756c2
+B-2	B2 table 4 EC	pwEC	B2 substrate sensor	292ae26f-4e51-45af-8d21-9c8772d0949d
+B-2	B2 table 7 EC	pwEC	B2 substrate sensor	3e2423b1-d917-4945-9fac-67757f0c0902
+B-3	Substrate Moisture 1	VWC	B3 substrate sensor	3f4a687e-bd60-4deb-9fec-3d78f21828a1
+B-3	Substrate Moisture 2	VWC	B3 substrate sensor	2a24b89f-3e83-41f1-8715-e2eec4f475b3
+B-3	Substrate Moisture 3	VWC	B3 substrate sensor	76cf75c5-a1ae-4c09-808a-960b36075035
+B-3	Substrate Moisture 4	VWC	B3 substrate sensor	3ebb0675-8acb-4608-b15c-c6fa2d091217
+B-3	Substrate Temp 1	Substrate Temp	B3 substrate sensor	4ba8a618-c55a-485a-9bb4-d52fc727c2b4
+B-3	Substrate Temp 2	Substrate Temp	B3 substrate sensor	c958e703-697c-4292-9085-757c4c88a20a
+B-3	Substrate Temp 3	Substrate Temp	B3 substrate sensor	a0b52e65-11ac-441e-8443-039c7ed8a113
+B-3	Substrate Temp 4	Substrate Temp	B3 substrate sensor	0454c994-ece7-4e67-814a-1c5096062f26
+B-3	Substrate EC 1	pwEC	B3 substrate sensor	899a0298-6a79-4777-b51e-a93bd3ef45e9
+B-3	Substrate EC 2	pwEC	B3 substrate sensor	904c440b-af31-45ce-bbe9-aebc054bbe60
+B-3	Substrate EC 3	pwEC	B3 substrate sensor	d37e9112-3ebb-4b98-adf6-1b2ab891387e
+B-3	Substrate EC 4	pwEC	B3 substrate sensor	baa6705c-a56f-43e0-8a50-2d64798a32d7
+B-4	B4 Table 1 Moisture	VWC	B4 substrate sensor 	5ecd91f0-5522-4c1e-ba40-6455b04f48c8
+B-4	B4 Table 2 Moisture	VWC	B4 substrate sensor 	e13775a1-6c5f-45f0-acee-908fee515a43
+B-4	B4 Table 5 Moisture	VWC	B4 substrate sensor 	b7402c02-e50f-40ff-b72d-00314bc1118f
+B-4	B4 Table 9 Moisture	VWC	B4 substrate sensor 	b0aa5f1a-345b-454c-b7e6-cea508fc46ae
+B-4	B4 Table 1 Temperature	Substrate Temp	B4 substrate sensor 	c9ea829a-e360-4733-9030-714660d6bf95
+B-4	B4 Table 2 Temperature	Substrate Temp	B4 substrate sensor 	2b16cd45-caef-44c7-a918-7f0268ee0822
+B-4	B4 Table 5 Temperature	Substrate Temp	B4 substrate sensor 	5f4a7569-7be0-4d5c-8bf7-5ef33f4c379c
+B-4	B4 Table 9 Temperature	Substrate Temp	B4 substrate sensor 	cc0a2f02-e8a8-48ee-8b57-adf31bb90741
+B-4	B4 Table 1 EC	pwEC	B4 substrate sensor 	dd5c74b9-dbe5-4e96-8da6-64bd70058fe5
+B-4	B4 Table 2 EC	pwEC	B4 substrate sensor 	589c61c3-a08c-490e-96b5-256c75d3b112
+B-4	B4 Table 5 EC	pwEC	B4 substrate sensor 	587c5b17-b2ed-45ad-b0a0-a6d7cc9f1104
+B-4	B4 Table 9 EC	pwEC	B4 substrate sensor 	d285ed5c-d4af-4ace-800b-b422882f5427
+B-6	B6 Table 10 Moisture	VWC	B6 substrate sensors	c9a8dc1b-0cb2-4ac6-8b19-bbe4209fa1d6
+B-6	B6 Table 11 Moisture	VWC	B6 substrate sensors	54731557-1083-4a0f-af8b-3c1f0b15a823
+B-6	B6 Table 3 Moisture	VWC	B6 substrate sensors	c76826d0-7fae-4960-9139-8b1079f4b2d1
+B-6	B6 Table 4 Moisture	VWC	B6 substrate sensors	5fb9a609-3827-4a4a-b72a-2f68a1b3e350
+B-6	B6 Table 5 Moisture	VWC	B6 substrate sensors	7db9aa6c-b084-4883-999f-60f811c21536
+B-6	B6 Table 6 Moisture	VWC	B6 substrate sensors	185d7eeb-5386-4a2d-86db-da7a1a26e398
+B-6	B6 Table 7 Moisture	VWC	B6 substrate sensors	97557f87-ffbb-49a4-8375-99b799f7b819
+B-6	B6 Table 8 Moisture	VWC	B6 substrate sensors	49a919ca-cb9b-474a-adec-6a2a9421fd08
+B-6	B6 Table 9 Moisture	VWC	B6 substrate sensors	9071c5f9-de1a-4745-8772-a154c6074278
+B-6	B6 Table 10 Temperature	Substrate Temp	B6 substrate sensors	67f7e487-204b-4d88-aa99-8e31e4400edf
+B-6	B6 Table 11 Temperature	Substrate Temp	B6 substrate sensors	5665a225-75e3-42fb-b6ed-dba715614fee
+B-6	B6 Table 3 Temperature	Substrate Temp	B6 substrate sensors	b19a23e5-f4f6-4a8e-bb13-eb7be03bc033
+B-6	B6 Table 4 Temperature	Substrate Temp	B6 substrate sensors	60f897ef-3f89-445c-bfd5-8ae14d10f581
+B-6	B6 Table 5 Temperature	Substrate Temp	B6 substrate sensors	bc0b1cf2-32e3-4dcd-b4fb-9dddff3d8a78
+B-6	B6 Table 6 Temperature	Substrate Temp	B6 substrate sensors	4d768294-5a73-4abe-a503-fdf68acce3c0
+B-6	B6 Table 7 Temperature	Substrate Temp	B6 substrate sensors	dfdb076e-d5b2-4801-8662-def29b5dc8e4
+B-6	B6 Table 8 Temperature	Substrate Temp	B6 substrate sensors	116ebaa8-a240-44c5-9c43-ecada9fadb5b
+B-6	B6 Table 9 Temperature	Substrate Temp	B6 substrate sensors	298a0aa1-b16d-4e5e-a02b-c9a448dbc4bc
+B-6	B6 Table 10 EC	pwEC	B6 substrate sensors	4e909777-534e-4ea8-87be-2a3ffc35ccba
+B-6	B6 Table 11 EC	pwEC	B6 substrate sensors	d6298239-ebbf-43c5-a08c-c05001ec4be3
+B-6	B6 Table 3 EC	pwEC	B6 substrate sensors	7c6caa2e-a1d8-487b-8f8c-e4dc0b69c93b
+B-6	B6 Table 4 EC	pwEC	B6 substrate sensors	986be961-a322-487e-9f68-fc4b9974560d
+B-6	B6 Table 5 EC	pwEC	B6 substrate sensors	4a97705b-bb9a-4cb8-b0bf-f4b6005f79d1
+B-6	B6 Table 6 EC	pwEC	B6 substrate sensors	fb0c3611-6b00-41ca-8241-a7deafaafb1d
+B-6	B6 Table 7 EC	pwEC	B6 substrate sensors	1a0cfeee-c270-4898-ba38-f3c9c9d8e6fd
+B-6	B6 Table 8 EC	pwEC	B6 substrate sensors	6ebbe24f-16ec-461f-8d1a-ae9635ed3f5a
+B-6	B6 Table 9 EC	pwEC	B6 substrate sensors	a1ed0eef-24d9-47b1-ab49-dcae9a0450f7
+A-4	A4 1 Back Moisture	VWC	A4 substrate 2.0	9ce31e39-f9fc-4ead-930c-e7c4ab5ff771
+A-4	A4 1 Front Moisture	VWC	A4 substrate 2.0	91b84427-9c0e-42ad-a4f4-04b5e669b782
+A-4	A4 10 Back Moisture	VWC	A4 substrate 2.0	6c8194e6-b3f9-4be0-ab3f-e3fc7532e812
+A-4	A4 10 Front Moisture	VWC	A4 substrate 2.0	d13e6bab-5119-485a-86e3-5be67ccccfb6
+A-4	A4 11 Back Moisture	VWC	A4 substrate 2.0	b5278225-138d-4f4a-bbe1-f2efa004c20b
+A-4	A4 11 Front Moisture	VWC	A4 substrate 2.0	a5dee842-c947-46fc-a3f6-914eaa198f60
+A-4	A4 12 Back Moisture	VWC	A4 substrate 2.0	c8882017-43d3-4010-93ec-29b027393683
+A-4	A4 12 Front Moisture	VWC	A4 substrate 2.0	3950f5d3-e1df-438c-9c22-24169f1888a5
+A-4	A4 2 Back Moisture	VWC	A4 substrate 2.0	46a95dfc-ef56-4ab5-84c5-4be76bd85561
+A-4	A4 2 Front Moisture	VWC	A4 substrate 2.0	8aea964a-4697-4a5f-a275-0a8318b1e10b
+A-4	A4 3 Back Moisture	VWC	A4 substrate 2.0	4f0b5859-2938-43c1-9e31-f76ac3e5acd7
+A-4	A4 3 Front Moisture	VWC	A4 substrate 2.0	e3bb962d-e176-4410-8d0b-b841b4283a02
+A-4	A4 4 Back Moisture	VWC	A4 substrate 2.0	969672b6-3994-4df3-aa15-4c04fd4e396c
+A-4	A4 4 Front Moisture	VWC	A4 substrate 2.0	704e7336-d5e0-4807-8ad5-3db9be247d9e
+A-4	A4 5 Back Moisture	VWC	A4 substrate 2.0	0fc7dc11-835d-4d6d-84c0-deb89ed74018
+A-4	A4 5 Front Moisture	VWC	A4 substrate 2.0	9603f983-334f-4dd0-a63a-43aa8cae0a62
+A-4	A4 6 Back Moisture	VWC	A4 substrate 2.0	54191e79-aebd-47fd-b8f9-b955459463c2
+A-4	A4 6 Front Moisture	VWC	A4 substrate 2.0	015eba7a-c596-44a8-9014-2bb11bc8559f
+A-4	A4 7 Back Moisture	VWC	A4 substrate 2.0	798cf1a9-b180-4619-8f12-196eec1fe745
+A-4	A4 7 Front Moisture	VWC	A4 substrate 2.0	dd46cf82-13c0-40aa-845a-82e01fdb696c
+A-4	A4 7 Middle Moisture	VWC	A4 substrate 2.0	9bd1f155-4eed-4b51-9246-bd4324564fc4
+A-4	A4 8 Back Moisture	VWC	A4 substrate 2.0	28db7403-5584-45fe-aeb3-336fb5fdc5f9
+A-4	A4 8 Front Moisture	VWC	A4 substrate 2.0	d6fc0625-8ef4-442b-b5d9-a4b1a3a89c61
+A-4	A4 9 Back Moisture	VWC	A4 substrate 2.0	802841d0-8c9d-47fc-8721-02a2fdfd38a0
+A-4	A4 9 Front Moisture	VWC	A4 substrate 2.0	0d4cf88e-6e8b-43db-bd9d-21ccd4c3f651
+A-4	Soil Moisture #20003610	VWC	Flower A4 substrate sensor	e30e284a-b979-4d28-aafa-fac735d1580c
+A-4	Soil Moisture #20003818	VWC	Flower A4 substrate sensor	4033e410-b235-4c3d-a5c8-73df1ed8092c
+A-4	Soil Moisture #20003823	VWC	Flower A4 substrate sensor	d1b3c894-b201-46a1-b737-3ff78f8c4791
+A-4	Soil Moisture #20004122	VWC	Flower A4 substrate sensor	f209dc12-87ac-4d46-869f-df23864770f4
+A-4	Soil Moisture #20004127	VWC	Flower A4 substrate sensor	61b07da6-9e4e-4b4e-8c31-79d511b1a080
+A-4	Soil Moisture #20004129	VWC	Flower A4 substrate sensor	12ed182c-5182-41a2-a01f-fef209e83eb9
+A-4	Soil Moisture #20004141	VWC	Flower A4 substrate sensor	a9c0ce18-96a6-44d0-9b9b-15827defd98e
+A-4	Soil Moisture #20004175	VWC	Flower A4 substrate sensor	e8887dba-628f-42a9-bc6c-822a9e74da13
+A-4	Soil Moisture #20004176	VWC	Flower A4 substrate sensor	77f43271-59a6-426b-a2b9-297eb51264cc
+A-4	Soil Moisture #20004177	VWC	Flower A4 substrate sensor	de6aa5ae-8d3f-4b56-b4e7-8e6416b8b7be
+A-4	Soil Moisture #20004182	VWC	Flower A4 substrate sensor	059d9259-c0a6-417b-9269-2f0dd17d8d17
+A-4	Soil Moisture #20004184	VWC	Flower A4 substrate sensor	edde7220-ca5f-4621-adce-3cb54fc04576
+A-4	Soil Moisture #20004186	VWC	Flower A4 substrate sensor	2fd7cc1b-1752-463b-a047-48ff8ebc5af9
+A-4	Soil Moisture #20004187	VWC	Flower A4 substrate sensor	9fa2b6b3-d879-49b5-8e96-75dffdf6345d
+A-4	Soil Moisture #20004489	VWC	Flower A4 substrate sensor	0d338602-b32b-4b21-952f-2d73cf3aeed5
+A-4	Soil Moisture #20004502	VWC	Flower A4 substrate sensor	44dc62c1-f2d4-4823-bcb2-87bad6face5a
+A-4	Soil Moisture #20004504	VWC	Flower A4 substrate sensor	d14dc0e7-ab22-4df7-bf9a-00c4d9dc9fd5
+A-4	Soil Moisture #20005101	VWC	Flower A4 substrate sensor	f626f511-f3bc-4c01-af68-38f2c9c68450
+A-4	A4 1 Back Temperature	Substrate Temp	A4 substrate 2.0	e0692331-588b-4187-9a24-96da64cc0b86
+A-4	A4 1 Front Temperature	Substrate Temp	A4 substrate 2.0	959123e1-3489-4c28-adb4-68e2ccd679f4
+A-4	A4 10 Back Temperature	Substrate Temp	A4 substrate 2.0	b8c3a666-7081-4ddf-af93-11d9c0d2b50e
+A-4	A4 10 Front Temperature	Substrate Temp	A4 substrate 2.0	523863db-ac63-42b0-a8d0-7bf3989a0563
+A-4	A4 11 Back Temperature	Substrate Temp	A4 substrate 2.0	95f7d57e-8bc1-4a71-bff3-28f15b1119c8
+A-4	A4 11 Front Temperature	Substrate Temp	A4 substrate 2.0	c495c42c-a3ca-4b32-aad5-bfa9ae3e56c4
+A-4	A4 12 Back Temperature	Substrate Temp	A4 substrate 2.0	25d3024e-8264-4aae-b099-f6befe1ef85e
+A-4	A4 12 Front Temperature	Substrate Temp	A4 substrate 2.0	db495640-62e5-42eb-8f6d-ca5cdfb28702
+A-4	A4 2 Back Temperature	Substrate Temp	A4 substrate 2.0	a709540f-ef1b-49b2-9d70-54e333f25dcd
+A-4	A4 2 Front Temperature	Substrate Temp	A4 substrate 2.0	b5cd0f17-1890-484d-9aa6-c68c1ec3dac8
+A-4	A4 3 Back Temperature	Substrate Temp	A4 substrate 2.0	700f432d-ac14-4b55-97f5-d3363391619a
+A-4	A4 3 Front Temperature	Substrate Temp	A4 substrate 2.0	2dda8398-0e48-4c46-97c3-2d7775486ee4
+A-4	A4 4 Back Temperature	Substrate Temp	A4 substrate 2.0	f64d2dae-25f2-4dbf-9f22-71868773ee8c
+A-4	A4 4 Front Temperature	Substrate Temp	A4 substrate 2.0	70209579-ec7b-4630-9df0-c7e27bf88a97
+A-4	A4 5 Back Temperature	Substrate Temp	A4 substrate 2.0	f8c0ec09-fc9e-4cd2-b01f-940426fc61f7
+A-4	A4 5 Front Temperature	Substrate Temp	A4 substrate 2.0	17efd2e6-d7af-40b9-8709-8caf7ca1b61e
+A-4	A4 6 Back Temperature	Substrate Temp	A4 substrate 2.0	51353dca-41bb-41bf-a0b5-58fd2ad251f7
+A-4	A4 6 Front Temperature	Substrate Temp	A4 substrate 2.0	cb4e24f8-481d-4b7a-a5fb-9913e3fb98e1
+A-4	A4 7 Back Temperature	Substrate Temp	A4 substrate 2.0	d893dc42-3f2b-4491-a383-3e363f7b9eb0
+A-4	A4 7 Front Temperature	Substrate Temp	A4 substrate 2.0	93bdf24e-1f28-4b10-8946-178a784d0586
+A-4	A4 7 Middle Temperature	Substrate Temp	A4 substrate 2.0	88f63950-8d8b-4062-8747-1204a043c15d
+A-4	A4 8 Back Temperature	Substrate Temp	A4 substrate 2.0	9c9f8b2a-9a50-41a1-a5a2-9640521a1ebf
+A-4	A4 8 Front Temperature	Substrate Temp	A4 substrate 2.0	0d31afd2-7f6c-4f1a-9370-48644cd5c7c9
+A-4	A4 9 Back Temperature	Substrate Temp	A4 substrate 2.0	b4d2a7da-96ec-4075-b0ec-328d7f2c2682
+A-4	A4 9 Front Temperature	Substrate Temp	A4 substrate 2.0	540d075b-1f6b-442d-8b6b-9328752be449
+A-4	Soil Temperature #20003610	Substrate Temp	Flower A4 substrate sensor	4d057883-f2fc-4385-94ab-24a3a6c6de91
+A-4	Soil Temperature #20003818	Substrate Temp	Flower A4 substrate sensor	4f037c21-b078-4edb-bf0c-a18f1d6ea246
+A-4	Soil Temperature #20003823	Substrate Temp	Flower A4 substrate sensor	3c2ff2e1-b162-4da5-abe5-90c77dcde66d
+A-4	Soil Temperature #20004122	Substrate Temp	Flower A4 substrate sensor	1d80e6bb-22d6-4619-9225-53cee5650cfa
+A-4	Soil Temperature #20004127	Substrate Temp	Flower A4 substrate sensor	6fbef74e-34f6-46ee-bf2b-dc6cff048f1c
+A-4	Soil Temperature #20004129	Substrate Temp	Flower A4 substrate sensor	c81a4fd1-9b42-413c-af77-9e2571706c77
+A-4	Soil Temperature #20004141	Substrate Temp	Flower A4 substrate sensor	645602f1-5514-47d6-b9ac-8fe94c165dea
+A-4	Soil Temperature #20004175	Substrate Temp	Flower A4 substrate sensor	ce89ec7b-314c-4d9b-aa45-f0e3aceb1ed4
+A-4	Soil Temperature #20004176	Substrate Temp	Flower A4 substrate sensor	17697544-0426-4995-9cfe-65f79783c38c
+A-4	Soil Temperature #20004177	Substrate Temp	Flower A4 substrate sensor	3813ff93-c16b-4c9b-b5a4-3aa070167f13
+A-4	Soil Temperature #20004182	Substrate Temp	Flower A4 substrate sensor	e24111c6-7f8b-4834-9341-6e6aac9eb1e4
+A-4	Soil Temperature #20004184	Substrate Temp	Flower A4 substrate sensor	ff7de457-c1bc-416d-8c30-5b789be20482
+A-4	Soil Temperature #20004186	Substrate Temp	Flower A4 substrate sensor	f92830ad-4945-49d8-9fd5-9c54035c221e
+A-4	Soil Temperature #20004187	Substrate Temp	Flower A4 substrate sensor	4de7a295-20a7-4868-a0d5-c23351f83c94
+A-4	Soil Temperature #20004489	Substrate Temp	Flower A4 substrate sensor	59ca374c-8571-45f0-aa14-fd8c67ca729a
+A-4	Soil Temperature #20004502	Substrate Temp	Flower A4 substrate sensor	c40a4d78-4d6c-49e4-a627-22475fd8112b
+A-4	Soil Temperature #20004504	Substrate Temp	Flower A4 substrate sensor	f2b0c462-1aef-45a9-84f5-28b0b6687cda
+A-4	Soil Temperature #20005101	Substrate Temp	Flower A4 substrate sensor	2c5dca9e-f4c6-40c9-995c-72f37add1b76
+A-4	A4 1 Back EC	pwEC	A4 substrate 2.0	e93e864d-c59e-48c1-9597-fa2156cb7f7c
+A-4	A4 1 Front EC	pwEC	A4 substrate 2.0	d598b9ce-a70b-49b0-b954-030384738640
+A-4	A4 10 Back EC	pwEC	A4 substrate 2.0	ed37bc06-d43e-47f8-8645-4d5c4c8942a9
+A-4	A4 10 Front EC	pwEC	A4 substrate 2.0	6d724c1a-780b-4532-ade2-f39084c9aa36
+A-4	A4 11 Back EC	pwEC	A4 substrate 2.0	32ecea3d-0b73-4605-86c1-71ac4f28e584
+A-4	A4 11 Front EC	pwEC	A4 substrate 2.0	cd71d6b6-18f1-4546-8217-4feb48a9c99b
+A-4	A4 12 Back EC	pwEC	A4 substrate 2.0	349e43e3-188d-4d8d-a687-a9c7691f7085
+A-4	A4 12 Front EC	pwEC	A4 substrate 2.0	155d70dc-e288-4fde-9c54-2baff8d3a2ce
+A-4	A4 2 Back EC	pwEC	A4 substrate 2.0	cde30d41-e1da-43aa-8e37-e8db29e44846
+A-4	A4 2 Front EC	pwEC	A4 substrate 2.0	bfb3b2a0-0383-4f93-95d3-b3b30fe76bb9
+A-4	A4 3 Back EC	pwEC	A4 substrate 2.0	d5b61d23-c8c7-4093-a3b7-c5288a6bb6e6
+A-4	A4 3 Front EC	pwEC	A4 substrate 2.0	0c146fd5-1f0f-468c-b5e1-c38e2e47918b
+A-4	A4 4 Back EC	pwEC	A4 substrate 2.0	e9a55032-5e00-4402-bfb8-900c3fb7dc87
+A-4	A4 4 Front EC	pwEC	A4 substrate 2.0	6616d347-f1ff-4357-abc0-cf115fa370fd
+A-4	A4 5 Back EC	pwEC	A4 substrate 2.0	fb450773-a503-4f51-b0bd-6d38f15baa16
+A-4	A4 5 Front EC	pwEC	A4 substrate 2.0	7e0a25e0-04c8-4227-85a4-e77cbb5b8b2f
+A-4	A4 6 Back EC	pwEC	A4 substrate 2.0	f2590819-dd25-4575-b6e1-74ffdf8fb853
+A-4	A4 6 Front EC	pwEC	A4 substrate 2.0	7b6e9e7c-ac22-4cb7-a225-d38bd8f7cabe
+A-4	A4 7 Back EC	pwEC	A4 substrate 2.0	2dcfe295-6d18-4fd1-9387-0689fb2a8938
+A-4	A4 7 Front EC	pwEC	A4 substrate 2.0	e762f030-7851-44e6-9f02-feb346601025
+A-4	A4 7 Middle EC	pwEC	A4 substrate 2.0	18dd07a3-426d-4d70-ba63-5fb1376c5d27
+A-4	A4 8 Back EC	pwEC	A4 substrate 2.0	819822fe-88ca-4285-a7da-2b85c8fb847a
+A-4	A4 8 Front EC	pwEC	A4 substrate 2.0	4f794953-bf12-4a2b-9025-895ae3591d3c
+A-4	A4 9 Back EC	pwEC	A4 substrate 2.0	747db84a-de42-4b14-88c0-c424722ebeba
+A-4	A4 9 Front EC	pwEC	A4 substrate 2.0	d2223aa2-2fe3-4866-9ad3-28e3419324e8
+A-4	Soil EC #20003610	pwEC	Flower A4 substrate sensor	a628d83c-d721-4546-b1e0-22486e9bf582
+A-4	Soil EC #20003818	pwEC	Flower A4 substrate sensor	6c8c70dd-3660-42c1-a65e-eb18c85cf7b0
+A-4	Soil EC #20003823	pwEC	Flower A4 substrate sensor	6f71b3c3-a6cd-4bdc-adc0-85b44f3eccd8
+A-4	Soil EC #20004122	pwEC	Flower A4 substrate sensor	d970a3d4-af45-40f3-bd64-6da59524974a
+A-4	Soil EC #20004127	pwEC	Flower A4 substrate sensor	227e0dc4-5f6f-45e9-b5a4-816c652ce0fe
+A-4	Soil EC #20004129	pwEC	Flower A4 substrate sensor	43c3ef70-f9c5-42c8-a72d-3a7fb98c5860
+A-4	Soil EC #20004141	pwEC	Flower A4 substrate sensor	4e49d658-efb1-4597-ae52-9859bd436696
+A-4	Soil EC #20004175	pwEC	Flower A4 substrate sensor	f9ee2d80-a497-41e8-8bd7-b0b715e94e14
+A-4	Soil EC #20004176	pwEC	Flower A4 substrate sensor	7bf959d8-c185-4bec-925b-af2290e91870
+A-4	Soil EC #20004177	pwEC	Flower A4 substrate sensor	e86f2003-f535-42dd-9ec3-6473fcd5a800
+A-4	Soil EC #20004182	pwEC	Flower A4 substrate sensor	a532e98c-f4a9-4668-a485-5208eac0c82c
+A-4	Soil EC #20004184	pwEC	Flower A4 substrate sensor	3aa77912-ad30-4da2-8dcb-575c43dd9773
+A-4	Soil EC #20004186	pwEC	Flower A4 substrate sensor	c6e69ec7-40ab-4f51-a9a1-c50709af4963
+A-4	Soil EC #20004187	pwEC	Flower A4 substrate sensor	f4c04008-40e6-4900-8ce8-b9812793fa1f
+A-4	Soil EC #20004489	pwEC	Flower A4 substrate sensor	995ab85a-82bb-4181-8fde-e10b457232e3
+A-4	Soil EC #20004502	pwEC	Flower A4 substrate sensor	50c0d174-6131-40d8-837e-cb2bab8a5c99
+A-4	Soil EC #20004504	pwEC	Flower A4 substrate sensor	ffed88b2-3a30-4c3c-ae1b-1532ee89d649
+A-4	Soil EC #20005101	pwEC	Flower A4 substrate sensor	1688474c-4b1e-4299-8563-d6b74097b473
+A-5	A5 1 Back Moisture	VWC	A5 substrate sensor	d1340d19-c307-4bd4-82c6-c7f1d0cead2c
+A-5	A5 1 Front Moisture	VWC	A5 substrate sensor	d0cbfb19-2355-43e8-8158-a5a8c0e5265c
+A-5	A5 10 Back Moisture	VWC	A5 substrate sensor	9e70bdba-cd71-4e27-a6b4-8920ac688095
+A-5	A5 10 Front Moisture	VWC	A5 substrate sensor	1bb97e78-157f-4db1-b977-7b0b11fab64f
+A-5	A5 11 Back Moisture	VWC	A5 substrate sensor	99151d8c-8d54-4f77-a632-1248d4d8471d
+A-5	A5 11 Front Moisture	VWC	A5 substrate sensor	f4a30fb2-8adc-424d-a75e-9869b966ea3a
+A-5	A5 12 Back Moisture	VWC	A5 substrate sensor	9fd2d6e7-bf4b-4082-b418-bbd4486512a4
+A-5	A5 12 Front Moisture	VWC	A5 substrate sensor	96e011ba-f368-4a84-a8b5-e57cc6836985
+A-5	A5 2 Back Moisture	VWC	A5 substrate sensor	f1aa6848-dfc1-467b-86f9-b878f851976f
+A-5	A5 2 Front Moisture	VWC	A5 substrate sensor	64cb0c44-49a7-4c96-b67f-a03e3e11f79f
+A-5	A5 3 Back Moisture	VWC	A5 substrate sensor	45acff5d-4a71-4e19-a9e6-ce4a286a144b
+A-5	A5 3 Front Moisture	VWC	A5 substrate sensor	6ece75d6-4377-4d5b-a9af-8e67f45b0c72
+A-5	A5 4 Back Moisture	VWC	A5 substrate sensor	7481379e-aa5c-4eed-a6d1-e7b9e5e7ad69
+A-5	A5 4 Front Moisture	VWC	A5 substrate sensor	0dacb2e3-aa2f-48f9-a1da-5f426663f7f6
+A-5	A5 5 Back Moisture	VWC	A5 substrate sensor	30443df8-c2d2-458e-a7d7-dc91c51b605c
+A-5	A5 5 Front Moisture	VWC	A5 substrate sensor	ad1f58a7-cb53-4138-8cb1-9eb83f7e109d
+A-5	A5 6 Back Moisture	VWC	A5 substrate sensor	91138158-d657-4bcb-a7de-a7076b40bf84
+A-5	A5 6 Front Moisture	VWC	A5 substrate sensor	312cb547-148e-4527-bcdc-0ac8ce242d36
+A-5	A5 7 Back Moisture	VWC	A5 substrate sensor	983489a8-ab0a-441d-a611-10e5951d95bc
+A-5	A5 7 Front Moisture	VWC	A5 substrate sensor	2e546657-0332-42f9-9879-2eb34c0620bb
+A-5	A5 8 Back Moisture	VWC	A5 substrate sensor	ca56e8a4-f57b-4870-861e-76f28213ee34
+A-5	A5 8 Front Moisture	VWC	A5 substrate sensor	57d9d7f1-6bd6-45ef-a864-437e4aae31b2
+A-5	A5 9 Back Moisture	VWC	A5 substrate sensor	f7473448-5330-4736-91a3-41ccf391e184
+A-5	A5 9 Front Moisture	VWC	A5 substrate sensor	4e204248-c9ea-43e6-8786-0ce2ac62e32b
+A-5	A5 1 Back Temperature	Substrate Temp	A5 substrate sensor	19d65fb4-156f-4661-a5a0-f341ad71d7fb
+A-5	A5 1 Front Temperature	Substrate Temp	A5 substrate sensor	4a80a9b5-419f-4171-bd85-9b541cc7fe83
+A-5	A5 10 Back Temperature	Substrate Temp	A5 substrate sensor	57fb4537-93e1-4af6-b55c-cdff2c24b5fa
+A-5	A5 10 Front Temperature	Substrate Temp	A5 substrate sensor	a22d985c-47fd-41f1-bd08-6eec3447b05e
+A-5	A5 11 Back Temperature	Substrate Temp	A5 substrate sensor	346d3c1c-ec61-434c-8c1b-b8f76a92dfbd
+A-5	A5 11 Front Temperature	Substrate Temp	A5 substrate sensor	e6522b95-39d4-40cc-8cd1-c8248be20c97
+A-5	A5 12 Back Temperature	Substrate Temp	A5 substrate sensor	79e269b3-76a3-42fa-9b51-7dd9b6574986
+A-5	A5 12 Front Temperature	Substrate Temp	A5 substrate sensor	264af7f0-4a66-4c32-b10b-dacd276e3a57
+A-5	A5 2 Back Temperature	Substrate Temp	A5 substrate sensor	35a52a53-73be-4a96-9db3-fb3847fbbe5c
+A-5	A5 2 Front Temperature	Substrate Temp	A5 substrate sensor	83cecdad-4785-4f4c-ac55-9eb193eecc99
+A-5	A5 3 Back Temperature	Substrate Temp	A5 substrate sensor	596d1bc5-f0e2-472e-ae85-30b48885f306
+A-5	A5 3 Front Temperature	Substrate Temp	A5 substrate sensor	fd4f211c-52d7-4daa-8d7f-c294c619d9b2
+A-5	A5 4 Back Temperature	Substrate Temp	A5 substrate sensor	6bea678b-7363-4855-adc2-a0ef7ea36827
+A-5	A5 4 Front Temperature	Substrate Temp	A5 substrate sensor	e7bca03f-249f-4e5b-8607-816e0b0dfc22
+A-5	A5 5 Back Temperature	Substrate Temp	A5 substrate sensor	d94d1768-5c23-4874-8537-5f10d5f3fc87
+A-5	A5 5 Front Temperature	Substrate Temp	A5 substrate sensor	45b59c61-a4ec-4334-8cd5-6775738b6e2d
+A-5	A5 6 Back Temperature	Substrate Temp	A5 substrate sensor	81495165-a68e-4545-88ae-0dba5b8ae199
+A-5	A5 6 Front Temperature	Substrate Temp	A5 substrate sensor	4a1cc7c1-6f33-4264-9de2-e230b4866837
+A-5	A5 7 Back Temperature	Substrate Temp	A5 substrate sensor	0d4460fb-3e17-42d4-b278-e4d19e6c25a4
+A-5	A5 7 Front Temperature	Substrate Temp	A5 substrate sensor	d4e7e935-ffe9-40e7-9144-156da40bf775
+A-5	A5 8 Back Temperature	Substrate Temp	A5 substrate sensor	70052339-ded5-4bf1-93d9-a9cafcf9b563
+A-5	A5 8 Front Temperature	Substrate Temp	A5 substrate sensor	147fc240-4b52-4dae-9705-22ee346b8bfc
+A-5	A5 9 Back Temperature	Substrate Temp	A5 substrate sensor	0d433e6f-a437-405f-b112-76c0a5091782
+A-5	A5 9 Front Temperature	Substrate Temp	A5 substrate sensor	75adace8-d9ea-44fe-9f13-860c0a06f716
+A-5	A5 1 Back EC	pwEC	A5 substrate sensor	d40b3c14-8b61-4736-b74c-492edbe795e0
+A-5	A5 1 Front EC	pwEC	A5 substrate sensor	92a74651-e56d-423b-bcbb-2e649ab6138e
+A-5	A5 10 Back EC	pwEC	A5 substrate sensor	64b7b08b-e4bc-4565-86f1-0d779c81897e
+A-5	A5 10 Front EC	pwEC	A5 substrate sensor	0841278e-fde1-4e16-ac5c-c4995c76e196
+A-5	A5 11 Back EC	pwEC	A5 substrate sensor	a96856bd-6ccd-4476-ae00-2ab38e073161
+A-5	A5 11 Front EC	pwEC	A5 substrate sensor	e946f68e-be43-483d-bda4-89f287e948ab
+A-5	A5 12 Back EC	pwEC	A5 substrate sensor	9fbf03c9-a5ca-4b1d-aa13-f11a73ad53d1
+A-5	A5 12 Front EC	pwEC	A5 substrate sensor	03ba18dd-204d-4dc5-b907-4fcfb44afa11
+A-5	A5 2 Back EC	pwEC	A5 substrate sensor	ffa4aa0d-cf4a-4b0c-a020-874c0a199ed4
+A-5	A5 2 Front EC	pwEC	A5 substrate sensor	828dc34a-e359-4643-9bf1-9f370cb503a5
+A-5	A5 3 Back EC	pwEC	A5 substrate sensor	b3bf4983-f583-4b70-a503-6782a39cf85e
+A-5	A5 3 Front EC	pwEC	A5 substrate sensor	48bf8c05-134d-4ef6-b6a6-6cecd01bce99
+A-5	A5 4 Back EC	pwEC	A5 substrate sensor	78950d5f-dcef-4dfc-b63a-8f4b1e985214
+A-5	A5 4 Front EC	pwEC	A5 substrate sensor	6cdefff1-306c-40c6-b7ea-42e830a37606
+A-5	A5 5 Back EC	pwEC	A5 substrate sensor	8fee6e03-942c-4f05-8401-10af34b42eb5
+A-5	A5 5 Front EC	pwEC	A5 substrate sensor	a3da0b9d-ff11-4c06-8095-1765bc3ebbde
+A-5	A5 6 Back EC	pwEC	A5 substrate sensor	9ae3a03f-06d8-4e1e-8ed2-c276dfc52804
+A-5	A5 6 Front EC	pwEC	A5 substrate sensor	fd857bb0-b8fa-481e-8f60-496dc847520f
+A-5	A5 7 Back EC	pwEC	A5 substrate sensor	5eb27965-83e3-4781-98db-80b30f43ed2e
+A-5	A5 7 Front EC	pwEC	A5 substrate sensor	f29180e1-05db-4aea-a7a8-1bf0e742061c
+A-5	A5 8 Back EC	pwEC	A5 substrate sensor	7525700d-af5f-47f3-adbd-d9102d04de95
+A-5	A5 8 Front EC	pwEC	A5 substrate sensor	778a0c7d-d36f-445d-a7e9-04428cacf503
+A-5	A5 9 Back EC	pwEC	A5 substrate sensor	0a04f553-3f8d-458a-ae7d-c82958581e3d
+A-5	A5 9 Front EC	pwEC	A5 substrate sensor	704d2487-b762-4b09-9db3-809cb348186e
+A-6	A6 1 Back Moisture	VWC	A6 substrate sensor	1a08121d-c334-4bc5-b2b5-13f35b7e0633
+A-6	A6 1 Front Moisture	VWC	A6 substrate sensor	a8488391-ddcf-4937-a347-bed848bf4334
+A-6	A6 10 Back Moisture	VWC	A6 substrate sensor	03b27d3a-31fa-4eb2-9209-1c538a97fd76
+A-6	A6 10 Front Moisture	VWC	A6 substrate sensor	e4ddf660-c1fc-4fc5-a7a5-fe3a87ffed05
+A-6	A6 11 Back Moisture	VWC	A6 substrate sensor	383f2199-8c8b-4853-bda4-c5d175004914
+A-6	A6 11 Front Moisture	VWC	A6 substrate sensor	90bb91fe-069c-41e0-9506-33c4f05c3cd3
+A-6	A6 12 Back Moisture	VWC	A6 substrate sensor	3b8b4f49-d443-4645-8aa4-631cffa7a535
+A-6	A6 12 Front Moisture	VWC	A6 substrate sensor	aa013ba3-ff4a-4b1b-8b6c-7e4bd51e3e6c
+A-6	A6 2 Back Moisture	VWC	A6 substrate sensor	33e67817-8500-45c3-aa3c-3a0245c8f1dc
+A-6	A6 2 Front Moisture	VWC	A6 substrate sensor	1892d5da-fd22-4de7-9422-907fa3307c20
+A-6	A6 3 Back Moisture	VWC	A6 substrate sensor	9a53cce9-b75c-46f4-8cc9-5b0a253fffa1
+A-6	A6 3 Front Moisture	VWC	A6 substrate sensor	e2a942dd-8b74-4a20-a2d6-f911bd0e1aa7
+A-6	A6 4 Back Moisture	VWC	A6 substrate sensor	1fbb4ed0-28cd-4d45-809f-87c3a6e6092a
+A-6	A6 4 Front Moisture	VWC	A6 substrate sensor	24079d73-ad33-41c8-81b8-6f5434a707be
+A-6	A6 5 Back Moisture	VWC	A6 substrate sensor	935cf73c-64db-498d-a352-973e214ffcac
+A-6	A6 5 Front Moisture	VWC	A6 substrate sensor	4e6f340a-8071-453a-91cd-77d9688ce438
+A-6	A6 6 Back Moisture	VWC	A6 substrate sensor	5ad809c9-07aa-47c4-85d9-8dd666b46c1b
+A-6	A6 6 Front Moisture	VWC	A6 substrate sensor	08dd6f51-7ebd-48c9-b6a7-f3c26a9bbca9
+A-6	A6 7 Back Moisture	VWC	A6 substrate sensor	b5632dc4-527c-4471-9b25-e26a0ff5c1c7
+A-6	A6 7 Front Moisture	VWC	A6 substrate sensor	c01d30d2-53ec-48c9-ad41-4b475db15a50
+A-6	A6 8 Back Moisture	VWC	A6 substrate sensor	8b61137b-ce1a-48f3-9830-ebadd736f597
+A-6	A6 8 Front Moisture	VWC	A6 substrate sensor	b76a3e6b-9896-4c89-b6e9-2895eafa5472
+A-6	A6 9 Back Moisture	VWC	A6 substrate sensor	10b43850-9d87-4c8a-b580-1d2ef4d796ee
+A-6	A6 9 Front Moisture	VWC	A6 substrate sensor	ed50d197-34d1-42d0-ab47-20e1d0d8158f
+A-6	A6 1 Back Temperature	Substrate Temp	A6 substrate sensor	89a02cdd-cc6b-4d1f-ade4-80274c75f1d6
+A-6	A6 1 Front Temperature	Substrate Temp	A6 substrate sensor	1b9de751-c96f-41cf-b9bf-8a20665c4656
+A-6	A6 10 Back Temperature	Substrate Temp	A6 substrate sensor	f8fbd278-ef00-4027-807e-020fe8fb8b0b
+A-6	A6 10 Front Temperature	Substrate Temp	A6 substrate sensor	08db12a9-df10-4fe0-b5e4-6967ca006467
+A-6	A6 11 Back Temperature	Substrate Temp	A6 substrate sensor	9f25953d-4393-483b-b81d-9ae0f086947a
+A-6	A6 11 Front Temperature	Substrate Temp	A6 substrate sensor	22fac07e-79ca-42a0-90be-9301ecd5694c
+A-6	A6 12 Back Temperature	Substrate Temp	A6 substrate sensor	9dc458cd-a730-4db3-8107-63c5821db660
+A-6	A6 12 Front Temperature	Substrate Temp	A6 substrate sensor	d2b5b0bf-cc2f-404f-b5e5-08fdef6f7243
+A-6	A6 2 Back Temperature	Substrate Temp	A6 substrate sensor	00300d56-684a-41f9-b8c0-8d3c6a0aa57d
+A-6	A6 2 Front Temperature	Substrate Temp	A6 substrate sensor	bcc84abb-6f37-46e2-9a5f-e6fdc02b54b8
+A-6	A6 3 Back Temperature	Substrate Temp	A6 substrate sensor	42ce1914-c275-459e-a12f-ca5cddf8d7fd
+A-6	A6 3 Front Temperature	Substrate Temp	A6 substrate sensor	010794aa-8f9d-4917-9450-73b5691b5170
+A-6	A6 4 Back Temperature	Substrate Temp	A6 substrate sensor	0788f93e-d68d-4dd2-b3b7-9d47ef85d3eb
+A-6	A6 4 Front Temperature	Substrate Temp	A6 substrate sensor	396ead6d-f775-4a19-bd4f-f1b6d8982950
+A-6	A6 5 Back Temperature	Substrate Temp	A6 substrate sensor	e5539f42-a1a3-483a-a268-bcc60f14f52a
+A-6	A6 5 Front Temperature	Substrate Temp	A6 substrate sensor	3ae10953-bb3e-4bd1-980a-1644584c62b0
+A-6	A6 6 Back Temperature	Substrate Temp	A6 substrate sensor	8b63fe1f-a901-4a05-8923-2311d13584a4
+A-6	A6 6 Front Temperature	Substrate Temp	A6 substrate sensor	e189d2cd-1ba3-4c70-92ea-96f4e7373b15
+A-6	A6 7 Back Temperature	Substrate Temp	A6 substrate sensor	25f35f7d-73f2-48c9-8815-fe4e1218dcd5
+A-6	A6 7 Front Temperature	Substrate Temp	A6 substrate sensor	d8d5d61d-2917-4dd6-9736-3be41731a0c4
+A-6	A6 8 Back Temperature	Substrate Temp	A6 substrate sensor	0a5f8317-05d6-4ef6-8c84-a313f073bcb9
+A-6	A6 8 Front Temperature	Substrate Temp	A6 substrate sensor	487151b3-3cae-4683-89e5-0f5d2e4c824d
+A-6	A6 9 Back Temperature	Substrate Temp	A6 substrate sensor	53a2a22a-b7b4-4bfe-9e27-12599ccc09b0
+A-6	A6 9 Front Temperature	Substrate Temp	A6 substrate sensor	9c25c80f-ea2c-42cb-b81e-9a68aa6dda78
+A-6	A6 1 Back EC	pwEC	A6 substrate sensor	94e5e56a-db59-4ac5-a944-d6a3dad57c25
+A-6	A6 1 Front EC	pwEC	A6 substrate sensor	e50f93c7-33f1-47d4-a9ee-aa913dcf93b8
+A-6	A6 10 Back EC	pwEC	A6 substrate sensor	11415f2e-5338-4ace-9e8b-ee011a07e6fd
+A-6	A6 10 Front EC	pwEC	A6 substrate sensor	6dfd7147-d691-47e9-91f0-8fad387cc1ee
+A-6	A6 11 Back EC	pwEC	A6 substrate sensor	3d41e96e-4704-47e7-bba9-dc74e0d9f6f3
+A-6	A6 11 Front EC	pwEC	A6 substrate sensor	45f2c968-a7fb-4e75-be23-77a1688c5442
+A-6	A6 12 Back EC	pwEC	A6 substrate sensor	713d9c7c-7223-4db9-920b-e26ff3c69580
+A-6	A6 12 Front EC	pwEC	A6 substrate sensor	d2ebaa8f-a8c0-4142-91cf-576b35c374d7
+A-6	A6 2 Back EC	pwEC	A6 substrate sensor	7d82fb5e-c265-4d3b-9783-dd97b51bdc67
+A-6	A6 2 Front EC	pwEC	A6 substrate sensor	acc238a5-e6a8-45cb-bc9b-c2f2af92909d
+A-6	A6 3 Back EC	pwEC	A6 substrate sensor	7d659b63-dce0-4972-885b-f5a50f53d646
+A-6	A6 3 Front EC	pwEC	A6 substrate sensor	be4954a2-1308-465f-afac-7ec3dba41136
+A-6	A6 4 Back EC	pwEC	A6 substrate sensor	11e8bbb1-e802-4bb2-b3d0-a0d378bf9c80
+A-6	A6 4 Front EC	pwEC	A6 substrate sensor	4b1e73f1-c973-4256-ba55-c4be703b6bfc
+A-6	A6 5 Back EC	pwEC	A6 substrate sensor	c1bb9c85-dec8-45be-8fd5-18ea8e2dbbfc
+A-6	A6 5 Front EC	pwEC	A6 substrate sensor	0f74acf9-4cb0-46ab-af2e-45ce81f59803
+A-6	A6 6 Back EC	pwEC	A6 substrate sensor	cec2cd19-125a-435b-b35c-8214a22c755c
+A-6	A6 6 Front EC	pwEC	A6 substrate sensor	85748a91-f5ba-479f-a251-1f96ec9227d6
+A-6	A6 7 Back EC	pwEC	A6 substrate sensor	99f7cac5-91f5-4aac-b2b2-2cf63861ca4c
+A-6	A6 7 Front EC	pwEC	A6 substrate sensor	04c94ce2-5496-4764-a5df-f28cec6e70aa
+A-6	A6 8 Back EC	pwEC	A6 substrate sensor	088c8921-8eac-4871-8fdf-7034134734eb
+A-6	A6 8 Front EC	pwEC	A6 substrate sensor	ccc30e14-13a7-4d7e-abf7-74b6ab1d1a6c
+A-6	A6 9 Back EC	pwEC	A6 substrate sensor	5e890ad4-c735-4c92-829b-84df7cb0acf4
+A-6	A6 9 Front EC	pwEC	A6 substrate sensor	49c3543a-5304-480b-92a9-97ef9a2325f9
+C-1	C1 Table 2 Moisture	VWC	C1 substrate sensor	ee582c5d-aac1-4c9d-aa51-ffdd97eeb5bc
+C-1	C1 Table 3 Moisture	VWC	C1 substrate sensor	73e813e9-2f92-4f3b-b804-b5362927d4aa
+C-1	C1 Table 4 Moisture	VWC	C1 substrate sensor	d86dc27d-abb2-4157-94b1-1786695db00b
+C-1	C1 Table 5 Moisture	VWC	C1 substrate sensor	1d2b04c6-2287-442d-9936-3baf756a9e3e
+C-1	C1 Table 6 Moisture	VWC	C1 substrate sensor	9190421f-2ac9-4fe5-822e-e014d7c21120
+C-1	C1 Table 7 Moisture	VWC	C1 substrate sensor	d4951973-8bd8-4e5f-a548-d808b5648e7d
+C-1	C1 Table 8 Moisture	VWC	C1 substrate sensor	0850b1b2-9e8a-48c5-b820-7040a6bcc3e1
+C-1	C1 Table 9 Moisture	VWC	C1 substrate sensor	289e5f95-70ef-4a8f-8112-fbedd01927ca
+C-1	Substrate Moisture #20004922	VWC	C1 substrate sensor	968138ec-4bb4-4c4a-bc8d-7076a93dd3a4
+C-1	C1 Table 2 Temperature	Substrate Temp	C1 substrate sensor	6780e7de-b72a-4048-a085-c0cf40337f16
+C-1	C1 Table 3 Temperature	Substrate Temp	C1 substrate sensor	2c0311b7-9652-43be-9dad-04a8702bbf45
+C-1	C1 Table 4 Temperature	Substrate Temp	C1 substrate sensor	71ebd8c5-a676-4d58-aaa5-cfa1c2e88ff9
+C-1	C1 Table 5 Temperature	Substrate Temp	C1 substrate sensor	2fb0f9d3-4d37-42f7-90d1-8eeeddb896c2
+C-1	C1 Table 6 Temperature	Substrate Temp	C1 substrate sensor	f831d0be-e105-4457-8141-f8e9914209c3
+C-1	C1 Table 7 Temperature	Substrate Temp	C1 substrate sensor	0b0d30ef-3024-487d-b272-546506ffdce3
+C-1	C1 Table 8 Temperature	Substrate Temp	C1 substrate sensor	9b180f64-f9c1-410e-a34a-e153b814682e
+C-1	C1 Table 9 Temperature	Substrate Temp	C1 substrate sensor	ba51ec93-978c-439f-bdd3-4a732f956e44
+C-1	Substrate Temperature #20004922	Substrate Temp	C1 substrate sensor	f60ef872-b479-4775-a0fc-e0da4da1f6b8
+C-1	C1 Table 2 EC	pwEC	C1 substrate sensor	4d3265c8-4b3d-47ac-9b9c-7afbcf11558e
+C-1	C1 Table 3 EC	pwEC	C1 substrate sensor	21b5fe45-8bc8-4f28-8498-e7ed55cc45b3
+C-1	C1 Table 4 EC	pwEC	C1 substrate sensor	272c3578-1fb4-4024-abfe-aa5b1cc1288f
+C-1	C1 Table 5 EC	pwEC	C1 substrate sensor	691aa26b-ed19-4ca0-9808-73102f455c83
+C-1	C1 Table 6 EC	pwEC	C1 substrate sensor	04428370-07b9-4f17-88ad-97a36b58d8b8
+C-1	C1 Table 7 EC	pwEC	C1 substrate sensor	2b4aa879-453a-4f8c-a4c2-e83613ac4a6e
+C-1	C1 Table 8 EC	pwEC	C1 substrate sensor	ff51c565-fdcd-43bb-95fc-098871ad7db9
+C-1	C1 Table 9 EC	pwEC	C1 substrate sensor	63fdd476-57f5-4025-9aae-5c5c88d1009f
+C-1	Substrate EC #20004922	pwEC	C1 substrate sensor	dc1bc1a5-dcdb-45ad-b8b7-46c1342177c8
+C-2	C2 table 1 Moisture	VWC	C2 substrate sensor	21426a7f-15f9-4779-a6f3-1edc9a152fed
+C-2	C2 table 10 Moisture	VWC	C2 substrate sensor	1e8fd2ed-0ea1-452f-b64e-447991de3096
+C-2	C2 table 11 Moisture	VWC	C2 substrate sensor	99183732-8302-40ce-b282-6332f18850d1
+C-2	C2 table 2 Moisture	VWC	C2 substrate sensor	3d395937-5dcb-49ec-a7af-2d833437947b
+C-2	C2 table 3 Moisture	VWC	C2 substrate sensor	4c5582b9-65a6-4859-9215-d3df61174e0b
+C-2	C2 table 6 Moisture	VWC	C2 substrate sensor	0a6f76fc-c69b-4690-9529-56e523c7e51d
+C-2	C2 table 7 Moisture	VWC	C2 substrate sensor	0c2e9c2c-1ed3-43f1-8b9f-fcd918035f2b
+C-2	C2 table 8 Moisture	VWC	C2 substrate sensor	b4f29f5f-cfd0-4e60-9b86-264cac3e670e
+C-2	C2 table 1 Temperature	Substrate Temp	C2 substrate sensor	b0257eb7-efed-4623-9095-5868ca24bab3
+C-2	C2 table 10 Temperature	Substrate Temp	C2 substrate sensor	850e88af-5398-4319-bc13-3d0c4317e526
+C-2	C2 table 11 Temperature	Substrate Temp	C2 substrate sensor	661b2f37-567a-4aea-916e-8b9eb718ca56
+C-2	C2 table 2 Temperature	Substrate Temp	C2 substrate sensor	2f260c8b-d5e8-4a20-b687-c0b1cc160c9c
+C-2	C2 table 3 Temperature	Substrate Temp	C2 substrate sensor	6b394f42-83fd-4d3b-b1c9-646b6b81b39f
+C-2	C2 table 6 Temperature	Substrate Temp	C2 substrate sensor	2a952349-3b95-4dbe-b8be-0a4a50d7fd8d
+C-2	C2 table 7 Temperature	Substrate Temp	C2 substrate sensor	9976f24a-7de6-4d97-b40d-012046bf1fa8
+C-2	C2 table 8 Temperature	Substrate Temp	C2 substrate sensor	583ac531-dc31-4bd3-b243-1aa070be005c
+C-2	C2 table 1 EC	pwEC	C2 substrate sensor	637aaec2-3afa-40bd-b8c7-4c40811ecc3d
+C-2	C2 table 10 EC	pwEC	C2 substrate sensor	880ace82-0b96-41ea-a439-2a6d000343d6
+C-2	C2 table 11 EC	pwEC	C2 substrate sensor	6d74bd82-9fa8-4a34-91bf-568b279a7de3
+C-2	C2 table 2 EC	pwEC	C2 substrate sensor	d1dce8aa-e4e5-4234-9b5b-d3795ccfeac4
+C-2	C2 table 3 EC	pwEC	C2 substrate sensor	df215dba-343a-4384-ba10-3d77b2ac5c0a
+C-2	C2 table 6 EC	pwEC	C2 substrate sensor	02170d24-904e-43c2-b96b-6541939c5921
+C-2	C2 table 7 EC	pwEC	C2 substrate sensor	d597b7db-d859-4696-a036-558381f507d6
+C-2	C2 table 8 EC	pwEC	C2 substrate sensor	2b77f920-5c3a-4535-b22c-1080e2a0b05a
+C-3	C3 table 1 Moisture	VWC	C3 substrate sensor 	23ae094f-7be4-4ad1-8396-1d2fce67508e
+C-3	C3 table 10 Moisture	VWC	C3 substrate sensor 	920b071e-e8ed-4f42-94b6-6daff941edbe
+C-3	C3 table 11 Moisture	VWC	C3 substrate sensor 	537ce439-7860-40bd-8823-907cdcb7cdd1
+C-3	C3 table 2 Moisture	VWC	C3 substrate sensor 	ff8771bc-c209-4cee-a77e-cdbfa78f0df9
+C-3	C3 table 3 Moisture	VWC	C3 substrate sensor 	4fc9fa14-3627-4be2-b77b-f25d7fac83f1
+C-3	C3 table 4 Moisture	VWC	C3 substrate sensor 	991b4fa9-acf4-4d4a-8434-579da4044f20
+C-3	C3 table 5 Moisture	VWC	C3 substrate sensor 	6769df24-c19c-4b6b-928e-ec9c1dd53840
+C-3	C3 table 6 Moisture	VWC	C3 substrate sensor 	1d9e698c-d401-42e7-b8b6-f339b5101258
+C-3	C3 table 7 Moisture	VWC	C3 substrate sensor 	2260681d-ec7c-4ee3-8f9b-db2a32f9e00e
+C-3	C3 table 8 Moisture	VWC	C3 substrate sensor 	18f12239-c278-4f69-96f0-7e8c5bdfaef2
+C-3	C3 table 9 Moisture	VWC	C3 substrate sensor 	e9fb5f91-9956-4d77-8ce9-52ff44c6e941
+C-3	C3 table 1 Temperature	Substrate Temp	C3 substrate sensor 	3cb98e1e-1702-4ebf-a5ef-9dfc2f3a7920
+C-3	C3 table 10 Temperature	Substrate Temp	C3 substrate sensor 	c17ec18e-e8cd-420e-a005-b232cfe70b09
+C-3	C3 table 11 Temperature	Substrate Temp	C3 substrate sensor 	3c6a0c9c-9371-412c-9931-697cb8e6a5e1
+C-3	C3 table 2 Temperature	Substrate Temp	C3 substrate sensor 	35b3db12-98d7-498b-a6bb-2027459d017c
+C-3	C3 table 3 Temperature	Substrate Temp	C3 substrate sensor 	7b25d653-5e85-4c60-9284-8788cc160083
+C-3	C3 table 4 Temperature	Substrate Temp	C3 substrate sensor 	fd12e2c5-9bfa-4fc6-a518-00f541fed512
+C-3	C3 table 5 Temperature	Substrate Temp	C3 substrate sensor 	21234f2b-9cf1-4989-a7e0-bd74bfdef664
+C-3	C3 table 6 Temperature	Substrate Temp	C3 substrate sensor 	f77cfa91-9e74-44ae-b1cc-6ea8a2fb8ff3
+C-3	C3 table 7 Temperature	Substrate Temp	C3 substrate sensor 	9a150838-c0a5-4577-aad4-7b566eda1dc3
+C-3	C3 table 8 Temperature	Substrate Temp	C3 substrate sensor 	7a453b15-db83-4ad5-a8e4-eba645b6710f
+C-3	C3 table 9 Temperature	Substrate Temp	C3 substrate sensor 	06e53cc0-e5a9-4dd8-b33e-1c6d97677971
+C-3	C3 table 1 EC	pwEC	C3 substrate sensor 	072d8621-c7e0-49c1-9e1f-a4c3a7cfa3b2
+C-3	C3 table 10 EC	pwEC	C3 substrate sensor 	7df4b78e-c5ee-444f-90ee-e1e7fb7a0b5b
+C-3	C3 table 11 EC	pwEC	C3 substrate sensor 	42a2906d-3184-47b9-b39b-7bc03f49473b
+C-3	C3 table 2 EC	pwEC	C3 substrate sensor 	53eb7dd3-7f87-4093-b071-defd2d30e6fd
+C-3	C3 table 3 EC	pwEC	C3 substrate sensor 	eedbe456-1e2c-4ea4-924c-154f85126cf0
+C-3	C3 table 4 EC	pwEC	C3 substrate sensor 	02415c5d-5766-4feb-89ec-27e9cd42532d
+C-3	C3 table 5 EC	pwEC	C3 substrate sensor 	22eef852-1366-4502-a246-d63fb8e44afb
+C-3	C3 table 6 EC	pwEC	C3 substrate sensor 	f2b99889-8645-4b40-b865-019687adfd11
+C-3	C3 table 7 EC	pwEC	C3 substrate sensor 	e9568e59-bedc-4315-8510-c9d7653b0fa8
+C-3	C3 table 8 EC	pwEC	C3 substrate sensor 	90840a5b-a3ca-42b9-adfa-943847185abe
+C-3	C3 table 9 EC	pwEC	C3 substrate sensor 	5c528576-97a8-4fca-9b25-fef0f5fa1cb2
+C-4	C4 Table 1 moisture 	VWC	C4 substrate 	4fc5ce5d-2c5d-4179-ba7a-5918828ba591
+C-4	C4 Table 10 moisture 	VWC	C4 substrate 	f33865c8-39fd-4f6a-b3bf-4f093f34469c
+C-4	C4 Table 11	VWC	C4 substrate 	0e9160ee-e9d0-4de8-86da-dfdc2af37211
+C-4	C4 Table 2 moisture 	VWC	C4 substrate 	a34176ba-54ff-4c69-ac44-dea1ad6a920e
+C-4	C4 Table 3 moisture	VWC	C4 substrate 	ae107316-05a8-48d4-919d-f14f49bc6ae1
+C-4	C4 Table 4 moisture 	VWC	C4 substrate 	493ced6f-7716-4e4c-8ab6-1f2ea421d433
+C-4	C4 Table 5 moisture 	VWC	C4 substrate 	37dbdcaa-043c-4369-a113-ab76637fc2f2
+C-4	C4 Table 8 moisture 	VWC	C4 substrate 	c144ae20-1a55-44b9-ba0c-0261dfadd171
+C-4	C4 Table 9 moisture 	VWC	C4 substrate 	9dc41e8d-b175-4be3-94fe-1ee5cc4abaa6
+C-4	C4 Table table 7 moisture 	VWC	C4 substrate 	bb7fc705-51fc-417a-8f60-01e0bbab9f78
+C-4	Substrate Moisture #20004907	VWC	C4 substrate 	d294e9ee-1548-42a9-b3cd-3935baff66c4
+C-4	Substrate Temperature #20003602	Substrate Temp	C4 substrate 	b438e708-a84e-4737-a68c-7b562756df9f
+C-4	Substrate Temperature #20003619	Substrate Temp	C4 substrate 	5fae0b9b-6ac5-410f-ac43-f08d66656a43
+C-4	Substrate Temperature #20004582	Substrate Temp	C4 substrate 	82641ec2-95f0-42c9-8ccf-2baff8c7dc00
+C-4	Substrate Temperature #20004585	Substrate Temp	C4 substrate 	5cceb791-aea8-4cfa-8165-d34c7311ef64
+C-4	Substrate Temperature #20004586	Substrate Temp	C4 substrate 	185d2563-4fcc-4d1f-800e-9bb1b749cbde
+C-4	Substrate Temperature #20004590	Substrate Temp	C4 substrate 	b0edcad4-71c1-4978-b793-df7b01a15520
+C-4	Substrate Temperature #20004591	Substrate Temp	C4 substrate 	286dd9f3-4bd3-495d-a199-17bc82d77b94
+C-4	Substrate Temperature #20004593	Substrate Temp	C4 substrate 	209b2d2c-87e4-4f47-b8a4-3e18e199f9f5
+C-4	Substrate Temperature #20004598	Substrate Temp	C4 substrate 	3438278a-5a61-48da-9bcd-969a9a0776be
+C-4	Substrate Temperature #20004896	Substrate Temp	C4 substrate 	9e0cdf11-67c7-4c33-bc8c-074f3a129e53
+C-4	Substrate Temperature #20004907	Substrate Temp	C4 substrate 	dcfccee1-992f-48a2-ba25-dfd32dccb9bf
+C-4	Substrate EC #20003602	pwEC	C4 substrate 	ff8ed47a-f71e-42c9-bf1a-281127e3d7e2
+C-4	Substrate EC #20003619	pwEC	C4 substrate 	e7fd7cfa-d71f-4e64-bf7c-81e9a50dc672
+C-4	Substrate EC #20004582	pwEC	C4 substrate 	6bad7adb-0f28-4dc6-80d1-faf2347b4eb4
+C-4	Substrate EC #20004585	pwEC	C4 substrate 	48295f6d-a5c7-4b4d-bca8-690b4596cf60
+C-4	Substrate EC #20004586	pwEC	C4 substrate 	b839ff2f-ec4a-49f1-979b-be17822a2d5e
+C-4	Substrate EC #20004590	pwEC	C4 substrate 	171dcf4a-964f-4c72-bbea-6b9d2075d0d6
+C-4	Substrate EC #20004591	pwEC	C4 substrate 	de7d6b62-43ad-4843-884f-be8942f75ec7
+C-4	Substrate EC #20004593	pwEC	C4 substrate 	0cc78aba-0bcf-4b3c-9b1e-b036c0e87f61
+C-4	Substrate EC #20004598	pwEC	C4 substrate 	7853722c-2cd5-4e29-97f3-d1f2ddb7cf12
+C-4	Substrate EC #20004896	pwEC	C4 substrate 	1a9fe1ea-3246-4082-9737-478525f55fb0
+C-4	Substrate EC #20004907	pwEC	C4 substrate 	4ad4aead-d716-4474-948e-17da80d92ae9
+C-5	Substrate Moisture #20004909	VWC	C5 substrate sensor	efb8d88d-23ef-4193-9ce0-f86886c3725b
+C-5	Table 10 Moisture	VWC	C5 substrate sensor	367ff0a6-0d12-4f8a-b27d-650bcfa0aee9
+C-5	Table 11 Moisture	VWC	C5 substrate sensor	4863b9d0-a52a-4eaa-840e-b4a45dd7cb1e
+C-5	Table 3 Moisture	VWC	C5 substrate sensor	3eaede4c-b76b-417c-94e9-48bd07cc36cf
+C-5	Table 4 Moisture	VWC	C5 substrate sensor	6836498e-f379-426d-b723-614cdd3f46bb
+C-5	Table 5 Moisture	VWC	C5 substrate sensor	99c1340b-cc46-4c66-a6a8-486c0f990f9b
+C-5	Table 6 Moisture	VWC	C5 substrate sensor	5116629f-dd4a-497c-8f39-17ad28277b5e
+C-5	Table 7 Moisture	VWC	C5 substrate sensor	9c1d0c64-bb4b-4760-ad47-b6ca4f98d695
+C-5	Table 8 Moisture	VWC	C5 substrate sensor	86210d38-90c5-4a1d-8fec-af8c051a6941
+C-5	Table 9 Moisture	VWC	C5 substrate sensor	35e52ba3-60cc-4888-a2bc-2fdb31b633eb
+C-5	Substrate Temperature #20004909	Substrate Temp	C5 substrate sensor	e757cb03-ea32-4ade-bcc6-53af3377149c
+C-5	Table 10 Temperature	Substrate Temp	C5 substrate sensor	6881df41-6248-488c-bcab-6c00965c8593
+C-5	Table 11 Temperature	Substrate Temp	C5 substrate sensor	454a1ae6-d6fd-4e7c-b2b4-97f3e7506b67
+C-5	Table 3 Temperature	Substrate Temp	C5 substrate sensor	55b18054-0c34-4c2a-8e8f-37c7262965ab
+C-5	Table 4 Temperature	Substrate Temp	C5 substrate sensor	b91f94e6-0f5a-4986-9135-e5c9ba1718aa
+C-5	Table 5 Temperature	Substrate Temp	C5 substrate sensor	50f2e311-45e6-472d-9025-0529dc3ed825
+C-5	Table 6 Temperature	Substrate Temp	C5 substrate sensor	63b6dd6e-a66b-4c88-a2e6-01e7c2b65536
+C-5	Table 7 Temperature	Substrate Temp	C5 substrate sensor	450e4fba-4cac-4329-a170-e4cef86d4c50
+C-5	Table 8 Temperature	Substrate Temp	C5 substrate sensor	4fa78b80-2807-462c-94d8-d0e8132934d5
+C-5	Table 9 Temperature	Substrate Temp	C5 substrate sensor	0132743a-95f8-4b4c-9894-440402e2a4f2
+C-5	Substrate EC #20004909	pwEC	C5 substrate sensor	9b1c418a-76d8-4a54-8d5a-03cd7207b2f3
+C-5	Table 10 EC	pwEC	C5 substrate sensor	0c8ba635-a78b-487c-956e-170832445b4b
+C-5	Table 11 EC	pwEC	C5 substrate sensor	e17c72c3-6610-4a24-92da-939f896bbb78
+C-5	Table 3 EC	pwEC	C5 substrate sensor	165c7cb6-718e-4302-8639-3682fbb0090d
+C-5	Table 4 EC	pwEC	C5 substrate sensor	f8622f31-193a-44bf-834c-1e00483b8789
+C-5	Table 5 EC	pwEC	C5 substrate sensor	5d36737a-58b3-4429-b56b-3a63ce35e39d
+C-5	Table 6 EC	pwEC	C5 substrate sensor	cdeec7e4-f83c-40a6-95da-1beb078fe645
+C-5	Table 7 EC	pwEC	C5 substrate sensor	09a8888d-eaf4-4b82-beb0-14d0bae5aaaf
+C-5	Table 8 EC	pwEC	C5 substrate sensor	04f8ff1d-2681-4a66-a2a1-545c5009d9af
+C-5	Table 9 EC	pwEC	C5 substrate sensor	0b755c5e-9994-430f-9298-dcca645132eb
+C-6	Substrate Moisture #20003616	VWC	C6 substrate sensor	adf2c6ab-fd35-4d7a-be1f-8f3c620e02c2
+C-6	Substrate Moisture #20004483	VWC	C6 substrate sensor	46eee8ef-a4b3-4647-aa5f-df1cec366213
+C-6	Substrate Moisture #20004501	VWC	C6 substrate sensor	f94a9d20-e815-4ec8-a35d-2f713207e485
+C-6	Substrate Moisture #20004923	VWC	C6 substrate sensor	2f8ef739-1696-4ebd-8203-da9be4f8e403
+C-6	Substrate Moisture #20005177	VWC	C6 substrate sensor	6e5daa24-c515-4849-a2c8-2e44eedfcd26
+C-6	Substrate Moisture #20005232	VWC	C6 substrate sensor	f1731f74-21aa-45c4-a38d-921095b05a56
+C-6	Substrate Moisture #20005234	VWC	C6 substrate sensor	31511c82-639a-419a-a228-259f426c4c8d
+C-6	Substrate Moisture #20005238	VWC	C6 substrate sensor	f24d391a-a924-4b78-979e-e9448e191c21
+C-6	Substrate Moisture #20005247	VWC	C6 substrate sensor	be3ef990-c55e-4671-beef-e30566b06ad0
+C-6	Substrate Moisture #20005248	VWC	C6 substrate sensor	3484fcfb-659e-47fd-ad33-7b0ac74866de
+C-6	Substrate Moisture #20005249	VWC	C6 substrate sensor	bd7b438d-09e5-4b2a-bd71-f951afdbcd3e
+C-6	Substrate Temperature #20003616	Substrate Temp	C6 substrate sensor	710127ab-70d6-43d8-98de-7131ff56e08e
+C-6	Substrate Temperature #20004483	Substrate Temp	C6 substrate sensor	2f698cb8-1d35-473d-b54b-5d5742ae685d
+C-6	Substrate Temperature #20004501	Substrate Temp	C6 substrate sensor	a5bbd3c7-72b3-4c78-884f-e9c914bd91cc
+C-6	Substrate Temperature #20004923	Substrate Temp	C6 substrate sensor	c4ea80ab-cbdb-483d-880b-35f73f5d2de0
+C-6	Substrate Temperature #20005177	Substrate Temp	C6 substrate sensor	28e65372-1fd7-4b58-bc4a-667e0df10a67
+C-6	Substrate Temperature #20005232	Substrate Temp	C6 substrate sensor	5b43cdc5-cee4-4ca5-b694-ff5c39d0bdad
+C-6	Substrate Temperature #20005234	Substrate Temp	C6 substrate sensor	f33c151f-2a44-44a5-8742-9021227afd0c
+C-6	Substrate Temperature #20005238	Substrate Temp	C6 substrate sensor	cbcca514-6d3d-4b89-9eb9-8a6b34986c84
+C-6	Substrate Temperature #20005247	Substrate Temp	C6 substrate sensor	5401186f-c034-4920-b525-ddd5139d31d5
+C-6	Substrate Temperature #20005248	Substrate Temp	C6 substrate sensor	2efb9517-be7e-4dea-82c5-e591ea941f7a
+C-6	Substrate Temperature #20005249	Substrate Temp	C6 substrate sensor	08c052c0-8a87-472f-b0a0-7d134124b1aa
+C-6	Substrate EC #20003616	pwEC	C6 substrate sensor	0637c1e5-0881-466e-b97f-d1eef9d41912
+C-6	Substrate EC #20004483	pwEC	C6 substrate sensor	4d9cfe9b-cb9e-48ec-aacd-2cb161b6263b
+C-6	Substrate EC #20004501	pwEC	C6 substrate sensor	32ab5a52-1838-490f-bd8d-7e1630cc502e
+C-6	Substrate EC #20004923	pwEC	C6 substrate sensor	0a78efc6-766e-4d50-b17d-c56936cf864b
+C-6	Substrate EC #20005177	pwEC	C6 substrate sensor	accb7eef-c59a-4fb0-8fe3-8dca937fded0
+C-6	Substrate EC #20005232	pwEC	C6 substrate sensor	6db74062-f981-4bb9-961d-699cfcdbf8d2
+C-6	Substrate EC #20005234	pwEC	C6 substrate sensor	99f75eab-a65d-43e1-b80f-7ee3cd7b55ef
+C-6	Substrate EC #20005238	pwEC	C6 substrate sensor	7057bff4-8646-4de5-92e9-7e82f81a6f23
+C-6	Substrate EC #20005247	pwEC	C6 substrate sensor	086c9db5-916d-47e9-9988-afde1708105d
+C-6	Substrate EC #20005248	pwEC	C6 substrate sensor	2f4e1315-d4c3-41c3-8a72-5997c964d203
+C-6	Substrate EC #20005249	pwEC	C6 substrate sensor	b331c8a7-fc4d-44d3-bb80-2bb12047ff7a
+A-7	A7 1 Back Moisture	VWC	A7 substrate sensors	b45e978e-27a6-4b03-8766-0a80b10fa1b2
+A-7	A7 1 Front Moisture	VWC	A7 substrate sensors	77a9e195-b4a5-47cd-827d-dba03bd12acf
+A-7	A7 10 Front Moisture	VWC	A7 substrate sensors	7a04e936-5b1a-4e38-a9b5-eb53f7ef93e1
+A-7	A7 11 Front Moisture	VWC	A7 substrate sensors	c233374d-78db-4a28-8749-e1eb0b063eeb
+A-7	A7 12 Back Moisture	VWC	A7 substrate sensors	0e1aa548-d3fd-43a7-a143-f09231804514
+A-7	A7 12 Front Moisture	VWC	A7 substrate sensors	3bcea7d9-8e4e-480d-8741-b07a6585f54c
+A-7	A7 2 Back Moisture	VWC	A7 substrate sensors	86d511b7-9d9d-422c-b529-c68e533533f6
+A-7	A7 2 Front Moisture	VWC	A7 substrate sensors	7b52c63f-9a27-4b6f-8466-c6e4ebf2fce4
+A-7	A7 3 Back Moisture	VWC	A7 substrate sensors	157390f2-9320-4d83-900a-ae18f4df4c96
+A-7	A7 3 Front Moisture	VWC	A7 substrate sensors	59d9c704-fd4c-4cab-a657-ac424c377c9e
+A-7	A7 4 Back Moisture	VWC	A7 substrate sensors	155d18bb-b4f6-4bc4-84b5-0fbae390c212
+A-7	A7 4 Front Moisture	VWC	A7 substrate sensors	91686e2f-9088-4595-8a96-079345535670
+A-7	A7 5 Back Moisture	VWC	A7 substrate sensors	4bfd6f4e-1195-4f49-977b-9aa808e16e52
+A-7	A7 5 Front Moisture	VWC	A7 substrate sensors	bc4c7ba5-2353-4577-9626-596cf0c38454
+A-7	A7 6 Back Moisture	VWC	A7 substrate sensors	80735806-ff42-46ee-82fa-b2e718e9e76a
+A-7	A7 6 Front Moisture	VWC	A7 substrate sensors	840990c4-69d4-40f4-8781-0599ee19f87c
+A-7	A7 7 Back Moisture	VWC	A7 substrate sensors	09cd588f-3b01-4164-be73-4ad3a79949e2
+A-7	A7 7 Front Moisture	VWC	A7 substrate sensors	015dae13-7171-4c7e-a498-5cc14c461c55
+A-7	A7 8 Back Moisture	VWC	A7 substrate sensors	b25b4195-fb47-45fa-9474-2d10e74d33d0
+A-7	A7 8 Front Moisture	VWC	A7 substrate sensors	59cb818d-dced-4f51-8ab4-774d7b047a70
+A-7	A7 9 Back Moisture	VWC	A7 substrate sensors	0f2f0e12-3473-4c0c-85d8-9ff79325b65e
+A-7	A7 9 Front Moisture	VWC	A7 substrate sensors	2de57d24-d099-4076-b161-335bc6e62be9
+A-7	A7 1 Back Temperature	Substrate Temp	A7 substrate sensors	cf196c77-a1e2-45c1-95fd-bb7b119ef920
+A-7	A7 1 Front Temperature	Substrate Temp	A7 substrate sensors	9760f047-57a7-40b7-9f86-2957b188c5ea
+A-7	A7 10 Front Temperature	Substrate Temp	A7 substrate sensors	ee6cd5b2-7104-40ab-8c7d-40e4c5c2df5f
+A-7	A7 11 Front Temperature	Substrate Temp	A7 substrate sensors	c99093f3-63cc-4cd6-a7f3-5a02c679ff35
+A-7	A7 12 Back Temperature	Substrate Temp	A7 substrate sensors	10f79f84-3e2c-4aeb-b2cb-f4b1c89293ea
+A-7	A7 12 Front Temperature	Substrate Temp	A7 substrate sensors	92324b81-e1dc-49c3-91d9-80e678b8f59d
+A-7	A7 2 Back Temperature	Substrate Temp	A7 substrate sensors	8d68d5ad-a22a-4124-89a4-97e4a9388364
+A-7	A7 2 Front Temperature	Substrate Temp	A7 substrate sensors	8cc95efd-2178-49cf-a509-1ddbad0be69f
+A-7	A7 3 Back Temperature	Substrate Temp	A7 substrate sensors	895b3bf6-f95b-4191-aa32-a897b25f7f86
+A-7	A7 3 Front Temperature	Substrate Temp	A7 substrate sensors	34d2e6db-9103-44ec-9dd4-7fa3bb97d3b9
+A-7	A7 4 Back Temperature	Substrate Temp	A7 substrate sensors	66f71afb-c185-48b7-ab74-512be68ac45b
+A-7	A7 4 Front Temperature	Substrate Temp	A7 substrate sensors	73d9c3cf-8a2d-451e-b64d-38d4a21fd6e0
+A-7	A7 5 Back Temperature	Substrate Temp	A7 substrate sensors	1ec77671-cd83-4606-a8c3-eef4eade3252
+A-7	A7 5 Front Temperature	Substrate Temp	A7 substrate sensors	91d88c3e-fa49-42dc-8132-72acca80cb7c
+A-7	A7 6 Back Temperature	Substrate Temp	A7 substrate sensors	4395f37e-cc29-4b09-8064-aff1ce5b53a8
+A-7	A7 6 Front Temperature	Substrate Temp	A7 substrate sensors	26dd9707-cbaf-4f00-9c1d-6d1f63fd7822
+A-7	A7 7 Back Temperature	Substrate Temp	A7 substrate sensors	d4698ede-cb5e-4db1-8981-2d0acb3a17e3
+A-7	A7 7 Front Temperature	Substrate Temp	A7 substrate sensors	76dbfe66-7adf-4a31-925a-7bd31398c359
+A-7	A7 8 Back Temperature	Substrate Temp	A7 substrate sensors	b00f2477-6808-45d1-b3d3-ac5b11b1f368
+A-7	A7 8 Front Temperature	Substrate Temp	A7 substrate sensors	29b58c91-0483-4049-aea7-e82172d02422
+A-7	A7 9 Back Temperature	Substrate Temp	A7 substrate sensors	efb6e3d2-fa70-4751-9aa5-21a2230b3279
+A-7	A7 9 Front Temperature	Substrate Temp	A7 substrate sensors	6c724083-2241-4624-a43f-f392697d4b93
+A-7	A7 1 Back EC	pwEC	A7 substrate sensors	6c31a075-33dd-475b-8295-0f7806d86abe
+A-7	A7 1 Front EC	pwEC	A7 substrate sensors	23b7f00c-d603-4c7e-ace5-9c85bd44bd23
+A-7	A7 10 Front EC	pwEC	A7 substrate sensors	bd1b9d7d-c4a4-4d91-9af0-5b85f306b2d2
+A-7	A7 11 Front EC	pwEC	A7 substrate sensors	514e639d-1bc4-483b-8e1b-582cc44afcde
+A-7	A7 12 Back EC	pwEC	A7 substrate sensors	cb74710d-552f-4d75-8404-731a846a487f
+A-7	A7 12 Front EC	pwEC	A7 substrate sensors	ea33d43d-e7ca-43c2-a5c1-bd14dde2f4a0
+A-7	A7 2 Back EC	pwEC	A7 substrate sensors	8bda7b8a-3466-4fa1-b375-b0b9c86bebf0
+A-7	A7 2 Front EC	pwEC	A7 substrate sensors	d52d4196-9702-4bba-95c0-db12aa30a7b9
+A-7	A7 3 Back EC	pwEC	A7 substrate sensors	270cad4e-9016-4a5c-bb00-6dde98bcf107
+A-7	A7 3 Front EC	pwEC	A7 substrate sensors	5feb5b06-3ae4-4582-87ea-7d859cf734bc
+A-7	A7 4 Back EC	pwEC	A7 substrate sensors	73f199d2-398e-4488-98ff-0b2d89a9b3d4
+A-7	A7 4 Front EC	pwEC	A7 substrate sensors	559836b2-a134-4e4c-b69d-606ec1560b48
+A-7	A7 5 Back EC	pwEC	A7 substrate sensors	345ccf25-29cf-4c0e-a108-82e8c2a99c74
+A-7	A7 5 Front EC	pwEC	A7 substrate sensors	f466926b-4361-4c38-b2fa-07c6e4f6931c
+A-7	A7 6 Back EC	pwEC	A7 substrate sensors	2fe8bb74-9c24-4944-94ee-10c26b3882cc
+A-7	A7 6 Front EC	pwEC	A7 substrate sensors	2042c8d0-53c6-45d0-91b6-f586c2b59f63
+A-7	A7 7 Back EC	pwEC	A7 substrate sensors	824e5a40-33d7-4038-aee4-20c0c5e5ad24
+A-7	A7 7 Front EC	pwEC	A7 substrate sensors	7a29d691-1da2-4644-b20c-fda879eacd01
+A-7	A7 8 Back EC	pwEC	A7 substrate sensors	ca2372a8-bf47-474f-9eb3-c73e47820c35
+A-7	A7 8 Front EC	pwEC	A7 substrate sensors	396d7667-be7d-45d8-87fb-071e4090d33b
+A-7	A7 9 Back EC	pwEC	A7 substrate sensors	1940a54a-f87f-4d35-a9c3-f05a7c9555ed
+A-7	A7 9 Front EC	pwEC	A7 substrate sensors	5ef3696a-9c81-4c11-bb47-de9bf8d5a745
+
+== Irrigation devices ==
+461 irrigation, valve, batch tank or dosing devices — these drive the "did it actually run" report
+A2 substrate	Valve #1	Valve	e9ca06e6-e0bc-4f37-91f7-d0aa4016a3a8
+A2 substrate	Valve #2	Valve	1e7d978a-0b35-426a-8f64-d7bb8d818889
+A2 substrate	Valve #3	Valve	dc003c07-bc1d-4a8b-b803-112cd0954972
+A2 substrate	Valve #4	Valve	7bac80a9-11fa-4581-b91f-0b3e223f79f1
+A-1	Flower A1 - C02	Valve	6d82bef2-c665-43bd-be7b-ef3cceb57dd0
+A-1	Flower A1 - Zone Valve #1	Batch Tank	bafde986-d058-41e0-82c7-192788944b86
+A-1	Flower A1 - Zone Valve #2	Batch Tank	0292733a-015e-4cc2-ad50-5330dac7c292
+A-1	Flower A1 - Zone Valve #3	Batch Tank	1793eb08-c3cc-4ddb-be80-9be931242078
+A-1	Flower A1 - Zone Valve #4	Batch Tank	a7ee26a7-947d-4d59-a970-3d9384029720
+A-1	Flower A1 - Zone Valve #5	Batch Tank	c61d1e74-aaa2-4485-845a-bb4f98269247
+A-1	Flower A1 - Zone Valve #6	Batch Tank	a683b492-7d09-4286-8faa-512fa5814a9f
+A-1	Flower A1 - Zone Valve #7	Batch Tank	c4682a24-0aca-41fc-95f7-00842194a02f
+A-1	Flower A1 - Zone Valve #8	Batch Tank	f43ed87d-6af3-4c91-a140-1ab8b85ad137
+A-1	Flower A1 - Zone Valve #9	Batch Tank	12be3e6e-9505-418e-b4d1-068d08655b44
+A-1	Flower A1 - Zone Valve #10	Batch Tank	60660584-1db1-456c-bdd8-2a1d1336c258
+A-1	Flower A1 - Zone Valve #11	Batch Tank	ca20f1fb-ed54-407f-a690-e1c1947846dd
+A-1	Flower A1 - Drain Valve 	Batch Tank	3e62d5bc-490f-425d-ab92-f159b4433461
+A-1	Flower A1 - Master Irrigation Valve	Batch Tank	91f6a6db-d3f4-4f32-a701-25393e41309e
+A-1	Flower A1 - Fresh Water Master Valve	Batch Tank	d7869aa7-9c57-412b-8734-faefd47f3349
+A-1	Flower A2 - Zone Valve #8	Batch Tank	8c4eebc1-69c2-4dc8-af00-e578ee66a1af
+A-1	A1 Tank B Master Irrigation	Batch Tank	eb5d58c4-dcb7-49a1-96cb-48d55589fa77
+A-1	A1 Tank C Master Irrigation	Batch Tank	0a9803ea-82ce-498b-a702-e43f35bfa03b
+A-1	Valve #1	Valve	1cafa54d-569f-468f-8cd2-b5f83d0bebab
+A-1	Valve #2	Valve	ec56305e-9ed8-4d5d-9917-2b241f191015
+A-1	Valve #3	Valve	4515e025-3877-431e-a194-c5725c39c12e
+A-1	Valve #4	Valve	6df02fa8-96f8-4745-88cf-be7df1de281c
+A-2	Flower A2 - C02	Valve	63882d80-e54f-4057-a782-506a5d6e150b
+A-2	Flower A2 - Zone Valve #1	Batch Tank	90790c11-81e6-44d1-bb43-cc89db7c7992
+A-2	Flower A2 - Zone Valve #2	Batch Tank	24ac2684-f006-49cc-9a83-834f0b8a9040
+A-2	Flower A2 - Zone Valve #3	Batch Tank	9c8cd91f-1014-45b5-9e31-0b4b0bcf17a5
+A-2	Flower A2 - Zone Valve #4	Batch Tank	3fcc18fb-72c4-49b3-9a9d-70f0b25540dd
+A-2	Flower A2 - Zone Valve #5	Batch Tank	bb343671-2f3e-4847-8b5d-20c812af3660
+A-2	Flower A2 - Zone Valve #6	Batch Tank	74329c19-29e1-4992-9fd0-51fad22fdf52
+A-2	Flower A2 - Zone Valve #7	Batch Tank	c3f5e962-cfea-49e2-9b61-6bee8d29e8d2
+A-2	Flower A2 - Zone Valve #8	Batch Tank	8c4eebc1-69c2-4dc8-af00-e578ee66a1af
+A-2	Flower A2 - Zone Valve #9	Batch Tank	bbec4a33-4f73-412c-9ba5-7e17ab2b8c9b
+A-2	Flower A2 - Zone Valve #10	Batch Tank	6b44b2d9-779d-42a9-8717-69cb9111d4aa
+A-2	Flower A2 - Zone Valve #11	Batch Tank	79f3e70a-efac-4f91-b12e-b405c6d11fbe
+A-2	Flower A2 - Drain Valve	Batch Tank	bbffa97a-7b70-4ec2-9ce8-19958a9596aa
+A-2	Flower A2 - Master Irrigation Valve	Batch Tank	0b2f668b-f77f-4897-a750-bf0242c7f661
+A-2	Flower A2 - Fresh Water Master Valve	Batch Tank	cdf71708-7631-495b-b728-992fd349ea2a
+A-2	A2 Tank B Master Irrigation	Batch Tank	8b6acda2-d521-4c84-9be1-7b3777210367
+A-2	A2 Tank C Master Irrigation	Batch Tank	e8379e98-5846-4d25-96e5-d50c871c5196
+A-2	Valve #1	Valve	f889c2a5-bf8c-41a7-bf60-11f72361c597
+A-2	Valve #2	Valve	e3ca8ca5-1442-479d-b261-4070d5707150
+A-2	Valve #3	Valve	7ac5e3d6-cd70-4198-bdbf-2c9e4f476391
+A-2	Valve #4	Valve	5e6a1f17-3258-4b79-8a7e-54c8e819e5c9
+A-3	Flower A3 - C02	Valve	225583b3-2e4d-4b02-a791-9861ef4d7d60
+A-3	Flower A3 - Zone Valve #1	Batch Tank	117a1ce3-3505-456d-bea6-cae3345af5d5
+A-3	Flower A3 - Zone Valve #2	Batch Tank	87f05fbc-5e5b-46b1-bd20-26967dd3d0d1
+A-3	Flower A3 - Zone Valve #3	Batch Tank	2d2bc97a-3702-4ede-b365-0968f43a1be3
+A-3	Flower A3 - Zone Valve #4	Batch Tank	35cd5a68-560c-499c-84e0-9a718d187045
+A-3	Flower A3 - Zone Valve #5	Batch Tank	6f2e557b-fb09-45e4-9367-6dce0a35b6e9
+A-3	Flower A3 - Zone Valve #6	Batch Tank	ed45be46-6bf7-4902-83a0-ca9bd64ef0e2
+A-3	Flower A3 - Zone Valve #7	Batch Tank	5d2ec43a-b967-44a0-a16c-5b0bac202526
+A-3	Flower A3 - Zone Valve #8	Batch Tank	adaf45aa-77fe-4a9f-9752-b06c9c98fcf2
+A-3	Flower A3 - Zone Valve #9	Batch Tank	771bc07f-c866-4bc6-bcb9-59d03fd5f1ce
+A-3	Flower A3 - Zone Valve #10	Batch Tank	28e1c92f-8929-4b25-b724-509e70af734e
+A-3	Flower A3 - Zone Valve #11	Batch Tank	9afc55f5-3e8b-41eb-bd85-575fb4532123
+A-3	Flower A3 - Drain Valve	Batch Tank	3f4d6b48-8c2d-435c-919e-a84f03a8c999
+A-3	Flower A3 - Master Irrigation Valve	Batch Tank	fe058c78-95f9-493b-8e62-b2cca3226b25
+A-3	Flower A3 - Fresh Water Master Valve	Batch Tank	a39ce6e8-e08c-431a-b25d-2f5e17842eed
+A-3	A3 Tank B Master Irrigation	Batch Tank	b707f7d0-7f5e-4afc-8b7a-f6e82ccf5414
+A-3	A3 Tank C Master Irrigation	Batch Tank	985aec91-59f2-4715-8539-c661a12e4a28
+A-3	Valve #1	Valve	1c0959fe-5cba-445f-a4c8-04ebc17ab0a4
+A-3	Valve #2	Valve	a7e360bb-4ca2-49ad-94ec-81c67edfbd0d
+A-3	Valve #3	Valve	8b8d3eae-0b31-406c-89f3-c0570a70bc33
+A-3	Valve #4	Valve	74e1173c-3585-4f43-935a-da558dd9cab0
+B-1	Flower B1 - C02 	Valve	11d8b54c-e02e-41de-98e5-5c7d9b20dc75
+B-1	Flower B1 - Zone Valve #1	Batch Tank	b9e22149-91ba-4925-8905-e1b09793d930
+B-1	Flower B1 - Zone Valve #2	Valve	714dce08-4b88-4d7b-a049-60d6f159455b
+B-1	Flower B1 - Zone Valve #3	Valve	8b68fb51-9816-4ea9-9c8d-c56607caf9b2
+B-1	Flower B1 - Zone Valve #4	Valve	67a1ac11-ea91-449a-8195-7675ad53f3a6
+B-1	Flower B1 - Zone Valve #5	Valve	b78baedd-c78b-43b4-b150-ef8e14abe54b
+B-1	Flower B1 - Zone Valve #6	Batch Tank	7572bb87-5a2f-4249-8800-c05dd07a966b
+B-1	Flower B1 - Zone Valve #7	Batch Tank	48cb5ec1-798d-46f6-8092-a8c464cf77ed
+B-1	Flower B1 - Zone Valve #8	Batch Tank	5a8334dc-a9c9-4d58-ad4f-0045013f81b0
+B-1	Flower B1 - Zone Valve #9	Batch Tank	8bf3a353-9534-41c3-bebf-0682fed42111
+B-1	Flower B1 - Zone Valve #10	Batch Tank	230e87e3-39c3-4a4e-8a50-5108bfc0e686
+B-1	Flower B1 - Zone Valve #11	Batch Tank	76b0cc4f-f8de-4952-892a-078056ee7d25
+B-1	Flower B1 - Zone Valve #12	Batch Tank	a3909797-6def-46a5-ab2f-344241c78029
+B-1	Flower B1 - Zone Valve #13	Batch Tank	00780992-73b3-411a-a767-178f7faba64e
+B-1	Flower B1 - Drain Valve	Batch Tank	ed629c40-e93f-45c7-b85c-067b2d51e282
+B-1	Flower B1 -  Master Irrigation Valve	Batch Tank	50afc331-392a-4ece-ae6c-ac3f02720fe7
+B-1	Flower B1 - Fresh Water Master Valve	Batch Tank	56300fac-c041-4f31-8f53-26fb9f8afdad
+B-1	B1 Master Irrigation Tank A	Batch Tank	79deb040-1af0-43fc-8c04-57946de0871d
+B-1	B1 Master Irrigation Tank C	Batch Tank	86267d52-231e-44a6-8afc-8f4b4508dc86
+B-1	Valve #1	Valve	1c1e1217-7083-46a5-85e7-c201d08768af
+B-1	Valve #2	Valve	9468441b-4566-4d89-8162-62dfd53259c0
+B-1	Valve #3	Valve	9870973f-d5ee-4ee6-9d57-dfeed59f3cb2
+B-1	Valve #4	Valve	2e3e13b2-a9ba-41fb-aa2b-6a646dfff274
+B-1	Valve #1	Valve	002aea19-8b7f-4e0e-847a-f9a88c314921
+B-1	Valve #2	Valve	3529bcb8-90b6-4fa0-8ae7-f928a98c865c
+B-1	Valve #3	Valve	eed59ffe-edca-42fb-a0c8-caebc88c9ea6
+B-1	Valve #4	Valve	5ab59f8a-ca2a-4952-bb3d-63cdf48a67f1
+B-2	Flower B2 - C02 	Valve	0d8266c9-3987-46d1-b0ca-400c2e2e4434
+B-2	Flower B2 - Zone Valve #1	Batch Tank	1cba9220-d2fd-4918-abdc-e4ee24c40ac2
+B-2	Flower B2 - Zone Valve #2	Batch Tank	92d5f49a-e0f7-47e0-8755-6853929a06e1
+B-2	Flower B2 - Zone Valve #3	Batch Tank	4bac49d8-963d-413c-a394-7cdd2e7e6736
+B-2	Flower B2 - Zone Valve #4	Batch Tank	c2efa0a1-910f-491b-a259-4705495f4372
+B-2	Flower B2 - Zone Valve #5	Batch Tank	39f4ac86-ea45-4902-85b9-fb2c845399c8
+B-2	Flower B2 - Zone Valve #6	Batch Tank	6a1df8e5-ef3a-498a-8557-b220f96874e1
+B-2	Flower B2 - Zone Valve #7	Batch Tank	8fd3bc6c-dc8c-4ca8-9fab-b8dba8b2d71d
+B-2	Flower B2 - Zone Valve #8	Batch Tank	7ec9028a-ae9b-4566-b759-03b806fa74aa
+B-2	Flower B2 - Zone Valve #9	Batch Tank	f3513a25-576c-486c-be73-229e7d2991af
+B-2	Flower B2 - Zone Valve #10	Batch Tank	f1599684-91dc-4065-84d4-06e3527ad3c2
+B-2	Flower B2 - Zone Valve #11	Batch Tank	054e3c75-782d-46b6-8eb6-06020f0aa2a6
+B-2	Flower B2 - Zone Valve #13	Batch Tank	6be720fc-064f-41b5-9aeb-c2c0327a1fed
+B-2	Flower B2 - Zone Valve #12	Batch Tank	65badd15-a85d-4920-b0a7-1b25bff18066
+B-2	Flower B2 - Drain Valve	Batch Tank	ae3ab09f-62a1-4dae-9a10-c482c2e6745e
+B-2	Flower B2 - Master Irrigation Valve	Batch Tank	eb318e5f-1613-48b6-a3c7-7aaba7e9f08d
+B-2	Flower B2 - Fresh Water Master Valve	Batch Tank	45e3db53-6364-4d09-b75a-d587822a6472
+B-2	B2 Master Irrigation Tank A	Batch Tank	209af8c2-c40d-4fef-b45a-6b4a57cf3fd5
+B-2	B2 Master Irrigation Tank C	Batch Tank	7c697956-4c27-4603-8df0-311c643c6e67
+B-2	Valve #1	Valve	0fc9181f-185c-4df7-ab11-f2dd81134701
+B-2	Valve #2	Valve	4bb6dba0-0891-4043-91e5-ffcc96fc07bc
+B-2	Valve #3	Valve	fa6b42c1-2e85-4387-952d-dfe412ade52a
+B-2	Valve #4	Valve	41293ac0-6ade-46d2-bdf6-3c112ddcf265
+B-3	Flower B3 - C02 	Valve	bb79dfcc-e5cc-412b-a280-a3efc04b6428
+B-3	Flower B3 - Zone Valve #1	Batch Tank	4a9ecf06-ae08-4d17-a941-ad0b70a3095f
+B-3	Flower B3 - Zone Valve #2	Batch Tank	635b1183-db42-4c7a-b061-453be87c63e3
+B-3	Flower B3 - Zone Valve #3	Batch Tank	d34786e4-c26f-4312-bf9d-82489be6f74d
+B-3	Flower B3 - Zone Valve #4	Batch Tank	1e0c458c-b832-479e-b277-50981de0308d
+B-3	Flower B3 - Zone Valve #5	Batch Tank	e7447bb3-2935-497e-8f84-1844fa700b04
+B-3	Flower B3 - Zone Valve #6	Batch Tank	e2f52f82-f8ff-4304-ab05-903af0ae4a3b
+B-3	Flower B3 - Zone Valve #7	Batch Tank	fc0c705a-e9a1-44db-8488-6c2853883fc7
+B-3	Flower B3 - Zone Valve #8	Batch Tank	00df62b3-97bd-41c7-96e8-7509f7bb08d6
+B-3	Flower B3 - Zone Valve #9	Batch Tank	6a35c9ff-329c-4e52-8258-dc7422064fdc
+B-3	Flower B3 - Zone Valve #10	Batch Tank	f2149c53-cc30-476c-9c92-29c01739a196
+B-3	Flower B3 - Zone Valve #11	Batch Tank	0fb77529-2f36-444c-ba55-2bae45f4fd6f
+B-3	Flower B3 - Zone Valve #12	Batch Tank	22776c90-8549-4252-80c2-793df498e630
+B-3	Flower B3 - Zone Valve #13	Batch Tank	ac1bad10-f9d7-4423-aad5-45916c95ab5f
+B-3	Flower B3 - Drain Valve 	Batch Tank	109de64e-ae7a-4858-9b04-0331f2f7093d
+B-3	Flower B3 - Fresh Water Valve	Batch Tank	d7c010c4-90e8-49fd-aada-a52cf66fe40a
+B-3	Flower B3 - Master Irrigation Valve	Batch Tank	69f17764-eab7-4042-92fe-c5123161f063
+B-3	B3 Master Irrigation Tank A	Batch Tank	c47a73c1-110f-46be-8ba8-3403e3755257
+B-3	B3 Master Irrigation Tank C	Batch Tank	cc10b787-1b63-4064-a850-8b6d74c625ed
+B-3	Valve #1	Valve	c919b1ff-6801-4ecc-9541-7e2a024700e3
+B-3	Valve #2	Valve	a2e22694-aeb0-464d-a32a-8f7b2653dc20
+B-3	Valve #3	Valve	668f1ea6-364b-40fd-a429-2a07f260bb27
+B-3	Valve #4	Valve	6ba7d8c3-c991-4a33-9808-cdb9c57db901
+B-4	Flower B4 - C02 	Valve	697579d5-621b-47e9-be59-cf9aebb4e9eb
+B-4	Flower B4 - Zone Valve #1	Batch Tank	ed3c91e8-9e6d-4dae-8f03-b3f143c5f139
+B-4	Flower B4 - Zone Valve #2	Batch Tank	9171ab66-ae26-4bfd-a7bb-43c733723e7a
+B-4	Flower B4 - Zone Valve #3	Batch Tank	29a2276d-92aa-4d9b-8118-f6d284d7fff4
+B-4	Flower B4 - Zone Valve #4	Batch Tank	1403c098-9736-40d3-882e-cb5febd8c953
+B-4	Flower B4 - Zone Valve #5	Batch Tank	8bc33f5c-d927-46a1-a9dd-a50c804693a4
+B-4	Flower B4 - Zone Valve #6	Batch Tank	9d2038c3-dc08-4338-a53d-839ed5e3f32d
+B-4	Flower B4 - Zone Valve #7	Batch Tank	57df0c6d-2b25-4559-8b1e-1ec55eac9d17
+B-4	Flower B4 - Zone Valve #8	Batch Tank	9da1ec75-ec33-4521-85ae-0f92443d7f37
+B-4	Flower B4 - Zone Valve #9	Batch Tank	11ac8306-5b78-4632-9cb7-1310157db4a9
+B-4	Flower B4 - Zone Valve #10	Batch Tank	315b9b06-8b98-4c6c-bcae-e6ca3abc6c5f
+B-4	Flower B4 - Zone Valve #11	Batch Tank	89454f2f-99af-4c28-8cbb-9e9b2610f166
+B-4	Flower B4 - Zone Valve #12	Batch Tank	1d8f0c8e-565c-474a-a952-c4cd8aa796c1
+B-4	Flower B4 - Zone Valve #13	Batch Tank	aec555db-6730-49b4-8721-f7c783a9b5d3
+B-4	Flower B4 - Drain Valve	Batch Tank	09c60a55-0182-4f11-82b9-c2729c987ce3
+B-4	Flower B4 - Master Irrigation Valve	Batch Tank	3127e551-8042-4a1d-83a1-9ce2a71f6ea6
+B-4	Flower B4 - Fresh Water Master Valve	Batch Tank	6815ebea-8635-4097-9eab-8e39738d5469
+B-4	B4 Master Irrigation Tank A	Batch Tank	a53d787b-a5db-4963-99d5-3bdd5f2b557f
+B-4	B4 Master Irrigation Tank C	Batch Tank	404a02c2-6f96-407b-ae72-46c174011e0c
+B-4	Valve #1	Valve	14752d92-4593-4473-99df-5b8912d4e17b
+B-4	Valve #2	Valve	9f8b28f1-370c-4e8d-b9a7-6acd26d8886f
+B-4	Valve #3	Valve	9cd51b15-9722-4ca8-a855-bac2a2f53560
+B-4	Valve #4	Valve	7dc7ea5e-ba18-47f3-a401-bf9aa1b0b287
+B-5	Flower B5 - C02 	Valve	d4958978-dae6-4cb1-b1bd-1284b82c35e1
+B-5	Flower B5 - Zone Valve #1	Batch Tank	e77c338c-9cf6-4923-be63-1676ea56010b
+B-5	Flower B5 - Zone Valve #2	Batch Tank	7c828e39-283e-4389-a4d2-3bc6c68e2778
+B-5	Flower B5 - Zone Valve #3	Batch Tank	2eda3a95-8e37-481d-bdec-6a2d36fe135a
+B-5	Flower B5 - Zone Valve #4	Batch Tank	af960ef2-256c-4b88-bed1-b55bbe7e24d8
+B-5	Flower B5 - Zone Valve #5	Batch Tank	4ab772e0-f7bf-4290-bdf6-bde76f56e046
+B-5	Flower B5 - Zone Valve #6	Batch Tank	e71b5c1a-ac2f-4bd5-9731-69fb564b8041
+B-5	Flower B5 - Zone Valve #7	Batch Tank	7ffc8b04-32c5-4436-aae7-fce1a45c7657
+B-5	Flower B5 - Zone Valve #8	Batch Tank	f0f2dea5-9b25-4c58-9892-8c045a84305b
+B-5	Flower B5 - Zone Valve #9	Batch Tank	b132618d-c274-4ebe-9d34-1417ccf9bef8
+B-5	Flower B5 - Zone Valve #10	Batch Tank	f1f5ba79-0eae-4ab0-887f-1ebe94819b07
+B-5	Flower B5 - Zone Valve #11	Batch Tank	96ae8acf-0251-4f06-a13c-aa851a45266b
+B-5	Flower B5 - Zone Valve #12	Batch Tank	7d6438ad-b01f-405a-a381-e24244d73902
+B-5	Flower B5 - Zone Valve #13	Batch Tank	6b6a45b7-54f7-43de-b0b2-0e1ce9059c34
+B-5	Flower B5 - Drain Valve	Batch Tank	b4f19bcd-7f44-4d3d-982b-eb8ea8a0dcf3
+B-5	Flower B5 - Master Irrigation Valve	Batch Tank	ba69136c-322b-41f1-b76a-446a9583fa2b
+B-5	Flower B5 - Fresh Water Master Valve	Batch Tank	dda1190e-2df2-4c79-92cf-2dc1b06b9c7d
+B-5	B5 Master Irrigation Tank A	Batch Tank	68d474ea-1559-4a06-8fe1-752a9482aacd
+B-5	B5 Master Irrigation Tank C	Batch Tank	bb376831-a0ac-4609-aff4-cccefdb45b22
+B-6	Flower B6 - C02 	Valve	886e4b73-6566-4f40-b847-a164b14a3bb7
+B-6	Flower B6 - Zone Valve #1	Batch Tank	09e56d5c-8410-4a8b-b01b-f83a8c104c37
+B-6	Flower B6 - Zone Valve #2	Batch Tank	ff2bf696-6720-493d-9bfb-c01d9411bf24
+B-6	Flower B6 - Zone Valve #3	Batch Tank	106dff05-0789-46bc-b6e3-cefa9fd0f3cf
+B-6	Flower B6 - Zone Valve #4	Batch Tank	6ccd6ba1-b76a-4204-9c66-13defa330f99
+B-6	Flower B6 - Zone Valve #5	Batch Tank	dfa35c29-db46-46b4-a03a-b23aaf9f17dd
+B-6	Flower B6 - Zone Valve #6	Batch Tank	96543f6b-5d45-4996-978e-e04823ffe979
+B-6	Flower B6 - Zone Valve #7	Batch Tank	9b4b62a3-d1c8-4f46-93fe-6d407db86793
+B-6	Flower B6 - Zone Valve #8	Batch Tank	80a3a6bd-dadb-44b6-8007-2f530cfa217a
+B-6	Flower B6 - Zone Valve #9	Batch Tank	d92ee4cd-a6cf-4e08-82b2-b7578ca87a0d
+B-6	Flower B6 - Zone Valve #10	Batch Tank	078075f4-2123-4448-b263-61fac6d49ef2
+B-6	Flower B6 - Zone Valve #11	Batch Tank	357a1a48-1727-4a9c-9791-7b13581a51e7
+B-6	Flower B6 - Zone Valve #12	Batch Tank	44f7c402-7815-4fc8-bf1a-d5ebbb3f5f2d
+B-6	Flower B6 - Zone Valve #13	Batch Tank	89c6cd05-9454-44f8-9de0-d9f4a7b5ce7d
+B-6	Flower B6 - Drain Valve 	Batch Tank	d655087e-2190-4e87-b1f2-76353e0ac229
+B-6	Flower B6 - Master Irrigation Valve	Batch Tank	0dee3093-482a-49b3-bfa0-1bba310d74fd
+B-6	Flower B6 - Fresh Water Master Valve	Batch Tank	db1c9202-034b-4581-ad84-cde6d2b0d7df
+B-6	B6 Master Irrigation Tank A	Batch Tank	0e2b97b8-4ecd-4880-9322-22e68e11de43
+B-6	B6 Master Irrigation Tank C	Batch Tank	d8a0cd81-bd4f-4b50-a1d9-98adeee03104
+B-6	Valve #1	Valve	09072eba-f7e9-4ecd-9b98-d9e8ba6156f3
+B-6	Valve #2	Valve	44d6aa8f-d51b-42ce-a839-abb10d8588d3
+B-6	Valve #3	Valve	5135a87d-814d-4398-9d37-f4a82c8eda3c
+B-6	Valve #4	Valve	099d23c5-9a42-49d0-ae81-3fd2a746e059
+A-4	Flower A4 - C02	Valve	2afc17eb-8046-43bf-9ef8-04d4214179b1
+A-4	Flower A4 - Zone Valve #1	Batch Tank	a245d5e4-16ff-4e4c-b685-23859a742904
+A-4	Flower A4 - Zone Valve #2	Batch Tank	4be6bb73-bfab-4e46-9384-1a08d5572ec5
+A-4	Flower A4 - Zone Valve #3	Batch Tank	1653ce28-676a-4c53-87a5-1b7ac3eddf0c
+A-4	Flower A4 - Zone Valve #4	Batch Tank	b82b8d01-0e8a-45b3-8383-3ec5e7b65c40
+A-4	Flower A4 - Zone Valve #5	Batch Tank	ad630a74-21ae-4e70-be60-9ca2218e41a3
+A-4	Flower A4 - Zone Valve #6	Batch Tank	afab95f5-9a22-4f18-a605-ab23b5b79d8d
+A-4	Flower A4 - Zone Valve #7	Batch Tank	b15ba009-5ccc-4704-abff-cf99216307f7
+A-4	Flower A4 - Zone Valve #8	Batch Tank	05b4d6f9-dbcb-406f-84e2-8e3bbf782109
+A-4	Flower A4 - Zone Valve #9	Batch Tank	c45e5f6c-fda8-4814-9ec8-2f39ae47f2a6
+A-4	Flower A4 - Zone Valve #10	Batch Tank	2add12c7-71b3-4a8b-b069-6466fc09ec9a
+A-4	Flower A4 - Zone Valve #11	Batch Tank	265bc8d3-ace3-4985-a195-e7ebe96a8bf1
+A-4	Flower A4 - Drain Valve 	Batch Tank	c9af3da4-2157-429e-b389-bfc2ad764572
+A-4	Flower A4 - Master Irrigation Valve	Batch Tank	b96e856c-0ffc-429a-b2f6-8bff7669a7fb
+A-4	Flower A4 - Fresh Water Master Valve	Batch Tank	6579d827-d618-415a-a44a-36a14f93d0e6
+A-4	A4 Tank B Master Irrigation	Batch Tank	4f67b09f-0d98-4b51-8d85-ef519685a8bc
+A-4	A4 Tank C Master Irrigation	Batch Tank	94cf1e00-be55-42b5-9ea4-775fac9f4907
+A-4	Valve #1	Valve	05ad68b2-4969-4904-8038-c6f28d8081b5
+A-4	Valve #2	Valve	402cd5a1-7439-4aa0-9b35-6cf599f95260
+A-4	Valve #3	Valve	10e57468-a970-46be-82fe-85ed928d594b
+A-4	Valve #4	Valve	a977bf8f-8e4f-45fc-b76f-3c701a6b4bb4
+A-4	Valve #1	Valve	eda67f69-46f4-4a9a-9ac8-2e733143d321
+A-4	Valve #2	Valve	8d7347d3-3cad-4275-81ed-bdad0b45b879
+A-4	Valve #3	Valve	4cec9fde-b2bb-418b-a9fd-8f21cbb8ea5a
+A-4	Valve #4	Valve	342cea30-58c9-4c1d-9ac8-0356ed1cf0fd
+A-5	Flower A5 - C02	Valve	d652db24-e4bb-4aff-8ab0-f95b9b4dbb8f
+A-5	Flower A5 - Zone Valve #1	Batch Tank	59955506-b8ed-4248-90bb-6e46f86a3f20
+A-5	Flower A5 - Zone Valve #2	Batch Tank	c2d63572-8556-41da-b711-b47150d3152f
+A-5	Flower A5 - Zone Valve #3	Batch Tank	1f27f6c1-6956-4fc9-a9d8-b9e8e831e962
+A-5	Flower A5 - Zone Valve #4	Batch Tank	7561ad77-85e9-449d-85e9-887029ddb432
+A-5	Flower A5 - Zone Valve #5	Batch Tank	b39da934-3f5b-4ebb-8337-f9ad0c510270
+A-5	Flower A5 - Zone Valve #6	Batch Tank	cf36ea9d-1ab3-41b0-8d5c-61359c0406f9
+A-5	Flower A5 - Zone Valve #7	Batch Tank	d2ecc90b-fa7a-44a6-95b5-513919acc92e
+A-5	Flower A5 - Zone Valve #8	Batch Tank	18645082-39af-404c-8a42-48204e42d39a
+A-5	Flower A5 - Zone Valve #9	Batch Tank	4c0c7148-5528-495c-a3a1-cb7ae5293299
+A-5	Flower A5 - Zone Valve #10	Batch Tank	aa498e98-6df8-449d-af30-deaa13151e7d
+A-5	Flower A5 - Zone Valve #11	Batch Tank	19a3deb8-3995-4f1c-aeef-2ec6c9020a62
+A-5	Flower A5 - Drain Valve	Batch Tank	f77c49cc-4786-41a8-bc22-81ad1e681409
+A-5	Flower A5 - Master Irrigation Valve	Batch Tank	7575d290-0f51-4fb3-9074-b80a73ca9ff2
+A-5	Flower A5 - Fresh Water Master Valve	Batch Tank	d2a60064-f568-4858-b5ab-87f75646714e
+A-5	A5 Tank B Master Irrigation	Batch Tank	0c1c49c9-9f14-467c-94f0-06a400459244
+A-5	A5 Tank C Master Irrigation	Batch Tank	ed38b4e2-7b25-411c-a825-b919c6cae47c
+A-5	Valve #1	Valve	a044b8dc-e77c-4c63-8b5c-991d70f49856
+A-5	Valve #2	Valve	bf6b9ca1-f5f4-4ed7-9485-e307785868e6
+A-5	Valve #3	Valve	939e1949-c663-48dc-992c-35fb31c60abc
+A-5	Valve #4	Valve	25d9661a-0487-465f-9fa2-bf2da22c711f
+A-6	Flower A6 - C02	Valve	b9f127f6-34c8-408a-82f6-b2a6490e5f2e
+A-6	Flower A6 - Zone Valve #1	Batch Tank	e9fde7b3-9a3e-444e-bab4-504a7a841815
+A-6	Flower A6 - Zone Valve #2	Batch Tank	9367d7dd-654e-427e-a6bb-870d901f5bcd
+A-6	Flower A6 - Zone Valve #3	Batch Tank	94c610b2-fab8-406e-8a22-fa3d98fcef91
+A-6	Flower A6 - Zone Valve #4	Batch Tank	8f3b685c-cd36-48ee-b0ea-d5093b4265e6
+A-6	Flower A6 - Zone Valve #5	Batch Tank	25b5c871-4d99-41a4-bed4-886341cf7f80
+A-6	Flower A6 - Zone Valve #6	Batch Tank	f4294925-97e9-492c-a1c0-ff521d945c3b
+A-6	Flower A6 - Zone Valve #7	Batch Tank	305e89dc-7a44-4b51-a24b-932111620403
+A-6	Flower A6 - Zone Valve #8	Batch Tank	ed21fd05-f89d-4062-bdd4-0b0115e40292
+A-6	Flower A6 - Zone Valve #9	Batch Tank	3d4e0ac7-337b-4029-8277-081340792ccf
+A-6	Flower A6 - Zone Valve #10	Batch Tank	f6b04e5e-7be1-4500-b877-4192bb05f109
+A-6	Flower A6 - Zone Valve #11	Batch Tank	9cd2e16e-13dc-44a7-8e28-a10c3cec9b4c
+A-6	Flower A6 - Drain Valve	Batch Tank	d26ebd82-719b-46b8-85fe-95d972eb29db
+A-6	Flower A6 - Master Irrigation Valve	Batch Tank	d84be16b-7624-4800-8430-6936f1bd8f55
+A-6	Flower A6 - Fresh Water Master Valve	Batch Tank	009d326e-8630-46ff-880d-8eab0bf1a81e
+A-6	A6 Tank B Master Irrigation	Batch Tank	a928fb51-48a5-48ad-bdb6-df1b0755fd2d
+A-6	A6 Tank C Master Irrigation	Batch Tank	6bd40185-2e46-4fef-91e8-8fa64b6951ef
+A-6	Valve #1	Valve	08eca0e5-d24e-459b-88ca-ca3ecd3c639f
+A-6	Valve #2	Valve	ee6c9283-c8d5-4f0f-8442-5ea8dd26e73c
+A-6	Valve #3	Valve	8cc8a14e-f9bf-438f-b8dd-6377a9892ba8
+A-6	Valve #4	Valve	45b9fb81-4fb5-4e88-9421-d300763ae53e
+C-1	Flower C1 - C02 	Valve	246776e2-d934-4ff7-9efc-b965e923bba8
+C-1	Flower C1 - Zone Valve #1	Batch Tank	22f2f7ad-bcc4-4da4-8712-8bf347240518
+C-1	Flower C1 - Zone Valve #2	Batch Tank	a75f86d1-3032-46ea-b8d9-bd51a638bc70
+C-1	Flower C1 - Zone Valve #3	Batch Tank	8ac18399-6d53-4837-a59d-bda4827e6580
+C-1	Flower C1 - Zone Valve #4	Batch Tank	979d76f8-2320-41f0-8d10-7c001adc5071
+C-1	Flower C1 - Zone Valve #5	Batch Tank	6fc5f8f7-a9f9-45d9-b6cb-fa3948e8f8fa
+C-1	Flower C1 - Zone Valve #6	Batch Tank	6ddffe90-455a-4eb6-b431-0140b7eb74d2
+C-1	Flower C1 - Zone Valve #7	Batch Tank	9aa0ccd3-d964-4035-a1d8-8901ba88634a
+C-1	Flower C1 - Zone Valve #8	Batch Tank	586bed07-b9a1-411b-a04c-642e5689f8b2
+C-1	Flower C1 - Zone Valve #9	Batch Tank	26861a30-2cc4-4d5d-81ee-900b31552fb8
+C-1	Flower C1 - Zone Valve #10	Batch Tank	aa4a26df-e2a3-4df6-b482-ad93930b2375
+C-1	Flower C1 - Zone Valve #11	Batch Tank	70c5edd6-2789-4481-9bfe-830f6dd8b7ba
+C-1	Flower C1 - Zone Valve #12	Batch Tank	3d90086f-2822-4e26-a787-63acb1bcde20
+C-1	Flower C1 - Zone Valve #13	Batch Tank	72ce8b6f-69c3-4161-98e0-49a203227fe5
+C-1	Flower C1 - Drain Valve	Batch Tank	c41a5e31-6d69-4cf3-b1bb-bda80faacb10
+C-1	Flower C1 - Master Irrigation Valve	Batch Tank	9e1971ef-d81e-40f9-8b68-c89a0a2f9de4
+C-1	Flower C1 - Fresh Water Master Valve	Batch Tank	0af0bba1-0b16-4030-8c21-295086018bee
+C-1	C1 Master Irrigation Tank A	Batch Tank	67aa9a98-c5d3-4281-a3bd-fc9781126333
+C-1	C1 Master Irrigation Tank B	Batch Tank	006b4e49-6da4-493e-888e-2949aad0e3c0
+C-1	Valve #1	Valve	0a371f5f-daac-4a90-9b77-702c294d7325
+C-1	Valve #2	Valve	82c723c5-c26f-4b73-8b47-e10de4c71f27
+C-1	Valve #3	Valve	5802d909-9287-4a56-bab5-f1e7b5f46dc9
+C-1	Valve #4	Valve	ad162c9d-a200-4b26-948e-d1622da30b42
+C-2	Flower C2 - C02 	Valve	858678dd-5d63-4fd9-be06-4193b00d455f
+C-2	Flower C2 - Zone Valve #1	Batch Tank	d2ba6cbd-88ae-4907-9f79-deb689e23d31
+C-2	Flower C2 - Zone Valve #2	Batch Tank	9ff097cf-194b-488f-83d3-14c34bda9bae
+C-2	Flower C2 - Zone Valve #3	Batch Tank	9ee20129-3bd3-46fa-a538-5cf3f1910a93
+C-2	Flower C2 - Zone Valve #4	Batch Tank	90ffb29b-a669-415d-a6c1-e38b8ffad94a
+C-2	Flower C2 - Zone Valve #5	Batch Tank	19a050f4-e262-440a-90b3-bfde69ebfbd9
+C-2	Flower C2 - Zone Valve #6	Batch Tank	ab5cf70b-b578-4846-8183-59ebf01c0738
+C-2	Flower C2 - Zone Valve #7	Batch Tank	cb58d96f-8dbf-4a7a-a1ef-a88828d2c160
+C-2	Flower C2 - Zone Valve #8	Batch Tank	1111659a-6f1e-4fa4-b7f9-8187b2943033
+C-2	Flower C2 - Zone Valve #9	Batch Tank	a2535c16-bd54-4dc0-b153-5ad4a548c2ce
+C-2	Flower C2 - Zone Valve #10	Batch Tank	4f2a17c1-5e6f-4c57-90c7-4b2434a894fe
+C-2	Flower C2 - Zone Valve #11	Batch Tank	23835934-f2c1-4358-89ba-b533d520b77f
+C-2	Flower C2 - Zone Valve #12	Batch Tank	0161a1e9-1de3-405f-bf82-0220ff753094
+C-2	Flower C2 - Zone Valve #13	Batch Tank	31cac303-1438-4f47-9bc6-83db27a99f5a
+C-2	Flower C2 - Drain Valve	Batch Tank	1b04ead4-3275-4792-8b0b-44530799d4c6
+C-2	Flower C2 - Master Irrigation Valve	Batch Tank	8960a431-0cf1-4f00-b869-604b0cb9ecb8
+C-2	Flower C2 - Fresh Water Master Valve	Batch Tank	d2a31da5-e7b7-444d-bdb8-fc63b3aa80d0
+C-2	C2 Master Irrigation Tank A	Batch Tank	0494548e-aa10-46fa-81e7-f9fdc52c77e1
+C-2	C2 Master Irrigation Tank B	Batch Tank	12b4f2b2-fba2-4114-a321-da5b4ce1f16d
+C-2	Valve #1	Valve	aac2d85f-e82e-4697-8b9e-6e2d0ed2f631
+C-2	Valve #2	Valve	73f29f0a-b0d1-4098-9ffb-b3b36a8037fd
+C-2	Valve #3	Valve	cea7e25c-41cc-4c0a-b972-972fddcfcfad
+C-2	Valve #4	Valve	d9010bc5-08a2-48f0-a4fe-acbb5bd4287c
+C-3	Flower C3 - C02 	Valve	6bf8cbf9-2efb-4671-b2dd-91a6a0f5447a
+C-3	Flower C3 - Zone Valve #1	Batch Tank	f2c27b8f-b4df-41e7-abcf-66c3e1ffb078
+C-3	Flower C3 - Zone Valve #2	Batch Tank	52e3f6a6-a306-471d-a768-78f3649cb22c
+C-3	Flower C3 - Zone Valve #3	Batch Tank	fb4ac5b0-801d-48d3-8ebd-752f3002ce2b
+C-3	Flower C3 - Zone Valve #4	Batch Tank	3732b7b6-bd40-4cea-8e96-fc5b0bd493be
+C-3	Flower C3 - Zone Valve #5	Batch Tank	c3b2d997-a6c0-4b28-bbd1-9b720c0788b9
+C-3	Flower C3 - Zone Valve #6	Batch Tank	ed33dcdf-a4a0-4a68-acbd-356898c59310
+C-3	Flower C3 - Zone Valve #7	Batch Tank	585b3c02-f475-4092-92c0-6d6379a9a9ea
+C-3	Flower C3 - Zone Valve #8	Batch Tank	30195644-409e-4d58-ad4b-a24cdb3d35ca
+C-3	Flower C3 - Zone Valve #9	Batch Tank	8101c108-deba-423d-9f72-6b7e10669b98
+C-3	Flower C3 - Zone Valve #10	Batch Tank	a7043ac4-286d-4f8b-8be9-a7422b2a18a6
+C-3	Flower C3 - Zone Valve #11	Batch Tank	506fb731-4d57-4c9d-8d5a-2def7b3892bd
+C-3	Flower C3 - Zone Valve #12	Batch Tank	9a9fcb51-ee1e-4c67-9d60-81b56b69dec3
+C-3	Flower C3 - Zone Valve #13	Batch Tank	1760946a-7b9c-4452-bd3d-7e80ef7df992
+C-3	Flower C3 - Drain Valve 	Batch Tank	6a4b47bb-f290-48b8-8198-b4752a9101df
+C-3	Flower C3 - Master Irrigation Valve	Batch Tank	41340af2-107f-4340-a964-612bee5b9bee
+C-3	Flower C3 - Fresh Water Master Valve	Batch Tank	bca6d37f-1591-489b-b583-89164a58ec6f
+C-3	C3 Master Irrigation Tank A	Batch Tank	304dc7d3-cc34-436e-a916-77fdfbf111ac
+C-3	C3 Master Irrigation Tank B	Batch Tank	fc21f59b-3dc0-4807-9ba8-0fca3518f952
+C-3	Valve #1	Valve	7793173a-8c9b-4393-97e3-1106773d809e
+C-3	Valve #2	Valve	8b40b871-3901-4e2e-bc53-33c142264c6a
+C-3	Valve #3	Valve	55c5b045-7018-4bbd-9367-a73a00e07bd6
+C-3	Valve #4	Valve	5199ab0e-bbd7-478d-b552-89ce6a79847b
+C-4	Flower C4 - C02 	Valve	4649281b-c4fb-4b5c-9c89-329052594885
+C-4	Flower C4 - Zone Valve #1	Batch Tank	5c8eec41-ce22-4286-a8e0-230e8c2a7f75
+C-4	Flower C4 - Zone Valve #2	Batch Tank	bc2c6da6-d80d-4633-bd44-7fd6bafa071e
+C-4	Flower C4 - Zone Valve #3	Batch Tank	d7df4627-d1a8-4555-b277-dd4f3d3682e8
+C-4	Flower C4 - Zone Valve #4	Batch Tank	7bd7ffd4-5933-473e-bcbd-3a3fff229c22
+C-4	Flower C4 - Zone Valve #5	Batch Tank	f277f079-43e7-4ab8-bc3d-4690bdfa70e7
+C-4	Flower C4 - Zone Valve #6	Batch Tank	67f25e81-f89c-4aeb-ba3c-04a29f5e7fef
+C-4	Flower C4 - Zone Valve #7	Batch Tank	81ec4b2a-f7b3-4853-82a2-04f40195a555
+C-4	Flower C4 - Zone Valve #8	Batch Tank	4bfc032e-ab8c-499b-b937-19791092b89c
+C-4	Flower C4 - Zone Valve #9	Batch Tank	e045cead-0bfd-4d64-b10e-bb0557bd452c
+C-4	Flower C4 - Zone Valve #10	Batch Tank	79c2a7eb-c765-4511-8d9e-3fac08629f70
+C-4	Flower C4 - Zone Valve #11	Batch Tank	77a50344-3595-49da-8e3b-a18d001db542
+C-4	Flower C4 - Zone Valve #12	Batch Tank	8999bb91-116e-4fc2-8a6f-ca0a9e77833a
+C-4	Flower C4 - Zone Valve #13	Batch Tank	8549515c-6f4b-451f-93c9-94835c92dc66
+C-4	Flower C4 - Drain Valve	Batch Tank	f366e022-a251-4ac9-936f-add1b4a9832a
+C-4	Flower C4 - Master Irrigation Valve	Batch Tank	59311ae1-71af-4f39-ac54-c5462df4777f
+C-4	Flower C4 - Fresh Water Master Valve	Batch Tank	772ed9a7-3c0f-4789-ab9a-d45d30547a00
+C-4	C4 Master Irrigation Tank A	Batch Tank	dcca3b9e-2663-45d6-8312-3958b8b36df0
+C-4	C4 Master Irrigation Tank B	Batch Tank	1d6477fc-d93b-43ba-b904-f22fc975b916
+C-4	Valve #1	Valve	cc44293b-fb54-4742-8f9f-0dfa9d4b074f
+C-4	Valve #2	Valve	355c2cd1-2baf-4d12-b61c-f86d184e0865
+C-4	Valve #3	Valve	3f1f0d09-b710-4988-82f9-d838c26103e2
+C-4	Valve #4	Valve	1838754e-a49a-42d9-8c3e-6bf9f37e178a
+C-5	Flower C5 - C02 	Valve	a0ab82b8-777d-4d6d-9a00-5f0e3793ca4f
+C-5	Flower C5 - Zone Valve #1	Batch Tank	e9274163-9451-4618-8599-fae4b9b15998
+C-5	Flower C5 - Zone Valve #2	Batch Tank	f3bbfc83-57a4-4e04-80d4-a252d496125d
+C-5	Flower C5 - Zone Valve #3	Batch Tank	1383db1b-d0f6-46b7-a7cb-a060db1cdcfc
+C-5	Flower C5 - Zone Valve #4	Batch Tank	2b33eb72-06ed-4ea3-8e5f-c2eb28078396
+C-5	Flower C5 - Zone Valve #5	Batch Tank	dc7bab8b-b27f-4bf9-a5b9-1edf93c9d954
+C-5	Flower C5 - Zone Valve #6	Batch Tank	55037b61-f563-42d9-8a6c-e3eb8b85fefc
+C-5	Flower C5 - Zone Valve #7	Batch Tank	321669a6-d123-4013-9c76-568d8293fdd9
+C-5	Flower C5 - Zone Valve #8	Batch Tank	f7946994-8eb9-4506-a038-5e8b65a49e32
+C-5	Flower C5 - Zone Valve #9	Batch Tank	a7942d7f-b690-4dc8-8653-10963ac26629
+C-5	Flower C5 - Zone Valve #10	Batch Tank	f72e8938-a9ec-4bc6-9444-c8884affd29e
+C-5	Flower C5 - Zone Valve #11	Batch Tank	16e1a8ef-1a1a-4798-8cff-cbcdd4a3f845
+C-5	Flower C5 - Zone Valve #12	Batch Tank	fffbaf26-edce-4fae-bc44-e2c79e4244bc
+C-5	Flower C5 - Zone Valve #13	Batch Tank	f5ab3400-a3aa-42fb-90e7-2ea1292394f0
+C-5	Flower C5 - Drain Valve	Batch Tank	b66b69ee-e467-4c03-8381-e2f8096bebde
+C-5	Flower C5 - Master Irrigation Valve	Batch Tank	55efa916-888b-41bd-8863-128c10289161
+C-5	Flower C5 - Fresh Water Master Valve	Batch Tank	fc92aa38-4252-451f-909a-654fb0e6fd30
+C-5	C5 Master Irrigation Tank A	Batch Tank	20881063-0d5e-4375-b9c9-e7cc44c70618
+C-5	C5 Master Irrigation Tank B	Batch Tank	a062c9b6-fce7-41a2-8c44-55d85aef270f
+C-5	Valve #1	Valve	db8b22b1-4071-4c02-992f-08ff70dc3073
+C-5	Valve #2	Valve	9863d6a4-b3b1-404b-bfb4-572cce1af5b1
+C-5	Valve #3	Valve	aca23f6b-07e3-4dcc-b970-587f564d3aaf
+C-5	Valve #4	Valve	d99d6307-57fd-478b-8004-3cc3c08096c2
+C-6	Flower C6 - C02 	Batch Tank	80430540-59eb-48d9-b2b5-ab50ff6caa4d
+C-6	Flower C6 - Zone Valve #1	Batch Tank	1ab59552-4708-4010-b072-aa1ee1de5196
+C-6	Flower C6 - Zone Valve #2	Batch Tank	79c0aaab-08d5-4434-8d69-08f3a66c098e
+C-6	Flower C6 - Zone Valve #3	Batch Tank	e920ae0f-ce7e-46ad-8271-7ee7b1441243
+C-6	Flower C6 - Zone Valve #4	Batch Tank	e863ae7c-a695-4a4c-b87c-0daf77a15c57
+C-6	Flower C6 - Zone Valve #5	Batch Tank	33a16d8d-5761-460e-ba46-f516d00f7dcd
+C-6	Flower C6 - Zone Valve #6	Batch Tank	7ee0a318-a01b-46d1-857d-6e3c9cbc7dd3
+C-6	Flower C6 - Zone Valve #7	Batch Tank	318f75ea-4a81-4cf4-ba11-8351bbbacd27
+C-6	Flower C6 - Zone Valve #8	Batch Tank	1ad4b630-817e-409b-b39b-44ea6eda05e5
+C-6	Flower C6 - Zone Valve #9	Batch Tank	201f15f4-2434-4325-bd80-979bb72ba2c6
+C-6	Flower C6 - Zone Valve #10	Batch Tank	341e00df-8bb5-4c94-aee7-59eb24527e53
+C-6	Flower C6 - Zone Valve #11	Batch Tank	ba432d6f-4719-4328-bd70-f9a6ae1d47ed
+C-6	Flower C6 - Zone Valve #12	Batch Tank	d05cc920-3bb0-47fd-81f2-f4629e85550b
+C-6	Flower C6 - Zone Valve #13	Batch Tank	c7a2a8f1-8164-4239-8a99-7d49455f5b6e
+C-6	Flower C6 - Drain Valve 	Batch Tank	1eeaf769-6669-4255-b610-813367b88547
+C-6	Flower C6 - Master Irrigation Valve	Batch Tank	f848cb81-9d8e-4318-953d-60d353960ef5
+C-6	Flower C6 - Fresh Water Master Valve	Batch Tank	2e1b2d5a-5e77-481d-b7bf-5a3e35d058c3
+C-6	C6 Master Irrigation Tank A	Batch Tank	28e0149b-13b7-4ca9-91c6-12358c8df1e7
+C-6	C6 Master Irrigation Tank B	Batch Tank	f9535a3b-2e7b-4fd4-a5b7-37d0289b001c
+C-6	Valve #1	Valve	1268b65e-1b73-4ed2-91bb-a8c80473f21f
+C-6	Valve #2	Valve	495f242d-33e9-4b21-9a68-bc84e800c298
+C-6	Valve #3	Valve	062c6229-43bf-4731-9d64-80067682ad9b
+C-6	Valve #4	Valve	c801671d-fdf7-4bd8-99fc-e0ae7752ef0d
+A-7	A7 CO2	Valve	0549317f-97c5-4257-b2e8-41a2e7cc84da
+A-7	A7 - Zone Valve #1	Batch Tank	d8ac971a-09fc-4616-8a4d-455ea74a43b9
+A-7	A7 - Zone Valve #2	Batch Tank	da4efc35-4abc-493f-88ae-d978651c4124
+A-7	A7 - Zone Valve #3	Batch Tank	3aedd1d3-e83d-4a3b-8265-96b23d981e0f
+A-7	A7 - Zone Valve #4	Batch Tank	b4d58129-cfe3-431e-a1dc-76c3f5a16779
+A-7	A7- Zone Valve #5	Batch Tank	12f6a23e-c10e-4f7d-85e2-1e4f26f2cd38
+A-7	A7- Zone Valve #6	Batch Tank	3bf02254-e845-43e3-9da1-c218b679ff86
+A-7	A7 - Zone Valve #7	Batch Tank	21de8ad0-9bd7-430e-9f7e-0eaeeae798d2
+A-7	A7- Zone Valve #8	Batch Tank	9c65bbec-6718-4b62-ac46-d02c6fc027ab
+A-7	A7 - Zone Valve #9	Batch Tank	a7436d75-839a-465a-b101-511559998ea6
+A-7	A7 - Zone Valve #10	Batch Tank	1fe1341b-5e4e-42c2-b70b-19d6f481e100
+A-7	A7 - Zone Valve #11	Batch Tank	bee102b8-ee0b-408b-936e-1cc3777d9d5a
+A-7	A7 - Drain Valve	Batch Tank	4bf582d2-143e-4ce3-940a-90057f960971
+A-7	A7- Do not use (Veg tank)	Batch Tank	b4a3cee4-5d79-43dc-bfb9-a2b91d7cf5d7
+A-7	A7 - Fresh Water Master Valve	Batch Tank	d073d3fb-09d5-4f83-a7f6-a0b2c3ce13da
+A-7	A7 Master Irrigation valve	Batch Tank	15af3420-e29b-4dba-8cab-c49939139c0b
+A-7	A7 Tank C Master Irrigation	Batch Tank	5359d4ed-9610-4f28-99b9-f3056efb875e
+Veg B	Veg B - C02 	Valve	88a018f2-a6fa-42e4-b26d-a721ff01c63d
+Veg B	Veg B - Zone Valve #1	Batch Tank	58e15507-53aa-4975-864d-65e586c9997b
+Veg B	Veg B - Zone Valve #2	Batch Tank	8c1a52ea-cd01-46eb-a67a-b75d3b2db2d9
+Veg B	Veg B - Zone Valve #3	Batch Tank	d988f36c-640f-4ed7-8e9c-3e07bc56291a
+Veg B	Veg B - Zone Valve #4	Batch Tank	597162ce-739c-43ef-b1d1-0bc3bb147296
+Veg B	Veg B - Zone Valve #5	Batch Tank	f463dcc2-40a0-4576-bd80-7e9fa0457d06
+Veg B	Veg B - Zone Valve #6	Batch Tank	67043e3d-71ff-40e6-b860-37e0bd7a5316
+Veg B	Veg B - Zone Valve #7	Batch Tank	701a4d6a-b153-4c2d-9b82-919773b64870
+Veg B	Veg B - Zone Valve #8	Batch Tank	cc49bbb2-c505-4be4-b929-7aaab51a1df2
+Veg B	Veg B - Zone Valve #9	Batch Tank	84760540-082e-45c9-b834-ee7ca5897b25
+Veg B	Veg B - Zone Valve #10	Batch Tank	2153cbb6-22de-4db4-8fc1-3bf815e36d99
+Veg B	Veg B - Zone Valve #11	Batch Tank	231848ef-d206-41e8-9cec-7916c60831d2
+Veg B	Veg B - Drain Valve	Batch Tank	55bd2cdd-9a35-4212-9207-ef5bbfda8845
+Veg B	Veg B - Fresh Water Valve	Batch Tank	103c08ab-a828-4b6d-b896-3339cb872276
+Veg B	Veg B - Master Irrigation Valve	Batch Tank	7e8a2010-bed4-4350-a7e6-1dbbfdb4a0a1
+Veg B	Veg B - Zone Valve #12	Valve	d94c7785-13cb-4d3b-aad0-0969dca2cf38
+Veg B	Veg B - Zone Valve #13	Valve	9982dd4c-6798-4a9f-abd5-e60114dc15e3
+Veg C	Veg C - C02	Valve	3cf505c5-9ce0-4f42-8a41-0a4fbbbc954a
+Veg C	Veg C - Zone Valve #1	Batch Tank	79894ce0-ebf6-4d8f-9552-81cfeb72fc27
+Veg C	Veg C - Zone Valve #2	Batch Tank	2c2d1284-a4bc-4b85-9013-c8929fb07ae8
+Veg C	Veg C - Zone Valve #3	Batch Tank	ddc16b11-64a4-4ffe-856b-08f602a2be29
+Veg C	Veg C - Zone Valve #4	Batch Tank	7d5442cf-d9cc-4652-912e-893743cf5404
+Veg C	Veg C - Zone Valve #5	Batch Tank	a5521be5-66d0-4628-9741-563bd1ee4d35
+Veg C	Veg C - Zone Valve #6	Batch Tank	e7b8c085-e38d-4f3c-98f8-a5fafa9cfe56
+Veg C	Veg C - Zone Valve #7	Batch Tank	00070f4f-9acd-41e3-aeca-4e8e868c033f
+Veg C	Veg C - Zone Valve #8	Batch Tank	ef3f776c-a829-4417-954e-f6fad71db3c3
+Veg C	Veg C - Zone Valve #9	Batch Tank	f5ac5db7-a1cb-4bbb-8af9-ed0b115b7c14
+Veg C	Veg C - Zone Valve #10	Batch Tank	84f0c0e3-237b-4757-801e-4df5bc57482a
+Veg C	Veg C - Zone Valve #11	Batch Tank	92480feb-3402-47b1-b725-9f9f09de3a07
+Veg C	Veg C - Drain Valve	Batch Tank	adaa2427-3cac-48b7-a561-986e2431f8ae
+Veg C	Veg C - Master Irrigation Valve	Batch Tank	70ac28d7-312d-48f1-99b0-80dd035b5f0c
+Veg C	Veg C - Zone Valve #12	Valve	bc5cc920-ee61-466e-9ea3-5d677fb51a81
+Veg C	Veg C - Zone Valve #13	Valve	5879d461-cfe9-4a00-98b9-2b88d0c85927
+
+== Fertigation and solution sensors ==
+Tank EC, pH, ORP, levels, flow — the manual truncheon round, if these are live
+CFS	Temperature	Solution Temp	f0670005-50c7-4687-8210-edbf2459f246
+CFS	Temperature	Solution Temp	3438cacc-6ec4-46d1-a615-a1e776670805
+CFS	pH	Solution pH	aea5e5c2-7d8a-4ce1-b199-748e26d09c4e
+CFS	pH	Solution pH	830b1f62-7ce7-4a02-86cb-0c6de8941710
+CFS	pH #1	Solution pH	7441df8e-cbc2-4c51-98aa-6341c1f544ad
+CFS	pH #2	Solution pH	eea56e2d-899e-4cbc-82c4-06039c02849c
+CFS	EC	Solution TDS	a497b6a8-29be-43b3-835b-aff4b03fb45d
+CFS	TDS	Solution TDS	db853181-fc4c-4345-9fc3-8024f331121e
+CFS	TDS	Solution TDS	df3fc1af-0af8-4cf5-999a-e4260f001071
+CFS	Flow Rate	Flow Rate	3c87f02b-a867-4f81-9b8c-611b6ccbe7d6
+CFS	Flow Rate	Flow Rate	884b7fa2-249c-4af6-8ee3-51317b97daee
+CFS	Flow Rate	Flow Rate	2d23c360-a8ba-4f89-8a18-e7725102c1eb
+
+== Done ==
+Copy the results and paste them back into the chat.

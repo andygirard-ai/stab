@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v61';
+var VER='v62';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -120,6 +120,50 @@ function hoursToNextShot(room, nowDate, table){
   var now=nowDate||new Date(), all=shotTimes(room,table,now), best=null;
   for(var i=0;i<all.length;i++) if(all[i]>now && (best===null||all[i]<best)) best=all[i];
   return best===null ? null : (best-now)/3600000;
+}
+/* Lights-on clock time (Growlink Integration Plan §2/§3/§4, 9/12). The
+   API's own light-cycle field is wrong for A-3/A-4/A-5/A-6 (confirmed by
+   Andy, §7) and for A-7 too — its 08:00/16:00 entry contradicts "A7 runs
+   7 to 7" — so nothing here reads it, for any room. Instead: SCHED's own
+   P1 start time already encodes AM/PM, confirmed against every real
+   schedule this app has ever seen — a 01:15 start is 2:15 after an
+   11 PM lights-on, a 13:15 start is 2:15 after an 11 AM one, and that
+   split holds for all 18 non-A7 rooms. A7 alone is special-cased to its
+   own documented 7-to-7 cycle rather than forced into that binary. */
+function lightsOnFor(rm){
+  if(rm==='A7') return '07:00';
+  var c=SCHED[rm];
+  if(!c) return null;
+  var hour=+String(c[0]).split(':')[0];
+  return (hour<12) ? '23:00' : '11:00';
+}
+/* The most recent lights-on instant at or before `nowDate` — the start of
+   the current light-day, which for an AM room can fall the calendar day
+   before `now`. */
+function lastLightsOn(rm, nowDate){
+  var now=nowDate||new Date();
+  var lo=lightsOnFor(rm);
+  if(!lo) return null;
+  var p=lo.split(':');
+  var t=new Date(now); t.setHours(+p[0],+p[1],0,0);
+  if(t>now) t.setDate(t.getDate()-1);
+  return t;
+}
+/* The schedule's own P1 duration, in seconds, for §2's short-run check.
+   Only the imported (pasted) schedule carries a duration at all — the
+   weekly file (SCHED) never has one — so a room still running off SCHED
+   alone returns null, and nightFireLine skips the short-run check rather
+   than comparing against nothing. */
+function scheduledDurationFor(room, table){
+  var imp=(typeof getSched==='function')?(getSched()||{}):{};
+  var rec=imp[room];
+  if(rec && rec.tables && rec.tables.length){
+    var t=null, i;
+    for(i=0;i<rec.tables.length;i++) if(rec.tables[i].table===table){ t=rec.tables[i]; break; }
+    if(!t) t=schedFallback(rec);
+    if(t && t.P1 && t.P1.duration!=null) return t.P1.duration;
+  }
+  return null;
 }
 /* ============ SCHEDULE PASTE-IN (Addendum B §4) ============
    Growlink exposes no schedule endpoint, so the operator copies the room's
@@ -258,37 +302,86 @@ function sensorId(name){
   var m=/#(\d{4,})/.exec(String(name||''));
   return m?m[1]:null;
 }
-/* Growlink zone list paste (Weekend Plan 3.5) — the second half of the v41
-   finding: 76 of 216 tables had no sensor mapping at all. schedSensor only
-   ever sees a sensor NAME buried in the schedule screen and can only pull
-   a device id out of it when the name happens to print one raw; the zone
-   list is Growlink's own export and names the device id, the table it is
-   mounted on, and Growlink's own zone code directly — "#20003605  B1
-   Table 4  B-1". This is the mapping the eventual overnight sensor pull
-   (§5.6) reads a device id and a zone against; nothing here calls the API.
-   One line per device, tab- or space-separated same as the schedule
-   screens; a line that will not parse is reported, not silently dropped. */
-function parseZoneList(text){
-  var lines=String(text||'').split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
-  var out=[], warnings=[], room=null;
-  lines.forEach(function(ln){
-    var m=/^#(\d+)\s+([A-Z]\d{1,2})\s+Table\s+(\d+)\s+(\S+)$/.exec(ln);
-    if(!m){ warnings.push('could not read: '+ln); return; }
-    var rm=m[2];
-    if(room && rm!==room) warnings.push('mixed rooms in one paste: '+room+' and '+rm);
-    room=room||rm;
-    out.push({device:m[1], room:rm, table:+m[3], zone:m[4]});
-  });
-  return {room:room, entries:out, warnings:warnings};
+/* Growlink discovery — device and sensor name parsers (Growlink
+   Integration Plan §0/§1, 9/12). Replaces the 3.5 zone-list paste
+   outright: that paste expected "Table N" and named tables B-wing style,
+   but the API's own sensor names for the A-wing are "A1 5 Back
+   Moisture" — no "Table" anywhere — so every zoned table read as
+   unparseable and 3.2 had nothing to match against. Confirmed against
+   the real discovery fixture, `fixtures/growlink/api_list.txt`.
+
+   Device `type` is not trustworthy for telling a zone valve from
+   anything else — the identical "Flower B-1 - Zone Valve #2" pattern
+   comes back typed `Batch Tank` for most of B-1's own valves and typed
+   `Valve` for #2 through #5 in the same room's own device list.
+   Matching here never looks at type, only the name. */
+function valveHeader(name){
+  var n=String(name||'').trim();
+  var R='([A-Za-z]-?\\d+)';
+  /* "Flower " is present for every room except A-7, which drops both
+     that prefix and the hyphen ("A7 - Zone Valve #1", "A7 Master
+     Irrigation valve" — lowercase "valve", no hyphen at all on that one). */
+  var m=new RegExp('^(?:Flower\\s+)?'+R+'\\s*-\\s*Zone\\s+Valve\\s*#(\\d+)$','i').exec(n);
+  if(m) return {kind:'zone', room:m[1].replace('-','').toUpperCase(), num:+m[2]};
+  m=new RegExp('^(?:Flower\\s+)?'+R+'\\s*-?\\s*Master\\s+Irrigation\\s+Valve$','i').exec(n);
+  if(m) return {kind:'masterDefault', room:m[1].replace('-','').toUpperCase()};
+  /* An explicit "Tank A" label exists alongside masterDefault for every
+     B/C-wing room (a real duplicate in the data, not a parsing error —
+     confirmed for all twelve) — kept as its own kind so the aggregator
+     can prefer the unambiguous one without silently dropping the other. */
+  m=new RegExp('^'+R+'\\s+Master\\s+Irrigation\\s+Tank\\s+A$','i').exec(n);
+  if(m) return {kind:'masterA', room:m[1].replace('-','').toUpperCase()};
+  m=new RegExp('^'+R+'\\s+(?:Tank\\s+([ABC])\\s+Master\\s+Irrigation|Master\\s+Irrigation\\s+Tank\\s+([ABC]))$','i').exec(n);
+  if(m) return {kind:'master'+(m[2]||m[3]).toUpperCase(), room:m[1].replace('-','').toUpperCase()};
+  /* "Master" itself is dropped on one real device — B-3's is named
+     "Flower B3 - Fresh Water Valve", every other room's "... Master
+     Valve" — confirmed against the fixture, not assumed uniform. */
+  m=new RegExp('^(?:Flower\\s+)?'+R+'\\s*-\\s*Fresh\\s+Water\\s+(?:Master\\s+)?Valve$','i').exec(n);
+  if(m) return {kind:'water', room:m[1].replace('-','').toUpperCase()};
+  m=new RegExp('^(?:Flower\\s+)?'+R+'\\s*-\\s*Drain\\s+Valve$','i').exec(n);
+  if(m) return {kind:'drain', room:m[1].replace('-','').toUpperCase()};
+  return null;   /* CO2/C02, a bare "Valve #N", anything else — not irrigation */
 }
-/* Device id and zone for a table, from whatever zone list has been pasted
-   for its room. Late-bound like getSched — pure.js reaches storage only
-   through this. A table absent from the list has no zone, not a guess. */
-function zoneFor(rm, t){
-  var z=(typeof getZones==='function')?(getZones()||{}):{};
-  var rec=z[rm];
-  if(!rec || !rec.entries) return null;
-  for(var i=0;i<rec.entries.length;i++) if(rec.entries[i].table===t) return rec.entries[i];
+/* Which table a numbered zone valve covers. A-wing rooms run one valve
+   short of their table count and the last valve covers two tables
+   (#11 -> T11 and T12, confirmed for every A-wing room); B/C-wing rooms
+   run two valves long and the extra numbers (#12, #13) cover no table
+   at all — real spares, not a guess (confirmed for every B/C-wing room:
+   13 zone valves, 11 tables). General rule, not hardcoded to a wing:
+   only a valve count exactly one short of the table count gets the
+   shared-last-valve treatment; anything else short is a real gap to
+   report, not paper over, and anything long is extras. */
+function valveTablesFor(tableCount, maxValveNum){
+  var byValve={};
+  if(maxValveNum===tableCount-1){
+    for(var v=1;v<maxValveNum;v++) byValve[v]=[v];
+    byValve[maxValveNum]=[maxValveNum, tableCount];
+  } else {
+    var lim=Math.min(maxValveNum, tableCount);
+    for(var v2=1;v2<=lim;v2++) byValve[v2]=[v2];
+  }
+  var extras=[];
+  for(var v3=1;v3<=maxValveNum;v3++) if(!byValve[v3]) extras.push(v3);
+  return {byValve:byValve, extras:extras};
+}
+/* Substrate sensor names. Two shapes, and the metric (VWC/pwEC/temp)
+   never comes from the name — it comes from the sensor's own `type`
+   field, since the name after the table number is inconsistently
+   present, inconsistently capitalized, and sometimes just missing
+   ("C4 Table 11" with no word at all). A-wing prints a Back/Front
+   position; B/C-wing tables do not, one sensor per table. Anything else
+   ("Substrate Moisture 4", "Substrate Moisture #20004907") has no room
+   or table in its own name at all and is reported unmapped, not guessed. */
+function sensorHeader(name){
+  var n=String(name||'').trim();
+  var m=/^([A-Za-z]\d+)\s+(\d+)\s+(Back|Front)\b/i.exec(n);
+  if(m) return {room:m[1].toUpperCase(), table:+m[2], position:m[3].toLowerCase()};
+  /* C-4's own export doubles the word once — "C4 Table table 7 moisture"
+     — a real typo, not a second table reference; `(?:[Tt]able\s+)+`
+     absorbs any number of repeats without treating it as a different
+     table than a single "Table 7" would. */
+  m=/^([A-Za-z]\d+)\s+(?:[Tt]able\s+)+(\d+)\b/.exec(n);
+  if(m) return {room:m[1].toUpperCase(), table:+m[2], position:null};
   return null;
 }
 /* Batch tank turnover (Weekend Plan 3.3): fill per day from a level time
@@ -325,22 +418,29 @@ function tankFillByDay(points){
    sits flat at 0 across the same window — unused by any of Stab's four
    tanks, so it has no entry here. */
 var BATCH_TANK_NUM={A:1,B:2,C:3,Veg:5};
-/* Did last night fire (Weekend Plan 3.2). Compares this app's own
-   schedule (shotTimes, already in this file) against the device log's
-   completed on/off periods for the same table's valve. Only scheduled
-   periods (isManual false) count toward "fired" — the developer API
-   guide's own device-log section says isManual describes how a run
-   started, not what kind of task it was, so a manual flush sitting next
-   to a night of scheduled shots is not evidence the schedule missed one;
-   it is reported alongside instead. A log period matches an expected
-   shot when its "on" timestamp falls within 30 minutes of it — the same
-   slop this file allows a schedule paste elsewhere — and each period
-   can only satisfy one expected shot, so an early double-report in the
-   log can't paper over a real miss right after it. */
-function nightFireLine(expected, logs){
+/* Did last night fire, rebuilt on the valve map (Growlink Integration
+   Plan §2, 9/12). Compares this app's own schedule (shotTimes, already
+   in this file) against the device log's completed on/off periods for
+   the same table's valve. Only scheduled periods (isManual false) count
+   toward "fired" — the developer API guide's own device-log section
+   says isManual describes how a run started, not what kind of task it
+   was, so a manual flush sitting next to a night of scheduled shots is
+   not evidence the schedule missed one; it is reported alongside
+   instead. A log period matches an expected shot when its "on"
+   timestamp falls within 30 minutes of it — the same slop this file
+   allows a schedule paste elsewhere — and each period can only satisfy
+   one expected shot, so an early double-report in the log can't paper
+   over a real miss right after it. A scheduled period matching no
+   expected shot at all is an extra run; a matched one whose "on" is
+   more than 10 minutes from the shot it satisfied is a late start; one
+   running under 90% of the schedule's own duration is a short run — the
+   plan's own three mismatch categories, on top of a fired shot simply
+   missing outright. `scheduledDurationSec` is optional — omit it and
+   short-run detection is skipped rather than compared against nothing. */
+function nightFireLine(expected, logs, scheduledDurationSec){
   var scheduled=(logs||[]).filter(function(l){ return !l.isManual; });
   var manual=(logs||[]).filter(function(l){ return l.isManual; });
-  var used=scheduled.slice(), fired=0, missed=[];
+  var used=scheduled.slice(), fired=0, missed=[], matches=[];
   expected.forEach(function(t){
     var best=-1, bestDiff=30*60000;
     used.forEach(function(l,i){
@@ -348,16 +448,200 @@ function nightFireLine(expected, logs){
       var diff=Math.abs(new Date(l.on).getTime()-t.getTime());
       if(diff<=bestDiff){ bestDiff=diff; best=i; }
     });
-    if(best>=0){ fired++; used[best]=null; }
+    if(best>=0){ fired++; matches.push({expected:t, log:used[best]}); used[best]=null; }
     else missed.push(t);
   });
+  var extra=used.filter(function(l){ return l!=null; });
+  var late=matches.filter(function(m){ return Math.abs(new Date(m.log.on)-m.expected)>10*60000; });
+  var short=(scheduledDurationSec==null) ? [] : matches.filter(function(m){
+    return m.log.onDurationInSeconds!=null && m.log.onDurationInSeconds<scheduledDurationSec*0.9;
+  });
   var n=expected.length;
-  var line=fired+'/'+n+' fired';
-  if(missed.length) line+=' · missed '+missed.map(function(t){
-    return t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  }).join(', ');
+  var firstOn=matches.length ? new Date(Math.min.apply(null, matches.map(function(m){ return new Date(m.log.on).getTime(); }))) : null;
+  var clean=(fired===n && !late.length && !short.length && !extra.length);
+  var tm=function(d){ return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); };
+  var line;
+  if(clean){
+    line=fired+'/'+n+' fired'+(firstOn?' · first '+tm(firstOn):'')+' · matches schedule';
+  } else {
+    var parts=[fired+'/'+n+' fired'];
+    if(firstOn) parts.push('first '+tm(firstOn));
+    if(missed.length) parts.push('missed '+missed.map(tm).join(', '));
+    if(late.length) parts.push(late.length+' late start'+(late.length===1?'':'s'));
+    if(short.length) parts.push(short.length+' short run'+(short.length===1?'':'s'));
+    if(extra.length) parts.push(extra.length+' extra run'+(extra.length===1?'':'s'));
+    line=parts.join(' · ');
+  }
   if(manual.length) line+=' · '+manual.length+' manual run'+(manual.length===1?'':'s')+' alongside';
-  return {fired:fired, expected:n, missed:missed, manual:manual.length, line:line};
+  return {fired:fired, expected:n, missed:missed, extra:extra, late:late.length, short:short.length,
+          manual:manual.length, firstOn:firstOn, matches:matches, line:line};
+}
+/* Tank from the log (Growlink Integration Plan §3, 9/12): which master
+   valve was actually open while a table's own runs happened, read
+   straight off the device log rather than trusted from room config.
+   `masterRuns` is {A:[...],B:[...],C:[...]}, each entry {on,off}; a
+   master with no `off` yet (still running) is treated as open through
+   `now`. Returns every letter that overlapped — usually one, but not
+   assumed to be, since room config is exactly the guess this exists to
+   check. */
+function tankFromLog(masterRuns, tableRunPeriods, now){
+  var letters=['A','B','C'], hit=[];
+  var end=function(p){ return p.off ? new Date(p.off).getTime() : (now||new Date()).getTime(); };
+  letters.forEach(function(L){
+    var runs=(masterRuns&&masterRuns[L])||[];
+    var overlaps=runs.some(function(m){
+      var mOn=new Date(m.on).getTime(), mOff=end(m);
+      return (tableRunPeriods||[]).some(function(t){
+        var tOn=new Date(t.on).getTime(), tOff=end(t);
+        return mOn<tOff && tOn<mOff;
+      });
+    });
+    if(overlaps) hit.push(L);
+  });
+  return hit;
+}
+/* A Fresh Water Master run is a flush by definition (§3), manual or
+   scheduled alike — Friday's two-flush pattern is an operator manually
+   opening it, not a series Growlink ever schedules, so filtering out
+   isManual here (the way nightFireLine does for the zone valves) would
+   drop exactly the runs this exists to catch. mL is the same arithmetic
+   as any other shot (mlPerPlant) — the master delivers through the same
+   drippers as everything else once open. No table id applies to a
+   room-wide master, so mlPerPlant's own room-default dripper count
+   (null table) stands in, the same number the room's own P1 mL figure
+   already assumes when nothing has been typed in per table. */
+function flushEventsFromLog(waterRuns, rm){
+  return (waterRuns||[]).map(function(w){
+    var durSec=w.onDurationInSeconds!=null ? w.onDurationInSeconds :
+      (w.off ? (new Date(w.off)-new Date(w.on))/1000 : null);
+    if(durSec==null) return null;
+    var durationMin=durSec/60;
+    return {date:new Date(w.on), durationMin:Math.round(durationMin*10)/10, mL:mlPerPlant(rm, null, durationMin)};
+  }).filter(Boolean);
+}
+/* Observed schedule (Growlink Integration Plan §4, 9/12): from completed,
+   non-manual zone-valve runs, reconstruct what a table is actually being
+   run on, as opposed to what the stored (pasted or weekly-file) schedule
+   says. Grouped per light-day, not calendar day — a calendar-day cut
+   falls in the middle of an AM room's own watering day. */
+function groupRunsByLightDay(rm, runs){
+  var groups={};
+  (runs||[]).forEach(function(r){
+    if(r.isManual) return;
+    var on=new Date(r.on);
+    var lo=lastLightsOn(rm, on);
+    if(!lo) return;
+    var key=lo.getTime();
+    if(!groups[key]) groups[key]={lightsOn:lo, runs:[]};
+    groups[key].runs.push(r);
+  });
+  return Object.keys(groups).map(function(k){ return groups[k]; })
+    .sort(function(a,b){ return a.lightsOn-b.lightsOn; });
+}
+function median(arr){
+  if(!arr.length) return null;
+  var s=arr.slice().sort(function(a,b){ return a-b; });
+  var mid=Math.floor(s.length/2);
+  return s.length%2 ? s[mid] : (s[mid-1]+s[mid])/2;
+}
+/* Every light-day a set of runs touches, manual runs included — used to
+   find the flush light-days §4 excludes before building the observed
+   schedule. groupRunsByLightDay drops isManual entries because a manual
+   run is never evidence of the stored schedule; a flush is real whether
+   the operator triggered it by hand or not, so detecting the day it
+   happened on needs every run, not just the scheduled ones. */
+function lightDayKeysFor(rm, runs){
+  var keys={};
+  (runs||[]).forEach(function(r){
+    var lo=lastLightsOn(rm, new Date(r.on));
+    if(lo) keys[lo.getTime()]=1;
+  });
+  return keys;
+}
+/* One light-day's own start/duration/frequency/interval — the four
+   numbers §4 asks for. Duration and interval are medians across that
+   day's own shots, not the first one, so a single slow valve open
+   doesn't read as the room's new duration. */
+function observedSchedule(runs, lightsOn){
+  if(!runs || !runs.length) return null;
+  var sorted=runs.slice().sort(function(a,b){ return new Date(a.on)-new Date(b.on); });
+  var first=new Date(sorted[0].on);
+  var durations=sorted.map(function(r){ return r.onDurationInSeconds; }).filter(function(x){ return x!=null; });
+  var gaps=[];
+  for(var i=1;i<sorted.length;i++) gaps.push((new Date(sorted[i].on)-new Date(sorted[i-1].on))/60000);
+  return {
+    startOffsetMin:Math.round((first-lightsOn)/60000),
+    duration:durations.length?Math.round(median(durations)):null,
+    frequency:sorted.length,
+    intervalMin:gaps.length?Math.round(median(gaps)):null
+  };
+}
+/* Whether two schedules (either shape this file produces — observedSchedule
+   or storedAsObserved) are the same shot pattern. Tolerances mirror the
+   ones nightFireLine already uses (10-minute late-start, 10%-short)
+   rather than inventing new ones for the same comparison. Duration and
+   interval are skipped, not scored as a mismatch, when either side
+   doesn't have one — an unknown pasted duration is not evidence of drift. */
+function scheduleMatches(a, b){
+  if(!a || !b) return false;
+  if(a.frequency!==b.frequency) return false;
+  if(Math.abs(a.startOffsetMin-b.startOffsetMin)>10) return false;
+  if(a.duration!=null && b.duration!=null && Math.abs(a.duration-b.duration)>Math.max(30,a.duration*0.1)) return false;
+  if(a.intervalMin!=null && b.intervalMin!=null && Math.abs(a.intervalMin-b.intervalMin)>5) return false;
+  return true;
+}
+/* The stored schedule (schedSeries's P1, whichever source it came from —
+   pasted or the weekly file), reshaped to observedSchedule's own
+   {startOffsetMin, duration, frequency, intervalMin} so scheduleMatches
+   can compare the two directly. */
+function storedAsObserved(rm, table){
+  var ser=schedSeries(rm, table);
+  if(!ser.length) return null;
+  var s=ser[0];
+  var lo=lightsOnFor(rm);
+  if(!lo || !s.start) return null;
+  var lp=lo.split(':').map(Number), sp=s.start.split(':').map(Number);
+  var off=(sp[0]*60+sp[1])-(lp[0]*60+lp[1]);
+  if(off<0) off+=24*60;
+  return {startOffsetMin:off, duration:scheduledDurationFor(rm,table), frequency:s.count, intervalMin:s.intervalMin};
+}
+/* §4's own report for one table: the latest light-day's observed pattern,
+   plus whether the light-day before it agrees closely enough to call the
+   read confident rather than "1 day — provisional". `changedAt` — the
+   room's own last-schedule-change timestamp, already tracked by saveSched
+   — drops any light-day from before that change: water that ran under
+   yesterday's schedule can't confirm today's. */
+function observedScheduleReport(rm, runs, changedAt){
+  var groups=groupRunsByLightDay(rm, runs);
+  if(changedAt!=null) groups=groups.filter(function(g){ return g.lightsOn.getTime()>=changedAt; });
+  if(!groups.length) return null;
+  var last=groups[groups.length-1];
+  var obs=observedSchedule(last.runs, last.lightsOn);
+  if(!obs) return null;
+  var confident=false;
+  if(groups.length>=2)
+    confident=scheduleMatches(obs, observedSchedule(groups[groups.length-2].runs, groups[groups.length-2].lightsOn));
+  obs.confident=confident;
+  obs.lightDays=groups.length;
+  obs.lightsOn=last.lightsOn;
+  return obs;
+}
+/* Drift alarm: the stored schedule and the observed one disagree on two
+   consecutive light-days with no paste in between — entered right,
+   firing wrong, the case a paste can never catch because the paste
+   itself never changed. `changedAt` keeps a room's own last edit from
+   counting as "in between": every light-day checked here already comes
+   after it. */
+function scheduleDrift(rm, table, runs, changedAt){
+  var stored=storedAsObserved(rm, table);
+  if(!stored) return false;
+  var groups=groupRunsByLightDay(rm, runs);
+  if(changedAt!=null) groups=groups.filter(function(g){ return g.lightsOn.getTime()>=changedAt; });
+  if(groups.length<2) return false;
+  return groups.slice(-2).every(function(g){
+    var obs=observedSchedule(g.runs, g.lightsOn);
+    return obs && !scheduleMatches(obs, stored);
+  });
 }
 /* The blob leads with "all schedules as of 9/11/26 10:14am". Kept, because
    it says how stale the schedule is independently of when it was pasted —

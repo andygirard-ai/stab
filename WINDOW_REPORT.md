@@ -384,3 +384,139 @@ same push as the Window 3 correction, per Andy's instruction.
 ## Blocked
 
 Nothing.
+
+---
+
+# Window 5 report — the Growlink Integration Plan, §0-§4
+
+Andy sent `Stab_Growlink_Plan_9-12-2026.md` and a real 9/9 discovery run,
+`fixtures/growlink/api_list.txt` (34 rooms, 909 substrate sensors, 461
+irrigation devices, real names and UUIDs) — the fixture §0 names as the
+reason 9/12's device matching never had anything real to match against.
+All four items in scope shipped in full; §5-8 are deliberately out of
+scope for this session, per the plan's own "Order" section and Andy's
+instruction to stop after §4. Suite: **1071 → 1095 passing, all
+green.** Branch `claude/new-session-ri155r`, v62.
+
+## §0 — why nothing matched on 9/12
+
+Three root causes, each traced against the real fixture rather than
+argued from the plan text alone:
+
+**Table valves are named `Zone Valve #N`, typed inconsistently.** A
+table's real Growlink device is `Flower A1 - Zone Valve #5` (or, for
+A-7 only, `A7 - Zone Valve #5` — no "Flower" prefix), never a
+schedule-style "Room Table N" header. The device `type` field cannot
+tell a zone valve from anything else: the identical name pattern comes
+back typed `Batch Tank` for most of B-1's own valves and `Valve` for #2
+through #5 in that same room's own device list — confirmed directly
+against the fixture, not assumed from the plan's own claim. Matching is
+by name only, everywhere, now.
+
+**The valve map and the sensor map were never actually coupled** in the
+data — 3.2's own design just assumed one implied the other. §1's
+discovery keeps them as two independent maps from the start.
+
+**The 3.5 zone-list paste expected `Table N`; the API never prints
+that word for the A-wing.** A1's own sensors are named `A1 5 Back
+Moisture` — no "Table" anywhere — so every A-wing table read as
+unparseable against that paste's own regex. `valveHeader`/`sensorHeader`
+(pure.js) replace the paste outright, parsing the API's own naming
+conventions directly; `parseZoneList`/`zoneFor`/`saveZones` and the
+Room Setup zone-paste box are deleted, not disabled.
+
+## Shipped
+
+**§1 Discovery — one button, three maps.** Settings gets **Discover
+rooms & devices**: two GETs per room (devices, sensors) across the 19
+flower rooms plus one for CFS's own solution sensors, deduped by device
+id globally across every room's fetch (the fixture's one real
+cross-room duplicate, `Flower A2 - Zone Valve #8`, appears under both
+A-1's and A-2's device lists with the same UUID — the name's own room
+wins, never the fetch source). `valveTablesFor` encodes the A-wing
+shared-last-valve rule (one valve short of the table count — the top
+valve covers two tables, e.g. A-1's #11 → T11+T12) and the B/C-wing
+extras rule (two valves long — #12/#13 are real spares, not a gap) as
+one general rule keyed off the count relationship, not a per-wing
+special case, and both hold for every room in the real fixture, not
+just the one checked by hand. A room with no valve map yet fails by
+name (`run discovery in Settings first`) everywhere §2-§4 depend on it,
+never a silent empty result. Coverage table verified directly against
+`fixtures/growlink/api_list.txt`: A-1 11 valves → 12 tables, 4 masters,
+22 sensors; C-3 11 valves +2 extras, 3 masters, 11 sensors; B-3 11
+valves, 4 unmapped sensor positions; C-1 T10 and C-4 T6 unmapped by
+serial — the same rooms the plan's own accept line names, with the real
+counts in place of its approximate ones where they differ (A-1 is 22
+real sensors, not the plan's estimated 24).
+
+**§2 Did last night fire, rebuilt on the valve map.** `fetchNightFire`
+no longer touches a zone paste at all — it reads the room's own valve
+map, fetches one `devices/data/log` call for every table's zone valve
+plus the four masters, windowed lights-on minus one hour to now
+(`lastLightsOn`, pure.js — a calendar day cuts an AM room's own
+watering night in half, the light day doesn't). `nightFireLine` gained
+two new mismatch categories on top of fired/missed/manual: a matched
+period under 90% of the schedule's own duration is a **short run**, one
+matching no expected shot at all is an **extra run** — the plan's own
+three named mismatches, the fourth (late start) already existed. The
+same call answers "which master was open during the shots" and "did
+the Fresh Water Master run" off the exact same log, not a second
+fetch. The real A7 T3 finding from 9/11 (a device still running at
+window end reports nothing at all, not a short run — its own absence
+*is* the finding) still holds, now against the valve map instead of a
+saved zone.
+
+**§4 Observed schedule → confirm → replace, with a drift alarm.** From
+48h of a table's own zone-valve log — manual runs and any light-day the
+Fresh Water Master ran on excluded first — `observedScheduleReport`
+reconstructs the actual firing pattern (start relative to lights-on,
+median duration, frequency, median interval) and reports it against the
+stored schedule (`storedAsObserved`) with a `confident` flag once two
+consecutive light-days agree, `provisional` before that. **OK, replace**
+writes the observed pattern into the room's own stored schedule and
+records it in the existing schedule change log (`stab_schedlog`) tagged
+`source: observed`, reusing the diff-as-verification machinery Window 2
+already built rather than a second one. **Drift alarm**
+(`scheduleDrift`): stored and observed disagreeing on two consecutive
+light-days with no paste in between — "entered right, firing wrong,"
+the one case a paste screen can never catch on its own, since the paste
+itself never changed.
+
+**§3 Tank and flush from the log.** `fetchTankFromLog` reuses §2's own
+fetch outright (`tankFromLog`, pure.js) — no second call, since both
+read the exact same masters over the exact same window — to find which
+letter's own periods actually overlapped the table runs, shown against
+what room config currently says (`B1 · tank A (from log) · config says
+B`), never silently overwritten: **update config** is a tap, and it
+writes the room's own event log (`stab_events`, `kind:'tankchange'`)
+same as any other room event. A Fresh Water Master run is a flush by
+definition, manual or scheduled alike — a flush is real whether the
+operator triggered it by hand or not, so `flushEventsFromLog` doesn't
+exclude `isManual` the way §2's own fired/missed counting does. mL
+reuses `mlPerPlant` exactly, room-default dripper count standing in
+since a room-wide master has no table id: the plan's own accept number,
+a 28-minute run at 4 A-wing drippers, reproduces at exactly 1960 mL.
+
+## Deferred (per the plan's own "Order," and Andy's instruction to stop
+after §4)
+
+§5 Drawdown/tank levels, §6 Live substrate reads, §7 DOF from
+`activeRun`, §8 Operator guide. None of these are started; nothing here
+depends on any of them.
+
+## Open, not blocking
+
+The Batch/Stock Tank level sensors the plan's own §1.3 describes don't
+appear in CFS's live `/sensors` call at all (only Temperature/pH/EC/
+TDS/Flow Rate, 12 rows total) — a real discrepancy against both the
+plan text and `growlink_room_export.csv`'s own columns, asked in
+`QUESTIONS.md` rather than guessed at. Window 3's existing, working
+`growlinkTankSensor`/`fetchTankFill` is untouched either way.
+
+## What's on branch (Window 5)
+
+One commit beyond v61: v62. Not yet merged to `main`.
+
+## Blocked
+
+Nothing.
