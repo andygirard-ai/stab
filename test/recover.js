@@ -33,7 +33,7 @@ async function inject(w,vwc,ec){ // push frames until a row commits
   await sleep(50);
   d.querySelector('#rooms .rm[data-room="B2"]').click();
   $('cfg_bag').value='2'; $('cfg_ec').value='3.1'; $('cfg_ph').value='5.9';
-  $('startbtn').click();
+  $('startbtn').click(); $('confirmgo').click();
   w.S.trigger=w.TRIGGER; // pretend probe verified
   ok(w.S.roomStarted,'sweep started (no BLE in jsdom → step says so)');
   for(const [v,e] of [[45,4.0],[38,4.4],[41,3.9],[70,2.0],[5.5,0]]) ok(await inject(w,v,e),'injected reading '+v+'%');

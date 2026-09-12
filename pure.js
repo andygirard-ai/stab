@@ -3,7 +3,7 @@
    Storage is reached only through late-bound globals (getHist) that app.js
    defines before any call. */
 /* ===================== PURE (testable, no DOM) ===================== */
-var VER='v51';
+var VER='v52';
 /* The floor is one number, and it lives in room config.
    Everything that used to key off bag size now keys off this instead — the
    feel bands, the mid-bag trigger, and whether a hand can find the floor at
@@ -577,6 +577,19 @@ function strainFor(rm, t){
   var c=rcfg(rm), k=String(t);
   if(c.strains && c.strains[k]) return c.strains[k];
   return (RMAP[rm]||{})[k] || ['',''];
+}
+/* Distinct strains in table order, for the room-confirmation step (Weekend
+   Plan 1.1). Sourced through strainFor, which reads room config before the
+   Monday file — confirmation has to show what an operator corrected at
+   move-in, not what rooms.js said before he fixed it. */
+function strainListFor(rm){
+  var c=ROOMS[rm]; if(!c) return [];
+  var out=[];
+  for(var t=1;t<=c.t;t++){
+    var name=(strainFor(rm,t)[0]||'').trim();
+    if(name && out.indexOf(name)<0) out.push(name);
+  }
+  return out;
 }
 function tankFor(rm){
   var c=rcfg(rm);

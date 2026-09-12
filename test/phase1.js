@@ -20,7 +20,7 @@ function boot(){
   return {w:dom.window, d:dom.window.document, errors};
 }
 const start=(w,d,room)=>{ d.querySelector('#rooms .rm[data-room="'+room+'"]').click();
-  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click();
+  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click(); d.getElementById('confirmgo').click();
   // jsdom has no navigator.bluetooth, so connect() bails before it would
   // normally mark the probe connected — fake what a real pairing leaves
   // behind so isConn() (and so bigTap()'s manual-commit branch) sees a

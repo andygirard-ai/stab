@@ -967,6 +967,28 @@ $('startbtn').onclick=function(){
   if(!S.room) return;
   if(S.mode==='triage' && !(S.triage&&S.triage.length)){ toast('pick the tables to triage first'); return; }
   applyRoomCfg();
+  showRoomConfirm();
+};
+/* ---------------- room confirmation (Weekend Plan 1.1) ----------------
+   A full C3 sweep was filed as A1 on 9/11 and nothing on screen said so for
+   eleven tables — the room grid is easy to mis-tap and nothing since then
+   forced a second look. This sits between Start and the first stab as its
+   own step: big room name plus the strain list, sourced from strainListFor
+   (room config first, the Monday file under it). Only #confirmgo begins the
+   sweep; #confirmback is the only other live control, so there is no tap
+   that gets past this by accident. */
+function showRoomConfirm(){
+  $('confirmroom').textContent=S.room;
+  var list=strainListFor(S.room);
+  $('confirmstrains').textContent=list.length?list.join(' / '):'no strains on record';
+  $('confirmsheet').classList.remove('hide');
+}
+$('confirmback').onclick=function(){ $('confirmsheet').classList.add('hide'); };
+$('confirmgo').onclick=function(){
+  $('confirmsheet').classList.add('hide');
+  beginSweep();
+};
+function beginSweep(){
   /* §5.5: said here, where it can still change what he does — not on the
      done screen, where it is only an excuse for the numbers. */
   if(S.mode==='sweep'){
@@ -997,7 +1019,7 @@ $('startbtn').onclick=function(){
     return;
   }
   connect();
-};
+}
 
 /* ---------------- render ---------------- */
 function drawRoute(){

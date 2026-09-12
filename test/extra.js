@@ -37,7 +37,7 @@ const legacy={ 'stab_session':JSON.stringify({v:21,room:'B2',side:'standard',dir
   ok(/shots/.test(d.getElementById('brief').textContent),'brief carries the schedule');
   d.getElementById('demo').click();
   ok(!d.getElementById('demoband').classList.contains('hide') && d.body.classList.contains('demo'),'band visible when demo on');
-  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click();
+  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click(); d.getElementById('confirmgo').click();
   ok(!d.getElementById('demoband').classList.contains('hide'),'band still visible on sweep screen');
   w.S.rows.push({date:'9/4/2026',time:'09:00:00',hrs:'2.0',room:'C3',table:1,position:'front',depth:'reference',vwc:30,ec:4,bulk:.8,tmp:22,flag:false,raw:'x',mode:'sweep',strain:'Walkabout',flags:''});
   const wb=w.buildWorkbook();

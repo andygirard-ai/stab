@@ -36,7 +36,7 @@ function vis(id){ return !$(id).classList.contains('hide'); }
   ok(vis('roomcfg'),'room cfg shown');
   $('cfg_bag').value='2'; $('cfg_ec').value='3.2'; $('cfg_ph').value='6.1';
   $('demo').click(); ok(w.DEMO===true,'demo on');
-  $('startbtn').click();
+  $('startbtn').click(); $('confirmgo').click();
   // backlog §6.7: a sweep routes references only and earns its mid-bag stabs
   // one at a time. Profile mode is the old every-position route.
   ok(w.S.roomStarted && w.S.route.length===33,'route built reference-only (33 stops): '+w.S.route.length);

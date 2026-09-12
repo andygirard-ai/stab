@@ -58,7 +58,7 @@ function boot(storage){
     ok(w.S.room==='BENCH','and the practice room opens from there: '+w.S.room);
     ok(d.getElementById('setsheet').classList.contains('hide'),'settings closes behind it');
     d.getElementById('demo').click();
-    d.getElementById('startbtn').click(); await sleep(50);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(50);
     ok(w.S.roomStarted && w.S.route.length===4*3,
        'BENCH route built as 4 tables × 3 positions, references only: '+w.S.route.length);
     const hdr=d.getElementById('hside').textContent;

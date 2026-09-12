@@ -32,7 +32,7 @@ function boot(opts){
   return {w:dom.window, d:dom.window.document, errors, dim, bt:dom.window.navigator.bluetooth};
 }
 const start=(d)=>{ d.querySelector('#rooms .rm[data-room="B2"]').click();
-  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click(); };
+  d.getElementById('cfg_bag').value='2'; d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); };
 
 (async()=>{
   // ---- 1. dim held off for the length of a sweep, given back at END ----

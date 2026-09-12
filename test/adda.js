@@ -26,7 +26,7 @@ function boot(storage){
   return {w:dom.window, d:dom.window.document, errors};
 }
 const start=(w,d,room,bag)=>{ d.querySelector('#rooms .rm[data-room="'+room+'"]').click();
-  d.getElementById('cfg_bag').value=String(bag||2); d.getElementById('startbtn').click();
+  d.getElementById('cfg_bag').value=String(bag||2); d.getElementById('startbtn').click(); d.getElementById('confirmgo').click();
   w.S.dev={gatt:{connected:true}}; w.S.chr={};
   ['log','extra','skip','undo','redo'].forEach(id=>{ d.getElementById(id).disabled=false; }); };
 function enterSettling(w,vwc,rawBulk){
@@ -948,7 +948,7 @@ function rowsFor(w,room,spec){
     ok(w.S.profile===true,'tapping Profile sets it: '+w.S.profile);
     ok(prof(1).classList.contains('on') && !prof(0).classList.contains('on'),
        'and the selection is visible, which it was not');
-    d.getElementById('startbtn').click(); await sleep(30);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(30);
     ok(w.S.route.length===33*2,'profile routes a mid at every position: '+w.S.route.length);
     w.S.roomStarted=false; }
   { const {w,d,errors}=boot(null); await sleep(50);
@@ -956,7 +956,7 @@ function rowsFor(w,room,spec){
     d.querySelector('.prof[data-prof="1"]').click(); await sleep(20);
     d.querySelector('.prof[data-prof="0"]').click(); await sleep(20);
     ok(w.S.profile===false,'and tapping back to Reference clears it');
-    d.getElementById('startbtn').click(); await sleep(30);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(30);
     ok(w.S.route.length===33,'reference-only again: '+w.S.route.length);
     ok(w.S.route.every(x=>x.depth==='reference'),'no mids routed at all'); }
 
@@ -1045,7 +1045,7 @@ function rowsFor(w,room,spec){
   { const {w,d,errors}=boot(null); await sleep(50);
     d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
     d.querySelector('.pf').click(); await sleep(20);
-    d.getElementById('startbtn').click(); await sleep(30);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(30);
     ok(w.S.postFlush===true,'the sweep is tagged');
     w.S.dev={gatt:{connected:true}}; w.S.chr={}; w.S.trigger=w.TRIGGER;
     ['log','extra','skip','undo','redo'].forEach(id=>{ d.getElementById(id).disabled=false; });
@@ -1567,7 +1567,7 @@ function rowsFor(w,room,spec){
        !d.getElementById('cfgbtn').classList.contains('stale'),
        'and the room stops reading as unconfirmed: '+d.getElementById('cfgbtn').textContent);
     // the move-in fields have to survive a Start, which used to replace the record
-    d.getElementById('startbtn').click(); await sleep(30);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(30);
     ok(w.strainFor('C3',1)[0]==='Scooby Snack' && w.drippersFor('C3',1)===4 && w.tankFor('C3')==='B',
        'starting a sweep does not wipe them');
     ok(w.S.rows.length===0,'…and nothing is logged yet');
@@ -1705,7 +1705,7 @@ function rowsFor(w,room,spec){
     d.querySelector('#rooms .rm[data-room="B2"]').click(); await sleep(20);
     [].find.call(d.querySelectorAll('[data-mode]'),b=>b.dataset.mode==='spot').click();
     await sleep(20);
-    d.getElementById('startbtn').click(); await sleep(30);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(30);
     w.S.dev={gatt:{connected:true}}; w.S.chr={}; w.S.trigger=w.TRIGGER;
     ['log','extra','skip','undo','redo'].forEach(id=>{ d.getElementById(id).disabled=false; });
     ok(/pick a table/.test(d.getElementById('pos').textContent),
@@ -2122,6 +2122,29 @@ function rowsFor(w,room,spec){
     ok(psc>=0,'the CSV separates the two populations');
     ok(csv[1].split(',')[psc]==='' && csv[2].split(',')[psc]==='YES',
        'and marks the right rows: "'+csv[1].split(',')[psc]+'" then "'+csv[2].split(',')[psc]+'"'); }
+
+  // ============ Weekend Plan 1.1 — room confirmation ============
+  // A full C3 sweep filed as A1 on 9/11 said nothing was wrong for eleven
+  // tables. Start now stops on its own screen naming the room and its
+  // strains, and only #confirmgo gets past it.
+  { const {w,d,errors}=boot(null); await sleep(50);
+    d.querySelector('#rooms .rm[data-room="C3"]').click(); await sleep(20);
+    d.getElementById('startbtn').click(); await sleep(20);
+    ok(!d.getElementById('confirmsheet').classList.contains('hide'),'Start opens a confirmation step, not the sweep');
+    ok(d.getElementById('hdr').classList.contains('hide'),'the sweep screen has not appeared yet');
+    ok(d.getElementById('confirmroom').textContent==='C3','the room is named in full size: '+d.getElementById('confirmroom').textContent);
+    const strains=d.getElementById('confirmstrains').textContent;
+    ok(strains===w.strainListFor('C3').join(' / '),'and the strain list is the room\'s own: '+strains);
+    ok(/Kabuki Sour/.test(strains) && /Triangle Kush/.test(strains),
+       'C3\'s current strains, not a stale grow: '+strains);
+    d.getElementById('confirmback').click(); await sleep(20);
+    ok(d.getElementById('confirmsheet').classList.contains('hide') && d.getElementById('hdr').classList.contains('hide') && !w.S.roomStarted,
+       'Back returns to setup without ever starting the sweep');
+    d.getElementById('startbtn').click(); await sleep(20);
+    d.getElementById('confirmgo').click(); await sleep(20);
+    ok(!d.getElementById('hdr').classList.contains('hide') && w.S.roomStarted===true && w.S.room==='C3',
+       'confirmgo is what actually starts it, on the confirmed room');
+    w.S.roomStarted=false; }
 
   // ============ §4 the verification screen ============
   // The paste is a convenience, not an authority: nothing is committed until

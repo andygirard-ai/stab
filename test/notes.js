@@ -45,7 +45,7 @@ async function demoStab(w,d){
     d.querySelector('#rooms .rm[data-room="C3"]').click();
     d.getElementById('demo').click();
     d.getElementById('cfg_bag').value='2';
-    d.getElementById('startbtn').click(); await sleep(50);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(50);
     for(let i=0;i<6;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const row=d.getElementById('wbrow').value, room=d.getElementById('wbroom').value;
@@ -73,7 +73,7 @@ async function demoStab(w,d){
     d.querySelector('#rooms .rm[data-room="C3"]').click();
     d.getElementById('demo').click();
     d.getElementById('cfg_bag').value='2';
-    d.getElementById('startbtn').click(); await sleep(50);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(50);
     await demoStab(w,d);                       // one reading on T1
     const tbl=w.S.route[w.S.i].t;
     d.getElementById('skip').click(); await sleep(20);
@@ -179,7 +179,7 @@ async function demoStab(w,d){
     ok(w.S.access && w.S.access.reason==='crew working','access held on state before Start');
     d.getElementById('demo').click();
     d.getElementById('cfg_bag').value='2';
-    d.getElementById('startbtn').click(); await sleep(50);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(50);
     ok(w.S.access && w.S.access.reason==='crew working','Start commits it rather than clearing it');
     for(let i=0;i<3;i++) await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
@@ -213,7 +213,7 @@ async function demoStab(w,d){
       'stab_prev':JSON.stringify({'C3|1|front|reference':{d:'9/6/2026',v:33,e:4}})}); await sleep(50);
     d.querySelector('#rooms .rm[data-room="C3"]').click();
     d.getElementById('demo').click(); d.getElementById('cfg_bag').value='2';
-    d.getElementById('startbtn').click(); await sleep(50);
+    d.getElementById('startbtn').click(); d.getElementById('confirmgo').click(); await sleep(50);
     await demoStab(w,d);
     d.getElementById('exit').click(); await sleep(50);
     const hb=d.querySelector('#hist .hb');

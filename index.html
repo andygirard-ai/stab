@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Stab v51</title>
+<title>Stab v52</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -335,6 +335,16 @@ main{flex:1;display:flex;flex-direction:column;padding:14px 16px 0;min-height:0}
 #logrecent .r{font-family:var(--mono);font-size:12px;color:var(--dim);padding:7px 0;
   border-top:1px solid var(--line);line-height:1.5}
 
+/* ---------- room confirmation (Weekend Plan 1.1) ---------- */
+#confirmsheet{position:fixed;inset:0;background:var(--bg);z-index:31;display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+#confirmtop{font-size:22px;font-weight:700;margin-bottom:2px}
+#confirmsub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:22px;line-height:1.5}
+#confirmroom{font-size:58px;font-weight:700;line-height:1;margin-bottom:14px}
+#confirmstrains{font-family:var(--mono);font-size:15px;color:var(--ink);line-height:1.6}
+#confirmgo{background:var(--ok);color:#052D14}
+#confirmback{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+
 /* ---------- schedule paste-in (B §4) ---------- */
 #schedsheet{position:fixed;inset:0;background:var(--bg);z-index:23;display:flex;flex-direction:column;
   padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
@@ -487,7 +497,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <!-- ============ SETUP ============ -->
 <section id="setup">
-  <div class="brand">Substrate sweep · <b>v51</b></div>
+  <div class="brand">Substrate sweep · <b>v52</b></div>
   <div id="dataage"></div>
   <div id="weekly"></div>
   <div id="resume" class="hide">
@@ -625,7 +635,7 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 <!-- ============ DONE ============ -->
 <section id="done" class="hide">
   <h2 id="dtitle">Sweep complete</h2>
-  <div class="v">stab v51</div>
+  <div class="v">stab v52</div>
   <div id="stats"></div>
   <div class="wbh">Checks · read here, never pasted</div>
   <div id="checks"></div>
@@ -724,6 +734,19 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
   <div class="lgact">
     <button id="schedok" class="hide">Save schedule</button>
     <button id="schedclose">Close</button>
+  </div>
+</div>
+
+<div id="confirmsheet" class="hide">
+  <div id="confirmtop">Confirm room</div>
+  <div id="confirmsub">This is what gets written on every row from here.
+    A sweep filed under the wrong room does not announce itself until
+    someone reads the CSV.</div>
+  <div id="confirmroom"></div>
+  <div id="confirmstrains"></div>
+  <div class="lgact">
+    <button id="confirmgo">Start</button>
+    <button id="confirmback">Back</button>
   </div>
 </div>
 
@@ -837,8 +860,8 @@ table.cfgt .ul.on{border-color:var(--warn);color:var(--warn)}
 
 <div id="toast"></div>
 
-<script src="rooms.js?v=51"></script>
-<script src="pure.js?v=51"></script>
-<script src="app.js?v=51"></script>
+<script src="rooms.js?v=52"></script>
+<script src="pure.js?v=52"></script>
+<script src="app.js?v=52"></script>
 </body>
 </html>
